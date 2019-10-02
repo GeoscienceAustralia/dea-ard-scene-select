@@ -13,6 +13,10 @@ import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 
+EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
+GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
+DATA_DIR = Path(__file__).parent.joinpath("data")
+
 _LOG = logging.getLogger(__name__)
 
 # landsat 8 filename pattern is configured to match only
@@ -135,7 +139,9 @@ def _write(filename: Path, list_to_write: List) -> None:
 
 
 def path_row_filter(
-    scenes_to_filter_list: Union[List[str], Path], path_row_list: Union[List[str], Path]
+    scenes_to_filter_list: Union[List[str], Path],
+    path_row_list: Union[List[str], Path],
+    out_dir: Optional[Path] = None,
 ) -> None:
     """Filter scenes to check if path/row of a scene is allowed in a path row list"""
 
@@ -178,7 +184,9 @@ def path_row_filter(
         else:
             _LOG.info(scene_path)
 
-    out_dir = Path.cwd()
+    if out_dir is None:
+        out_dir = Path.cwd()
+
     _write(out_dir.joinpath("L08_CollectionUpgrade_Level1_list.txt"), ls8_list)
     _write(out_dir.joinpath("L07_CollectionUpgrade_Level1_list.txt"), ls7_list)
     _write(out_dir.joinpath("L05_CollectionUpgrade_Level1_list.txt"), ls5_list)
@@ -222,31 +230,31 @@ def get_landsat_level1_file_paths(
     "--brdf-shapefile",
     type=click.Path(dir_okay=False, file_okay=True),
     help="full path to brdf extent shapefile",
-    default="/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/auxiliary-extents/brdf_tiles_new.shp",
+    default=EXTENT_DIR.joinpath("brdf_tiles_new.shp"),
 )
 @click.option(
     "--one-deg-dsm-v1-shapefile",
     type=click.Path(dir_okay=False, file_okay=True),
     help="full path to one deg dsm version 1 extent shapefile",
-    default="/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/auxiliary-extents/one-deg-dsm-v1.shp",
+    default=EXTENT_DIR.joinpath("one-deg-dsm-v1.shp"),
 )
 @click.option(
     "--one-sec-dsm-v1-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to one sec dsm version 1 shapefile",
-    default="/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/auxiliary-extents/one-sec-dsm-v1.shp",
+    default=EXTENT_DIR.joinpath("one-sec-dsm-v1.shp"),
 )
 @click.option(
     "--one-deg-dsm-v2-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to dsm shapefile",
-    default="/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/auxiliary-extents/one-deg-dsm-v2.shp",
+    default=EXTENT_DIR.joinpath("one-deg-dsm-v2.shp"),
 )
 @click.option(
     "--aerosol-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to aerosol shapefile",
-    default="/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/auxiliary-extents/aerosol.shp",
+    default=EXTENT_DIR.joinpath("aerosol.shp"),
 )
 @click.option(
     "--satellite-data-provider",
@@ -258,13 +266,13 @@ def get_landsat_level1_file_paths(
     "--world-wrs-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to global wrs shapefile",
-    default="/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/global_wrs_mgrs_shps/wrsdall_Decending.shp",
+    default=GLOBAL_MGRS_WRS_DIR.joinpath("wrsdall_Decending.shp"),
 )
 @click.option(
     "--world-mgrs-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to global mgrs shapefile",
-    default="/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/global_wrs_mgrs_shps/S2_tile.shp",
+    default=GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp"),
 )
 @click.option(
     "--usgs-level1-files",
@@ -275,6 +283,12 @@ def get_landsat_level1_file_paths(
     "--allowed-codes",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to a text files containing path/row or MGRS tile name to act as a filter",
+)
+@click.option(
+    "--nprocs",
+    type=int,
+    help="number of processes to enable faster search througha  large file systems",
+    default=1
 )
 def main(
     brdf_shapefile: click.Path,
@@ -287,14 +301,14 @@ def main(
     world_mgrs_shapefile: click.Path,
     usgs_level1_files: click.Path,
     allowed_codes: click.Path,
+    nprocs: int,
 ):
+
     if not usgs_level1_files:
         get_landsat_level1_file_paths(
             Path("/g/data/da82/AODH/USGS/L1/Landsat/C1"),
-            Path(
-                "/g/data/u46/users/pd1813/Collection_Upgrade/region_code_filter/all_landsat_scenes.txt"
-            ),
-            nprocs=8,
+            Path.cwd().joinpath("all_landsat_scenes.txt"),
+            nprocs=nprocs,
         )
 
     if not allowed_codes:
