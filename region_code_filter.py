@@ -305,9 +305,10 @@ def main(
 ):
 
     if not usgs_level1_files:
+        usgs_level1_files = Path.cwd().joinpath("all_landsat_scenes.txt")
         get_landsat_level1_file_paths(
             Path("/g/data/da82/AODH/USGS/L1/Landsat/C1"),
-            Path.cwd().joinpath("all_landsat_scenes.txt"),
+            usgs_level1_files,
             nprocs=nprocs,
         )
 
