@@ -5,6 +5,9 @@ from typing import List
 from pathlib import Path
 
 
+DATA_DIR = Path(__file__).parent.joinpath("data")
+
+
 def _get_allowed_path_rows(path_row_file: Path) -> List:
     with open(path_row_file, "r") as fid:
         return [
@@ -40,14 +43,11 @@ def _check_level1_lists(
 
 
 def main():
-    level1_ls8 = ("/g/data1a/u46/users/pd1813/Collection_Upgrade/region_code_filter/data/"
-                  "L08_CollectionUpgrade_Level1_list.txt")
-    level1_ls7 = ("/g/data1a/u46/users/pd1813/Collection_Upgrade/region_code_filter/data/"
-                  "L08_CollectionUpgrade_Level1_list.txt")
-    level1_ls5 = ("/g/data1a/u46/users/pd1813/Collection_Upgrade/region_code_filter/data/"
-                  "L08_CollectionUpgrade_Level1_list.txt")
-    path_row_au = ("/g/data1a/u46/users/pd1813/Collection_Upgrade/region_code_filter/data"
-                   "Australian_Wrs_list.txt")
+    level1_ls8 = DATA_DIR.joinpath("L08_CollectionUpgrade_Level1_list.txt")
+    level1_ls7 = DATA_DIR.joinpath("L07_CollectionUpgrade_Level1_list.txt")
+    level1_ls5 = DATA_DIR.joinpath("L08_CollectionUpgrade_Level1_list.txt")
+    path_row_au = DATA_DIR.joinpath("Australian_Wrs_list.txt")
+
     allowed_pathrows = _get_allowed_path_rows(Path(path_row_au))
 
     # check landsat8 level1 lists
