@@ -8,6 +8,7 @@ from typing import List, Optional, Union
 import re
 import concurrent.futures
 
+import datacube
 import click
 import geopandas as gpd
 from shapely.geometry import Polygon
@@ -16,6 +17,7 @@ from shapely.ops import cascaded_union
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
+USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
 
 _LOG = logging.getLogger(__name__)
 
@@ -67,14 +69,14 @@ L5_PATTERN = (
 
 
 def read_shapefile(shapefile: Path) -> gpd.GeoDataFrame:
-    """ Code to read a shapefile and return its content as a geopandas dataframe"""
+    """Code to read a shapefile and return its content as a geopandas dataframe"""
     return gpd.read_file(str(shapefile))
 
 
 def _get_auxiliary_extent(
     gpd_df: gpd.GeoDataFrame, subset_key: Optional[str] = None
 ) -> Polygon:
-    """ Returns the extent of all auxiliary dataset or an extent by a subset_key"""
+    """Returns the extent of all auxiliary dataset or an extent by a subset_key"""
     if subset_key:
         return cascaded_union(
             [geom for geom in gpd_df[gpd_df.auxiliary_ == subset_key].geometry]
@@ -83,7 +85,7 @@ def _get_auxiliary_extent(
 
 
 def _auxiliary_overlap_extent(_extents: List[Polygon]) -> Polygon:
-    """ Returns the overlaped regions from list of extents derived from auxiliary datasets"""
+    """Returns the overlaped regions from list of extents derived from auxiliary datasets."""
 
     overlap_extent = _extents[0]
     for idx, extent in enumerate(_extents, start=1):
@@ -95,7 +97,7 @@ def _auxiliary_overlap_extent(_extents: List[Polygon]) -> Polygon:
 def nbar_scene_filter(
     nbar_auxiliary_extent: Polygon, df_scenes_to_filter: Union[gpd.GeoDataFrame, Path]
 ) -> List[str]:
-    """ Filtering method to check if acquisition can be used for nbar processing"""
+    """Filtering method to check if acquisition can be used for nbar processing."""
 
     if isinstance(df_scenes_to_filter, Path):
         df_scenes_to_filter = read_shapefile(df_scenes_to_filter)
@@ -114,7 +116,7 @@ def subset_global_tiles_to_ga_extent(
     aux_extents_vectorfiles: List[Path],
     _satellite_data_provider: str,
 ) -> List[str]:
-    """ processing block for nbar scene filter"""
+    """Processing block for nbar scene filter."""
 
     # get extents from auxiliary vector files
     extents = [
@@ -132,7 +134,7 @@ def subset_global_tiles_to_ga_extent(
 
 
 def _write(filename: Path, list_to_write: List) -> None:
-    """ helper method to write contents in a list to a file"""
+    """A helper method to write contents in a list to a file."""
     with open(filename, "w") as fid:
         for item in list_to_write:
             fid.write(item + "\n")
@@ -143,7 +145,7 @@ def path_row_filter(
     path_row_list: Union[List[str], Path],
     out_dir: Optional[Path] = None,
 ) -> None:
-    """Filter scenes to check if path/row of a scene is allowed in a path row list"""
+    """Filter scenes to check if path/row of a scene is allowed in a path row list."""
 
     if isinstance(path_row_list, Path):
         with open(path_row_list, "r") as fid:
@@ -187,22 +189,41 @@ def path_row_filter(
     if out_dir is None:
         out_dir = Path.cwd()
 
-    _write(out_dir.joinpath("L08_CollectionUpgrade_Level1_list.txt"), ls8_list)
-    _write(out_dir.joinpath("L07_CollectionUpgrade_Level1_list.txt"), ls7_list)
-    _write(out_dir.joinpath("L05_CollectionUpgrade_Level1_list.txt"), ls5_list)
+    _write(out_dir.joinpath("DataCube_L08_CollectionUpgrade_Level1_list.txt"), ls8_list)
+    _write(out_dir.joinpath("DataCube_L07_CollectionUpgrade_Level1_list.txt"), ls7_list)
+    _write(out_dir.joinpath("DataCube_L05_CollectionUpgrade_Level1_list.txt"), ls5_list)
 
 
 def mgrs_filter(
     scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[List[str], Path]
 ) -> None:
-    """checks scenes to filter list if mrgs tile name are in mrgs list """
+    """Checks scenes to filter list if mrgs tile name are in mrgs list."""
     raise NotImplementedError
+
+
+def get_landsat_level1_from_datacube(
+    outfile: Path,
+    products: Optional[List[str]] = USGS_L1_PRODUCTS,
+    env: Optional[str] = "c3-samples",
+) -> None:
+    """Writes all the files returned from datacube for level1 to a text file."""
+    dc = datacube.Datacube(app="gen-list", env=env)
+    with open(outfile, "w") as fid:
+        for product in products:
+            results = [
+                item.local_path.parent.joinpath(item.metadata.landsat_product_id)
+                .with_suffix(".tar")
+                .as_posix()
+                for item in dc.index.datasets.search(product=product)
+            ]
+            for fp in results:
+                fid.write(fp + "\n")
 
 
 def get_landsat_level1_file_paths(
     nci_dir: Path, out_file: Path, nprocs: Optional[int] = 1
 ) -> None:
-    """ Write all the files with *.tar in nci_dir to a text file"""
+    """Write all the files with *.tar in nci_dir to a text file."""
 
     # this returns only folder name with PPP_RRR as is in NCI landsat archive
     nci_path_row_dirs = [
@@ -277,7 +298,13 @@ def get_landsat_level1_file_paths(
 @click.option(
     "--usgs-level1-files",
     type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to a text files containing all the level-1 usgs/esa  list to be filtered",
+    help="full path to a text files containing all the level-1 USGS/ESA list to be filtered",
+)
+@click.option(
+    "--search-datacube",
+    type=bool,
+    help="whether query level1 files form database or file systems",
+    default=True,
 )
 @click.option(
     "--allowed-codes",
@@ -287,8 +314,8 @@ def get_landsat_level1_file_paths(
 @click.option(
     "--nprocs",
     type=int,
-    help="number of processes to enable faster search througha  large file systems",
-    default=1
+    help="number of processes to enable faster search through a  large file system",
+    default=1,
 )
 def main(
     brdf_shapefile: click.Path,
@@ -300,17 +327,21 @@ def main(
     world_wrs_shapefile: click.Path,
     world_mgrs_shapefile: click.Path,
     usgs_level1_files: click.Path,
+    search_datacube: bool,
     allowed_codes: click.Path,
     nprocs: int,
 ):
 
     if not usgs_level1_files:
-        usgs_level1_files = Path.cwd().joinpath("all_landsat_scenes.txt")
-        get_landsat_level1_file_paths(
-            Path("/g/data/da82/AODH/USGS/L1/Landsat/C1"),
-            usgs_level1_files,
-            nprocs=nprocs,
-        )
+        usgs_level1_files = Path.cwd().joinpath("DataCube_all_landsat_scenes.txt")
+        if search_datacube:
+            get_landsat_level1_from_datacube(usgs_level1_files)
+        else:
+            get_landsat_level1_file_paths(
+                Path("/g/data/da82/AODH/USGS/L1/Landsat/C1"),
+                usgs_level1_files,
+                nprocs=nprocs,
+            )
 
     if not allowed_codes:
         _extent_list = [
