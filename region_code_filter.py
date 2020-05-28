@@ -204,10 +204,11 @@ def mgrs_filter(
 def get_landsat_level1_from_datacube(
     outfile: Path,
     products: Optional[List[str]] = USGS_L1_PRODUCTS,
-    env: Optional[str] = "c3-samples",
+    config: Optional[Path] = None,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
-    dc = datacube.Datacube(app="gen-list", env=env)
+    #fixme add conf to the datacube API
+    dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
             results = [
@@ -317,6 +318,12 @@ def get_landsat_level1_file_paths(
     help="number of processes to enable faster search through a  large file system",
     default=1,
 )
+@click.option(
+    "--config",
+    type=click.Path(dir_okay=False, file_okay=True),
+    help="full path to a datacube config text file",
+    default=None
+)
 def main(
     brdf_shapefile: click.Path,
     one_deg_dsm_v1_shapefile: click.Path,
@@ -330,15 +337,16 @@ def main(
     search_datacube: bool,
     allowed_codes: click.Path,
     nprocs: int,
+    config: click.Path,
 ):
 
     if not usgs_level1_files:
         usgs_level1_files = Path.cwd().joinpath("DataCube_all_landsat_scenes.txt")
         if search_datacube:
-            get_landsat_level1_from_datacube(usgs_level1_files)
+            get_landsat_level1_from_datacube(usgs_level1_files, config=config)
         else:
             get_landsat_level1_file_paths(
-                Path("/g/data/da82/AODH/USGS/L1/Landsat/C1"),
+                Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"),
                 usgs_level1_files,
                 nprocs=nprocs,
             )
