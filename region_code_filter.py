@@ -17,7 +17,11 @@ from shapely.ops import cascaded_union
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
+# ga_ls7e_level1_3, ga_ls5t_level1_3
+USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1", "ga_ls7e_level1_3", "ga_ls5t_level1_3"]
+#USGS_L1_PRODUCTS = ["usgs_ls8c_level1_1"]
 USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
+
 
 _LOG = logging.getLogger(__name__)
 
@@ -200,6 +204,47 @@ def mgrs_filter(
     """Checks scenes to filter list if mrgs tile name are in mrgs list."""
     raise NotImplementedError
 
+def _do_search(dc, expressions, only_childless=True):
+    for dataset in dc.index.datasets.search(**expressions):
+        metadata_path = dataset.local_path
+        if not dataset.local_path:
+            _LOG.warning("Skipping dataset without local paths: %s", dataset.id)
+            continue
+        assert metadata_path.name.endswith("metadata.yaml")
+
+        # Name of input folder treated as telemetry dataset name
+        name = metadata_path.parent.name
+
+        if only_childless:
+            # If any child exists that isn't archived
+            if any(
+                not child_dataset.is_archived
+                for child_dataset in dc.index.datasets.get_derived(dataset.id)
+            ):
+                _LOG.debug(
+                    "Skipping dataset with children: %s (%s)", name, dataset.id
+                )
+                continue
+        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
+
+        yield file_path
+
+def get_landsat_level1_from_datacube_childless(
+    outfile: Path,
+    products: Optional[List[str]] = USGS_L1_PRODUCTS,
+    config: Optional[Path] = None,
+) -> None:
+    """Writes all the files returned from datacube for level1 to a text file."""
+    #fixme add conf to the datacube API
+    dc = datacube.Datacube(app="gen-list", config=config)
+    with open(outfile, "w") as fid:
+        for product in products:
+            results = list(_do_search(dc, {'product':product}))
+            #gen = _do_search(dc, {'product':product})
+            #results = [next(gen)]
+            for fp in results:
+                fid.write(fp + "\n")
+
 
 def get_landsat_level1_from_datacube(
     outfile: Path,
@@ -219,7 +264,6 @@ def get_landsat_level1_from_datacube(
             ]
             for fp in results:
                 fid.write(fp + "\n")
-
 
 def get_landsat_level1_file_paths(
     nci_dir: Path, out_file: Path, nprocs: Optional[int] = 1
@@ -343,7 +387,7 @@ def main(
     if not usgs_level1_files:
         usgs_level1_files = Path.cwd().joinpath("DataCube_all_landsat_scenes.txt")
         if search_datacube:
-            get_landsat_level1_from_datacube(usgs_level1_files, config=config)
+            get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config)
         else:
             get_landsat_level1_file_paths(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"),
