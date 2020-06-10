@@ -24,7 +24,6 @@ USGS_L1_PRODUCTS = ["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3",
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
 USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
 
-#USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1"]
 
 _LOG = logging.getLogger(__name__)
 
@@ -242,7 +241,7 @@ def get_landsat_level1_from_datacube_childless(
     outfile: Path,
     products: Optional[List[str]] = USGS_L1_PRODUCTS,
     config: Optional[Path] = None,
-    days_delta: int = 0,
+    days_delta: int = 21,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
     #fixme add conf to the datacube API
@@ -381,7 +380,8 @@ def get_landsat_level1_file_paths(
 @click.option(
     "--days_delta",
     type=int,
-    default=0,
+    help="Only process files older than days delta.",
+    default=21,
 )
 def main(
     brdf_shapefile: click.Path,
