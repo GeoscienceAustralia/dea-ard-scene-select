@@ -13,6 +13,7 @@ import click
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
+from datetime import datetime, timedelta
 
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
@@ -21,6 +22,9 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 
 USGS_L1_PRODUCTS = ["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3",
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
+USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
+
+#USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1"]
 
 _LOG = logging.getLogger(__name__)
 
@@ -203,13 +207,19 @@ def mgrs_filter(
     """Checks scenes to filter list if mrgs tile name are in mrgs list."""
     raise NotImplementedError
 
-def _do_search(dc, expressions, only_childless=True):
+def _do_search(dc, expressions, days_delta=0, only_childless=True):
     for dataset in dc.index.datasets.search(**expressions):
         metadata_path = dataset.local_path
         if not dataset.local_path:
             _LOG.warning("Skipping dataset without local paths: %s", dataset.id)
             continue
         assert metadata_path.name.endswith("metadata.yaml")
+
+        days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
+        if days_ago < dataset.time.end:
+            _LOG.warning("Skipping dataset after time delta(days:%d, Date %s): %s", days_delta,
+            days_ago.strftime('%Y-%m-%d'), dataset.id)
+            continue
 
         # Name of input folder treated as telemetry dataset name
         name = metadata_path.parent.name
@@ -232,13 +242,14 @@ def get_landsat_level1_from_datacube_childless(
     outfile: Path,
     products: Optional[List[str]] = USGS_L1_PRODUCTS,
     config: Optional[Path] = None,
+    days_delta: int = 0,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
     #fixme add conf to the datacube API
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
-            results = list(_do_search(dc, {'product':product}))
+            results = list(_do_search(dc, {'product':product}, days_delta=days_delta))
             #gen = _do_search(dc, {'product':product})
             #results = [next(gen)]
             for fp in results:
@@ -367,6 +378,11 @@ def get_landsat_level1_file_paths(
     help="full path to a datacube config text file",
     default=None
 )
+@click.option(
+    "--days_delta",
+    type=int,
+    default=0,
+)
 def main(
     brdf_shapefile: click.Path,
     one_deg_dsm_v1_shapefile: click.Path,
@@ -381,12 +397,14 @@ def main(
     allowed_codes: click.Path,
     nprocs: int,
     config: click.Path,
+    days_delta: int,
 ):
 
     if not usgs_level1_files:
         usgs_level1_files = Path.cwd().joinpath("DataCube_all_landsat_scenes.txt")
         if search_datacube:
-            get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config)
+            get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config,
+                                                       days_delta=days_delta)
         else:
             get_landsat_level1_file_paths(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"),
