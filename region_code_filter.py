@@ -22,8 +22,8 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 
 USGS_L1_PRODUCTS = ["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3",
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
-USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
-
+#USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
+#USGS_L1_PRODUCTS = ["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3"]
 
 _LOG = logging.getLogger(__name__)
 
