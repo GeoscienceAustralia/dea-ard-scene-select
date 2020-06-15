@@ -22,7 +22,7 @@ EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
 
-PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3", \
+PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 
 _LOG = logging.getLogger(__name__)
