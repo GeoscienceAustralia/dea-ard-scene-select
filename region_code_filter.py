@@ -298,8 +298,56 @@ def _do_search(dc, expressions, days_delta=0):
                             "%s # Skipping unprocessed duplicate scene: (%s)", file_path,
                             dataset.id
                         )
-                pass
 
+def _do_list_search(dc, expressions, days_delta=0):
+    scene_id_as_key = defaultdict(list)
+    to_process = []
+    for dataset in dc.index.datasets.search(**expressions):
+        scene_id_as_key[dataset.metadata.landsat_scene_id].append(dataset)
+
+    for _ , scenes in scene_id_as_key.items():
+        if len(scenes) == 1:
+            # only 1 dataset
+            dataset = scenes[0]
+            # Check if the dataset has a child
+            if dataset_with_child(dc, dataset):
+                # Name of input folder treated as telemetry dataset name
+                name = dataset.local_path.parent.name
+                file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+                    ".tar").as_posix()
+                _LOG.info(
+                    "%s # Skipping dataset with children: (%s)", file_path, dataset.id
+                )
+                continue
+            # let's see if it passes the other filters
+            if process_scene(dataset, days_delta) is True:
+                file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+                    ".tar").as_posix()
+                to_process.append(file_path)
+        else:
+            # two or more scenes with same scene_id.
+            # Let's see if they all have no children
+            # dataset_with_child = don't process
+            if all(not dataset_with_child(dc, x) for x in scenes):
+                # They don't have any children
+                # scene_id
+                # Process the first scene that can be processed
+                for dataset in scenes:
+                    if process_scene(dataset, days_delta) is True:
+                        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+                        ".tar").as_posix()
+                        to_process.append(file_path)
+            else:
+                # log scenes without children that are skipped.
+                for dataset in scenes:
+                    if not dataset_with_child(dc, dataset):
+                        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+                        ".tar").as_posix()
+                        _LOG.info(
+                            "%s # Skipping unprocessed duplicate scene: (%s)", file_path,
+                            dataset.id
+                        )
+    return to_process
 
 def _do_basic_search(dc, expressions, days_delta=0):
     for dataset in dc.index.datasets.search(**expressions):
@@ -497,6 +545,8 @@ def main(
                                                        days_delta=days_delta,
                                                        products=products)
         else:
+            _LOG.warning("searching the file system is untested.")
+
             get_landsat_level1_file_paths(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"),
                 usgs_level1_files,
