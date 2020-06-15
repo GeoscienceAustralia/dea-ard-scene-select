@@ -2,6 +2,7 @@
 
 
 import os
+import sys
 import logging
 from pathlib import Path
 from typing import List, Optional, Union
@@ -10,20 +11,19 @@ import concurrent.futures
 
 import datacube
 import click
+import ast
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
-# ga_ls7e_level1_3, ga_ls5t_level1_3
 
-USGS_L1_PRODUCTS = ["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3",
-                    "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
-#USGS_L1_PRODUCTS = ["usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]
-#USGS_L1_PRODUCTS = ["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3"]
+PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", "ga_ls8c_level1_3", \
+                    "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 
 _LOG = logging.getLogger(__name__)
 
@@ -72,6 +72,19 @@ L5_PATTERN = (
     r"(?P<collectionCategory>T1|T2)"
     r"(?P<extension>.tar)$"
 )
+
+
+class PythonLiteralOption(click.Option):
+    """  """
+    def type_cast_value(self, ctx, value):
+        try:
+            value = str(value)
+            assert value.count('[') == 1 and value.count(']') == 1
+            list_as_str = value.replace('"', "'").split('[')[1].split(']')[0]
+            list_of_items = [item.strip().strip("'") for item in list_as_str.split(',')]
+            return list_of_items
+        except Exception:
+            raise click.BadParameter(value)
 
 
 def read_shapefile(shapefile: Path) -> gpd.GeoDataFrame:
@@ -206,49 +219,67 @@ def mgrs_filter(
     """Checks scenes to filter list if mrgs tile name are in mrgs list."""
     raise NotImplementedError
 
-def _do_search(dc, expressions, days_delta=0, only_childless=True):
-    for dataset in dc.index.datasets.search(**expressions):
-        metadata_path = dataset.local_path
-        if not dataset.local_path:
-            _LOG.warning("Skipping dataset without local paths: %s", dataset.id)
-            continue
-        assert metadata_path.name.endswith("metadata.yaml")
 
-        days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
-        if days_ago < dataset.time.end:
-            _LOG.warning("Skipping dataset after time delta(days:%d, Date %s): %s", days_delta,
-            days_ago.strftime('%Y-%m-%d'), dataset.id)
-            continue
+def process_scene(dataset, days_delta):
+    if not dataset.local_path:
+        _LOG.warning("Skipping dataset without local paths: %s", dataset.id)
+        return False
 
-        # Name of input folder treated as telemetry dataset name
-        name = metadata_path.parent.name
+    assert dataset.local_path.name.endswith("metadata.yaml")
 
-        if only_childless:
-            # If any child exists that isn't archived
-            if any(
-                not child_dataset.is_archived
+    days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
+    if days_ago < dataset.time.end:
+        _LOG.warning("Skipping dataset after time delta(days:%d, Date %s): %s", days_delta,
+                     days_ago.strftime('%Y-%m-%d'), dataset.id)
+        return False
+
+    return True
+
+def dataset_with_child(dc, dataset):
+    """
+    If any child exists that isn't archived
+    :param dc:
+    :param dataset:
+    :return:
+    """
+    return any(not child_dataset.is_archived
                 for child_dataset in dc.index.datasets.get_derived(dataset.id)
-            ):
-                _LOG.debug(
-                    "Skipping dataset with children: %s (%s)", name, dataset.id
-                )
-                continue
+            )
+
+
+def _do_search(dc, expressions, days_delta=0):
+    for dataset in dc.index.datasets.search(**expressions):
+        pass
+
+def _do_basic_search(dc, expressions, days_delta=0):
+    for dataset in dc.index.datasets.search(**expressions):
+        if process_scene(dataset, days_delta) is False:
+            continue
+
+        # If any child exists that isn't archived
+        if dataset_with_child(dc, dataset):
+            # Name of input folder treated as telemetry dataset name
+            name = dataset.local_path.parent.name
+            _LOG.debug(
+                "Skipping dataset with children: %s (%s)", name, dataset.id
+            )
+            continue
         file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
 
         yield file_path
 
+
 def get_landsat_level1_from_datacube_childless(
     outfile: Path,
-    products: Optional[List[str]] = USGS_L1_PRODUCTS,
+    products: List[str],
     config: Optional[Path] = None,
     days_delta: int = 21,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
-    #fixme add conf to the datacube API
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
-            results = list(_do_search(dc, {'product':product}, days_delta=days_delta))
+            results = list(_do_basic_search(dc, {'product':product}, days_delta=days_delta))
             #gen = _do_search(dc, {'product':product})
             #results = [next(gen)]
             for fp in results:
@@ -257,7 +288,7 @@ def get_landsat_level1_from_datacube_childless(
 
 def get_landsat_level1_from_datacube(
     outfile: Path,
-    products: Optional[List[str]] = USGS_L1_PRODUCTS,
+    products: List[str],
     config: Optional[Path] = None,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
@@ -383,6 +414,14 @@ def get_landsat_level1_file_paths(
     help="Only process files older than days delta.",
     default=21,
 )
+@click.option(
+    "--products",
+    cls=PythonLiteralOption,
+    type=list,
+    help="List the ODC products to filter. e.g. \
+    '[\"ga_ls5t_level1_3\", \"usgs_ls8c_level1_1\"]'",
+    default=PRODUCTS
+)
 def main(
     brdf_shapefile: click.Path,
     one_deg_dsm_v1_shapefile: click.Path,
@@ -398,13 +437,15 @@ def main(
     nprocs: int,
     config: click.Path,
     days_delta: int,
+    products: list,
 ):
 
     if not usgs_level1_files:
         usgs_level1_files = Path.cwd().joinpath("DataCube_all_landsat_scenes.txt")
         if search_datacube:
             get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config,
-                                                       days_delta=days_delta)
+                                                       days_delta=days_delta,
+                                                       products=products)
         else:
             get_landsat_level1_file_paths(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"),
