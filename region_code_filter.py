@@ -284,16 +284,25 @@ def _do_search(dc, expressions, days_delta=0):
                 # scene_id
                 # Process the first scene that can be processed
                 for dataset in scenes:
-                    if process_scene(dataset, days_delta) is True:
-                        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+                    file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
                         ".tar").as_posix()
-                        yield file_path
+                    _LOG.info(
+                        "%s # Multiple datasets with no children: (%s)", file_path, dataset.id
+                    )
+                    # if process_scene(dataset, days_delta) is True:
+                    #     file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+                    #     ".tar").as_posix()
+                    #     yield file_path
             else:
                 # log scenes without children that are skipped.
                 for dataset in scenes:
-                    if not dataset_with_child(dc, dataset):
-                        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+                    file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
                         ".tar").as_posix()
+                    if dataset_with_child(dc, dataset):
+                        _LOG.info(
+                            "%s # Skipping dataset with children: (%s)", file_path, dataset.id
+                        )
+                    else:
                         _LOG.info(
                             "%s # Skipping unprocessed duplicate scene: (%s)", file_path,
                             dataset.id
@@ -516,7 +525,7 @@ def get_landsat_level1_file_paths(
     "--products",
     cls=PythonLiteralOption,
     type=list,
-    help="List the ODC products to filter. e.g. \
+    help="List the ODC products to be processed. e.g. \
     '[\"ga_ls5t_level1_3\", \"usgs_ls8c_level1_1\"]'",
     default=PRODUCTS
 )
