@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 import re
 import concurrent.futures
+import uuid
 
 import datacube
 import click
@@ -23,6 +24,7 @@ ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
 LOG_FILE = "ignored_scenes_list.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
+FMT2 = 'jobid-{jobid}'
 
 ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
                                "ga_ls7e_level1_3": "ga_ls7e_ard_3",
@@ -484,8 +486,11 @@ def main(
 ):
     # set up the dirs
     jobid = uuid.uuid4().hex[0:6]
-    jobdir = os.path.join(workdir, FMT2.format(jobid=jobid))
+    jobdir = Path(os.path.join(workdir, FMT2.format(jobid=jobid)))
+    print("Job directory: " + str(jobdir))
     log_filepath = os.path.join(jobdir, LOG_FILE)
+    if not os.path.exists(jobdir):
+        os.makedirs(jobdir)
     logging.basicConfig(filename=log_filepath, level=logging.INFO)
 
     if not usgs_level1_files:
