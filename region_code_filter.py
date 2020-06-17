@@ -19,7 +19,8 @@ from datetime import datetime, timedelta
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
-
+ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
+LOG_FILE = "ignored_scenes_list.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 
@@ -461,6 +462,8 @@ def get_landsat_level1_file_paths(
     '[\"ga_ls5t_level1_3\", \"usgs_ls8c_level1_1\"]'",
     default=PRODUCTS
 )
+@click.option("--workdir", type=click.Path(file_okay=False, writable=True),
+              help="The base output working directory.", default=Path.cwd())
 def main(
     brdf_shapefile: click.Path,
     one_deg_dsm_v1_shapefile: click.Path,
@@ -477,10 +480,16 @@ def main(
     config: click.Path,
     days_delta: int,
     products: list,
+    workdir: click.Path,
 ):
+    # set up the dirs
+    jobid = uuid.uuid4().hex[0:6]
+    jobdir = os.path.join(workdir, FMT2.format(jobid=jobid))
+    log_filepath = os.path.join(jobdir, LOG_FILE)
+    logging.basicConfig(filename=log_filepath, level=logging.INFO)
 
     if not usgs_level1_files:
-        usgs_level1_files = Path.cwd().joinpath("DataCube_all_landsat_scenes.txt")
+        usgs_level1_files = os.path.join(jobdir, ODC_FILTERED_FILE)
         if search_datacube:
             get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config,
                                                        days_delta=days_delta,
@@ -507,13 +516,12 @@ def main(
         allowed_codes = subset_global_tiles_to_ga_extent(
             global_tiles_data, _extent_list, satellite_data_provider
         )
-
     path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
+        out_dir=jobdir,
     )
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="ignored_scenes_list.log", level=logging.INFO)
     main()
