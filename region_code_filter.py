@@ -11,12 +11,10 @@ import concurrent.futures
 
 import datacube
 import click
-import ast
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from datetime import datetime, timedelta
-from collections import defaultdict
 
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
@@ -320,8 +318,7 @@ def get_landsat_level1_from_datacube_childless(
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
-            results = list(_do_parent_search(dc, product, days_delta=days_delta))
-            for fp in results:
+            for fp in _do_parent_search(dc, product, days_delta=days_delta):
                 fid.write(fp + "\n")
 
 
