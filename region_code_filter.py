@@ -219,6 +219,7 @@ def path_row_filter(
     _write(out_dir.joinpath("DataCube_L08_CollectionUpgrade_Level1_list.txt"), ls8_list)
     _write(out_dir.joinpath("DataCube_L07_CollectionUpgrade_Level1_list.txt"), ls7_list)
     _write(out_dir.joinpath("DataCube_L05_CollectionUpgrade_Level1_list.txt"), ls5_list)
+    _write(out_dir.joinpath("scenes_to_ARD_process.txt"), scenes_to_filter_list)
 
 
 def mgrs_filter(
