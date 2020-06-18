@@ -289,8 +289,13 @@ def _do_parent_search(dc, product, days_delta=0):
         processed_ard_scene_ids = {chopped_scene_id(s) for s in processed_ard_scene_ids}
     else:
         processed_ard_scene_ids = None
+        _LOG.info(
+           "Child ARD not know for product: (%s)", product
+        )
 
     for dataset in dc.index.datasets.search(product=product):
+        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+            ".tar").as_posix()
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info(
@@ -310,8 +315,6 @@ def _do_parent_search(dc, product, days_delta=0):
             )
             continue
 
-        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
-            ".tar").as_posix()
         yield file_path
 
 def get_landsat_level1_from_datacube_childless(
@@ -491,7 +494,7 @@ def main(
     log_filepath = os.path.join(jobdir, LOG_FILE)
     if not os.path.exists(jobdir):
         os.makedirs(jobdir)
-    logging.basicConfig(filename=log_filepath, level=logging.INFO)
+    logging.basicConfig(filename=log_filepath, level=logging.INFO) # INFO
 
     if not usgs_level1_files:
         usgs_level1_files = os.path.join(jobdir, ODC_FILTERED_FILE)
