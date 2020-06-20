@@ -17,6 +17,8 @@ from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from datetime import datetime, timedelta
 
+import subprocess
+
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
@@ -469,24 +471,69 @@ def get_landsat_level1_file_paths(
 )
 @click.option("--workdir", type=click.Path(file_okay=False, writable=True),
               help="The base output working directory.", default=Path.cwd())
+@click.option("--test", default=True, is_flag=True,
+              help=("Test job execution (Don't submit the job to the "
+                    "PBS queue)."))
+@click.option("--walltime", default="48:00:00",
+              help="Job walltime in `hh:mm:ss` format.")
+@click.option("--email", default="",
+              help="Notification email address.")
+@click.option("--project", default="v10", help="Project code to run under.")
+@click.option("--logdir", type=click.Path(file_okay=False, writable=True),
+              help="The base logging and scripts output directory.")
+@click.option("--pkgdir", type=click.Path(file_okay=False, writable=True),
+              help="The base output packaged directory.")
+@click.option("--env", type=click.Path(exists=True, readable=True),
+              help="Environment script to source.")
+@click.option("--ardworkers", type=click.IntRange(1, 48), default=30,
+              help="The number of workers to request per node.")
+@click.option("--ardnodes", default=1, help="The number of nodes to request.")
+@click.option("--ardmemory", default=192,
+              help="The memory in GB to request per node.")
+@click.option("--ardjobfs", default=50,
+              help="The jobfs memory in GB to request per node.")
 def main(
-    brdf_shapefile: click.Path,
-    one_deg_dsm_v1_shapefile: click.Path,
-    one_sec_dsm_v1_shapefile: click.Path,
-    one_deg_dsm_v2_shapefile: click.Path,
-    satellite_data_provider: str,
-    aerosol_shapefile: click.Path,
-    world_wrs_shapefile: click.Path,
-    world_mgrs_shapefile: click.Path,
-    usgs_level1_files: click.Path,
-    search_datacube: bool,
-    allowed_codes: click.Path,
-    nprocs: int,
-    config: click.Path,
-    days_delta: int,
-    products: list,
-    workdir: click.Path,
-):
+        brdf_shapefile: click.Path,
+        one_deg_dsm_v1_shapefile: click.Path,
+        one_sec_dsm_v1_shapefile: click.Path,
+        one_deg_dsm_v2_shapefile: click.Path,
+        satellite_data_provider: str,
+        aerosol_shapefile: click.Path,
+        world_wrs_shapefile: click.Path,
+        world_mgrs_shapefile: click.Path,
+        usgs_level1_files: click.Path,
+        search_datacube: bool,
+        allowed_codes: click.Path,
+        nprocs: int,
+        config: click.Path,
+        days_delta: int,
+        products: list,
+        workdir: click.Path,
+        test: bool,
+        logdir: click.Path,
+        pkgdir: click.Path,
+        env: click.Path,
+        ardworkers: int,
+        ardnodes: int,
+        ardmemory: int,
+        ardjobfs: int,
+        project: str,
+        walltime: str,
+        email: str,
+
+    ):
+
+    # the ugly interface
+
+    subprocess.run(["ard_pbs",
+                    "--project", "v10",
+                    "--level1-list", "level1-list.txt",
+                    "--workdir", ".",
+                    "--pkgdir", ".",
+                    "--logdir", ".",
+                    "--env", "definitive.env",
+                    "--test"])
+    sys.exit()
     # set up the dirs
     jobid = uuid.uuid4().hex[0:6]
     jobdir = Path(os.path.join(workdir, FMT2.format(jobid=jobid)))
