@@ -551,15 +551,7 @@ def main(
         **ard_click_params: dict,
     ):
     """
-        subprocess.run(["ard_pbs",
-                    "--project", "v10",
-                    "--level1-list", "level1-list.txt",
-                    "--workdir", ".",
-                    "--pkgdir", ".",
-                    "--logdir", ".",
-                    "--env", "definitive.env",
-                    "--test"])
-    #sys.exit()
+    The keys for ard_click_params;
         test: bool,
         logdir: click.Path,
         pkgdir: click.Path,
@@ -570,7 +562,7 @@ def main(
         ardjobfs: int,
         project: str,
         walltime: str,
-        email: str,
+        email: str
     :param brdf_shapefile:
     :param one_deg_dsm_v1_shapefile:
     :param one_sec_dsm_v1_shapefile:
