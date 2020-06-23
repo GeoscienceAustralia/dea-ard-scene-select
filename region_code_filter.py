@@ -393,7 +393,7 @@ def dict2ard_arg_string(ard_click_params):
             continue
         if key == "test":
             if value is True:
-                ard_params.append("--" + key)                
+                ard_params.append("--" + key)
             continue
         ard_params.append("--" + key)
         # Make path strings absolute
