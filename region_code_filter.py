@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import os
 import sys
 import stat
@@ -10,15 +9,15 @@ from typing import List, Optional, Union
 import re
 import concurrent.futures
 import uuid
-
-import datacube
+import subprocess
 import click
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from datetime import datetime, timedelta
 
-import subprocess
+import datacube
+
 
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
@@ -38,6 +37,7 @@ ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
                                }
 
 NODE_TEMPLATE = ("""#!/bin/bash
+module unload dea
 source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
@@ -227,12 +227,13 @@ def path_row_filter(
 
     if out_dir is None:
         out_dir = Path.cwd()
-
-    _write(out_dir.joinpath("DataCube_L08_CollectionUpgrade_Level1_list.txt"), ls8_list)
-    _write(out_dir.joinpath("DataCube_L07_CollectionUpgrade_Level1_list.txt"), ls7_list)
-    _write(out_dir.joinpath("DataCube_L05_CollectionUpgrade_Level1_list.txt"), ls5_list)
-    _write(out_dir.joinpath("scenes_to_ARD_process_no_file_pattern_matching.txt"), to_process)
-    _write(out_dir.joinpath("scenes_to_ARD_process_pattern_matching.txt"), ls5_list + ls7_list + ls8_list)
+    scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
+    _write(out_dir.joinpath("DataCube_L08_Level1.txt"), ls8_list)
+    _write(out_dir.joinpath("DataCube_L07_Level1.txt"), ls7_list)
+    _write(out_dir.joinpath("DataCube_L05_Level1.txt"), ls5_list)
+    _write(out_dir.joinpath("no_file_pattern_matching.txt"), to_process)
+    _write(scenes_filepath, ls5_list + ls7_list + ls8_list)
+    return scenes_filepath
 
 
 def mgrs_filter(
@@ -387,18 +388,17 @@ def get_landsat_level1_file_paths(
 
 def dict2ard_arg_string(ard_click_params):
     ard_params = []
-    print(ard_click_params)
     for key, value in ard_click_params.items():
         if value is None:
             continue
-
         if key == "test":
-            ard_params.append("--" + key)
+            if value is True:
+                ard_params.append("--" + key)                
             continue
-        # The scene select keyword
-        if key.startswith('ard'):
-            key = key[3:]
         ard_params.append("--" + key)
+        # Make path strings absolute
+        if key in ('logdir', 'pkgdir'):
+            value = Path(value).resolve()
         ard_params.append(str(value))
     ard_arg_string = " ".join(ard_params)
     return ard_arg_string
@@ -510,9 +510,12 @@ def make_ard_pbd(**ard_click_params):
 )
 @click.option("--workdir", type=click.Path(file_okay=False, writable=True),
               help="The base output working directory.", default=Path.cwd())
-@click.option("--test", default=True, is_flag=True,
-              help=("Test job execution (Don't submit the job to the "
-                    "PBS queue)."))
+@click.option("--run-ard", default=False, is_flag=True,
+              help="Execute the ard_pbs script.")
+## This are passed on to ard processing
+@click.option("--test", default=False, is_flag=True,
+              help="Test job execution (Don't submit the job to the "
+                    "PBS queue).")
 @click.option("--walltime",
               help="Job walltime in `hh:mm:ss` format.")
 @click.option("--email",
@@ -548,6 +551,7 @@ def main(
         days_delta: int,
         products: list,
         workdir: click.Path,
+        run_ard: bool,
         **ard_click_params: dict,
     ):
     """
@@ -581,6 +585,7 @@ def main(
     :param workdir:
     :return:
     """
+    workdir = Path(workdir).resolve()
     # set up the scene select job dir in the work dir
     jobid = uuid.uuid4().hex[0:6]
     jobdir = Path(os.path.join(workdir, FMT2.format(jobid=jobid)))
@@ -592,12 +597,8 @@ def main(
         os.makedirs(jobdir)
     logging.basicConfig(filename=log_filepath, level=logging.INFO) # INFO
 
-    # The workdir is used by ard_pbs
-    ard_click_params['workdir'] = workdir
 
-    ard_click_params['level1_list'] = 'level1-list.txt'
-    pbs_script_text = make_ard_pbd(**ard_click_params)
-
+    
 
     if not usgs_level1_files:
         usgs_level1_files = os.path.join(jobdir, ODC_FILTERED_FILE)
@@ -627,20 +628,29 @@ def main(
         allowed_codes = subset_global_tiles_to_ga_extent(
             global_tiles_data, _extent_list, satellite_data_provider
         )
-    path_row_filter(
+    scenes_filepath = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
         out_dir=jobdir,
     )
 
+    
+    # The workdir is used by ard_pbs
+    ard_click_params['workdir'] = workdir
+    ard_click_params['level1_list'] = scenes_filepath
+    pbs_script_text = make_ard_pbd(**ard_click_params)
+    
     # write pbs script
-    out_fname = os.path.join(jobdir, "run_ard_pbs.sh")  # FMT4.format(jobid=jobid)
-    with open(out_fname, 'w') as src:
+    run_ard_pathfile = os.path.join(jobdir, "run_ard_pbs.sh") 
+    with open(run_ard_pathfile, 'w') as src:
         src.write(pbs_script_text)
 
-    st = os.stat(out_fname)
-    os.chmod(out_fname, st.st_mode | stat.S_IEXEC)
-    sys.exit()
+    # Make the script executable
+    st = os.stat(run_ard_pathfile)
+    os.chmod(run_ard_pathfile, st.st_mode | stat.S_IEXEC)
+
+    if run_ard is True:
+        subprocess.run([run_ard_pathfile])
 
 if __name__ == "__main__":
     main()
