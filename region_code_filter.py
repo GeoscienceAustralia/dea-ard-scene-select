@@ -3,6 +3,7 @@
 
 import os
 import sys
+import stat
 import logging
 from pathlib import Path
 from typing import List, Optional, Union
@@ -35,6 +36,12 @@ ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
                                "usgs_ls7e_level1_1": "ga_ls7e_ard_3",
                                "usgs_ls8c_level1_1": "ga_ls8c_ard_3"
                                }
+
+NODE_TEMPLATE = ("""#!/bin/bash
+source {env}
+
+ard_pbs --level1-list {scene_list} {ard_args}
+""")
 
 _LOG = logging.getLogger(__name__)
 
@@ -378,6 +385,38 @@ def get_landsat_level1_file_paths(
                     fid.write(_fp + "\n")
 
 
+def dict2ard_arg_string(ard_click_params):
+    ard_params = []
+    print(ard_click_params)
+    for key, value in ard_click_params.items():
+        if value is None:
+            continue
+
+        if key == "test":
+            ard_params.append("--" + key)
+            continue
+        # The scene select keyword
+        if key.startswith('ard'):
+            key = key[3:]
+        ard_params.append("--" + key)
+        ard_params.append(str(value))
+    ard_arg_string = " ".join(ard_params)
+    return ard_arg_string
+
+
+def make_ard_pbd(**ard_click_params):
+    level1_list = ard_click_params['level1_list']
+    env = ard_click_params['env']
+
+    # Use the template format to make sure 'level1_list' is there
+    del ard_click_params['level1_list']
+
+    ard_args_str = dict2ard_arg_string(ard_click_params)
+    pbs = NODE_TEMPLATE.format(env=env,
+                               scene_list=level1_list,
+                               ard_args=ard_args_str)
+    return pbs
+
 @click.command()
 @click.option(
     "--brdf-shapefile",
@@ -474,9 +513,9 @@ def get_landsat_level1_file_paths(
 @click.option("--test", default=True, is_flag=True,
               help=("Test job execution (Don't submit the job to the "
                     "PBS queue)."))
-@click.option("--walltime", default="48:00:00",
+@click.option("--walltime",
               help="Job walltime in `hh:mm:ss` format.")
-@click.option("--email", default="",
+@click.option("--email",
               help="Notification email address.")
 @click.option("--project", default="v10", help="Project code to run under.")
 @click.option("--logdir", type=click.Path(file_okay=False, writable=True),
@@ -485,12 +524,12 @@ def get_landsat_level1_file_paths(
               help="The base output packaged directory.")
 @click.option("--env", type=click.Path(exists=True, readable=True),
               help="Environment script to source.")
-@click.option("--ardworkers", type=click.IntRange(1, 48), default=30,
+@click.option("--workers", type=click.IntRange(1, 48),
               help="The number of workers to request per node.")
-@click.option("--ardnodes", default=1, help="The number of nodes to request.")
-@click.option("--ardmemory", default=192,
+@click.option("--nodes", default=1, help="The number of nodes to request.")
+@click.option("--memory",
               help="The memory in GB to request per node.")
-@click.option("--ardjobfs", default=50,
+@click.option("--jobfs",
               help="The jobfs memory in GB to request per node.")
 def main(
         brdf_shapefile: click.Path,
@@ -509,6 +548,18 @@ def main(
         days_delta: int,
         products: list,
         workdir: click.Path,
+        **ard_click_params: dict,
+    ):
+    """
+        subprocess.run(["ard_pbs",
+                    "--project", "v10",
+                    "--level1-list", "level1-list.txt",
+                    "--workdir", ".",
+                    "--pkgdir", ".",
+                    "--logdir", ".",
+                    "--env", "definitive.env",
+                    "--test"])
+    #sys.exit()
         test: bool,
         logdir: click.Path,
         pkgdir: click.Path,
@@ -520,28 +571,41 @@ def main(
         project: str,
         walltime: str,
         email: str,
-
-    ):
-
-    # the ugly interface
-
-    subprocess.run(["ard_pbs",
-                    "--project", "v10",
-                    "--level1-list", "level1-list.txt",
-                    "--workdir", ".",
-                    "--pkgdir", ".",
-                    "--logdir", ".",
-                    "--env", "definitive.env",
-                    "--test"])
-    sys.exit()
-    # set up the dirs
+    :param brdf_shapefile:
+    :param one_deg_dsm_v1_shapefile:
+    :param one_sec_dsm_v1_shapefile:
+    :param one_deg_dsm_v2_shapefile:
+    :param satellite_data_provider:
+    :param aerosol_shapefile:
+    :param world_wrs_shapefile:
+    :param world_mgrs_shapefile:
+    :param usgs_level1_files:
+    :param search_datacube:
+    :param allowed_codes:
+    :param nprocs:
+    :param config:
+    :param days_delta:
+    :param products:
+    :param workdir:
+    :return:
+    """
+    # set up the scene select job dir in the work dir
     jobid = uuid.uuid4().hex[0:6]
     jobdir = Path(os.path.join(workdir, FMT2.format(jobid=jobid)))
+
+    #
     print("Job directory: " + str(jobdir))
     log_filepath = os.path.join(jobdir, LOG_FILE)
     if not os.path.exists(jobdir):
         os.makedirs(jobdir)
     logging.basicConfig(filename=log_filepath, level=logging.INFO) # INFO
+
+    # The workdir is used by ard_pbs
+    ard_click_params['workdir'] = workdir
+
+    ard_click_params['level1_list'] = 'level1-list.txt'
+    pbs_script_text = make_ard_pbd(**ard_click_params)
+
 
     if not usgs_level1_files:
         usgs_level1_files = os.path.join(jobdir, ODC_FILTERED_FILE)
@@ -577,6 +641,14 @@ def main(
         out_dir=jobdir,
     )
 
+    # write pbs script
+    out_fname = os.path.join(jobdir, "run_ard_pbs.sh")  # FMT4.format(jobid=jobid)
+    with open(out_fname, 'w') as src:
+        src.write(pbs_script_text)
+
+    st = os.stat(out_fname)
+    os.chmod(out_fname, st.st_mode | stat.S_IEXEC)
+    sys.exit()
 
 if __name__ == "__main__":
     main()
