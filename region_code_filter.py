@@ -652,13 +652,6 @@ def main(
         out_dir=jobdir,
     )
 
-    # *********** Moving around
-
-    # The workdir is used by ard_pbs
-    ard_click_params['workdir'] = workdir
-    ard_click_params['level1_list'] = scenes_filepath
-    pbs_script_text = make_ard_pbd(**ard_click_params)
-
     if ard_click_params['nodes'] is None:
         if ard_click_params['walltime'] is None:
             walltime = "05:00:00"
@@ -671,6 +664,12 @@ def main(
         ard_click_params['nodes'] = _calc_nodes_req(count_all_scenes_list,
                                                     walltime, workers)
 
+    # The workdir is used by ard_pbs
+    ard_click_params['workdir'] = workdir
+    ard_click_params['level1_list'] = scenes_filepath
+    pbs_script_text = make_ard_pbd(**ard_click_params)
+
+
     # write pbs script
     run_ard_pathfile = os.path.join(jobdir, "run_ard_pbs.sh") 
     with open(run_ard_pathfile, 'w') as src:
@@ -679,7 +678,6 @@ def main(
     # Make the script executable
     st = os.stat(run_ard_pathfile)
     os.chmod(run_ard_pathfile, st.st_mode | stat.S_IEXEC)
-    # *********** Moving around
 
     if run_ard is True:
         subprocess.run([run_ard_pathfile])
