@@ -3,6 +3,7 @@
 import os
 import sys
 import stat
+import math
 import logging
 from pathlib import Path
 from typing import List, Optional, Union
@@ -224,7 +225,8 @@ def path_row_filter(
 
         else:
             _LOG.info(scene_path)
-
+    all_scenes_list = ls5_list + ls7_list + ls8_list
+    count_all_scenes_list = len(all_scenes_list)
     if out_dir is None:
         out_dir = Path.cwd()
     scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
@@ -232,8 +234,8 @@ def path_row_filter(
     _write(out_dir.joinpath("DataCube_L07_Level1.txt"), ls7_list)
     _write(out_dir.joinpath("DataCube_L05_Level1.txt"), ls5_list)
     _write(out_dir.joinpath("no_file_pattern_matching.txt"), to_process)
-    _write(scenes_filepath, ls5_list + ls7_list + ls8_list)
-    return scenes_filepath
+    _write(scenes_filepath, all_scenes_list)
+    return scenes_filepath, count_all_scenes_list
 
 
 def mgrs_filter(
@@ -339,6 +341,26 @@ def get_landsat_level1_from_datacube_childless(
         for product in products:
             for fp in _do_parent_search(dc, product, days_delta=days_delta):
                 fid.write(fp + "\n")
+
+                
+def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
+    """ Provides estimation of the number of nodes required to process granule count
+
+    >>> _calc_nodes_req(400, '20:59', 28)
+    2
+    >>> _calc_nodes_req(800, '20:00', 28)
+    3
+    """
+    print(granule_count)
+    print(walltime)
+    print(workers)
+    hours, _, _ = [int(x) for x in walltime.split(':')]
+    # to avoid divide by zero errors
+    if hours == 0:
+        hours = 1
+    nodes = int(math.ceil(float(hours_per_granule * granule_count) \
+                          / (hours * workers)))
+    return nodes
 
 
 def get_landsat_level1_from_datacube(
@@ -529,7 +551,7 @@ def make_ard_pbd(**ard_click_params):
               help="Environment script to source.")
 @click.option("--workers", type=click.IntRange(1, 48),
               help="The number of workers to request per node.")
-@click.option("--nodes", default=1, help="The number of nodes to request.")
+@click.option("--nodes", help="The number of nodes to request.")
 @click.option("--memory",
               help="The memory in GB to request per node.")
 @click.option("--jobfs",
@@ -598,7 +620,6 @@ def main(
     logging.basicConfig(filename=log_filepath, level=logging.INFO) # INFO
 
 
-    
 
     if not usgs_level1_files:
         usgs_level1_files = os.path.join(jobdir, ODC_FILTERED_FILE)
@@ -628,18 +649,31 @@ def main(
         allowed_codes = subset_global_tiles_to_ga_extent(
             global_tiles_data, _extent_list, satellite_data_provider
         )
-    scenes_filepath = path_row_filter(
+    scenes_filepath, count_all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
         out_dir=jobdir,
     )
 
-    
+    # *********** Moving around
+
     # The workdir is used by ard_pbs
     ard_click_params['workdir'] = workdir
     ard_click_params['level1_list'] = scenes_filepath
     pbs_script_text = make_ard_pbd(**ard_click_params)
-    
+
+    if ard_click_params['nodes'] is None:
+        if ard_click_params['walltime'] is None:
+            walltime = "05:00:00"
+        else:
+            walltime = ard_click_params['walltime']
+        if ard_click_params['workers'] is None:
+            workers = 30
+        else:
+            workers = ard_click_params['workers']           
+        ard_click_params['nodes'] = _calc_nodes_req(count_all_scenes_list,
+                                                    walltime, workers)
+ 
     # write pbs script
     run_ard_pathfile = os.path.join(jobdir, "run_ard_pbs.sh") 
     with open(run_ard_pathfile, 'w') as src:
@@ -648,7 +682,8 @@ def main(
     # Make the script executable
     st = os.stat(run_ard_pathfile)
     os.chmod(run_ard_pathfile, st.st_mode | stat.S_IEXEC)
-
+    # *********** Moving around    
+ 
     if run_ard is True:
         subprocess.run([run_ard_pathfile])
 
