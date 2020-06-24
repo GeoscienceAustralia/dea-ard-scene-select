@@ -670,10 +670,10 @@ def main(
         if ard_click_params['workers'] is None:
             workers = 30
         else:
-            workers = ard_click_params['workers']           
+            workers = ard_click_params['workers']
         ard_click_params['nodes'] = _calc_nodes_req(count_all_scenes_list,
                                                     walltime, workers)
- 
+
     # write pbs script
     run_ard_pathfile = os.path.join(jobdir, "run_ard_pbs.sh") 
     with open(run_ard_pathfile, 'w') as src:
@@ -682,8 +682,8 @@ def main(
     # Make the script executable
     st = os.stat(run_ard_pathfile)
     os.chmod(run_ard_pathfile, st.st_mode | stat.S_IEXEC)
-    # *********** Moving around    
- 
+    # *********** Moving around
+
     if run_ard is True:
         subprocess.run([run_ard_pathfile])
 
