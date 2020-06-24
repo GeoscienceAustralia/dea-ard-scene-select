@@ -27,7 +27,7 @@ ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
 LOG_FILE = "ignored_scenes_list.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
-FMT2 = 'jobid-{jobid}'
+FMT2 = 'filter-jobid-{jobid}'
 
 # No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
