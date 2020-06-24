@@ -646,12 +646,16 @@ def main(
         allowed_codes = subset_global_tiles_to_ga_extent(
             global_tiles_data, _extent_list, satellite_data_provider
         )
+
+    # apply path_row filter and
+    # 
     scenes_filepath, count_all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
         out_dir=jobdir,
     )
 
+    # Estimate the number of nodes needed
     if ard_click_params['nodes'] is None:
         if ard_click_params['walltime'] is None:
             walltime = "05:00:00"
@@ -679,6 +683,7 @@ def main(
     st = os.stat(run_ard_pathfile)
     os.chmod(run_ard_pathfile, st.st_mode | stat.S_IEXEC)
 
+    # run the script
     if run_ard is True:
         subprocess.run([run_ard_pathfile])
 
