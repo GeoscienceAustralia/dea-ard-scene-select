@@ -29,9 +29,9 @@ PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 FMT2 = 'jobid-{jobid}'
 
+# No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
                                "ga_ls7e_level1_3": "ga_ls7e_ard_3",
-                               "ga_ls8c_level1_3": "ga_ls8c_ard_3",
                                "usgs_ls5t_level1_1": "ga_ls5t_ard_3",
                                "usgs_ls7e_level1_1": "ga_ls7e_ard_3",
                                "usgs_ls8c_level1_1": "ga_ls8c_ard_3"
@@ -351,9 +351,6 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
     >>> _calc_nodes_req(800, '20:00', 28)
     3
     """
-    print(granule_count)
-    print(walltime)
-    print(workers)
     hours, _, _ = [int(x) for x in walltime.split(':')]
     # to avoid divide by zero errors
     if hours == 0:
