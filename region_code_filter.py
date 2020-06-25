@@ -587,23 +587,8 @@ def main(
         project: str,
         walltime: str,
         email: str
-    :param brdf_shapefile:
-    :param one_deg_dsm_v1_shapefile:
-    :param one_sec_dsm_v1_shapefile:
-    :param one_deg_dsm_v2_shapefile:
-    :param satellite_data_provider:
-    :param aerosol_shapefile:
-    :param world_wrs_shapefile:
-    :param world_mgrs_shapefile:
-    :param usgs_level1_files:
-    :param search_datacube:
-    :param allowed_codes:
-    :param nprocs:
-    :param config:
-    :param days_delta:
-    :param products:
-    :param workdir:
-    :return:
+
+    :return: list of scenes to ARD process
     """
     workdir = Path(workdir).resolve()
     # set up the scene select job dir in the work dir
