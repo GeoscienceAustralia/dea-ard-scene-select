@@ -18,7 +18,7 @@ from shapely.ops import cascaded_union
 from datetime import datetime, timedelta
 
 
-
+LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
@@ -528,6 +528,10 @@ def make_ard_pbd(**ard_click_params):
     '[\"ga_ls5t_level1_3\", \"usgs_ls8c_level1_1\"]'",
     default=PRODUCTS
 )
+@click.option("--landsat-AOI", default=False, is_flag=True,
+              help="If true use the internal Landsat Area of Interest to "
+                    "filter scenes.  This overrides shape files and "
+              "allowed-codes.")
 @click.option("--workdir", type=click.Path(file_okay=False, writable=True),
               help="The base output working directory.", default=Path.cwd())
 @click.option("--run-ard", default=False, is_flag=True,
@@ -572,6 +576,7 @@ def main(
         products: list,
         workdir: click.Path,
         run_ard: bool,
+        landsat_aoi: bool,
         **ard_click_params: dict,
     ):
     """
@@ -619,6 +624,11 @@ def main(
                 nprocs=nprocs,
             )
 
+    # If needed build the allowed_codes using the landsat AOI
+    if landsat_aoi:
+        allowed_codes = DATA_DIR.joinpath(LANDSAT_AOI_FILE)
+            
+    # If needed build the allowed_codes using the shapefiles        
     if not allowed_codes:
         _extent_list = [
             brdf_shapefile,
