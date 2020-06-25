@@ -17,7 +17,6 @@ from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from datetime import datetime, timedelta
 
-import datacube
 
 
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
@@ -193,6 +192,7 @@ def path_row_filter(
         "{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1]))
         for item in path_row_list
     ]
+
     if isinstance(scenes_to_filter_list, Path):
         with open(scenes_to_filter_list, "r") as fid:
             scenes_to_filter_list = [line.rstrip() for line in fid.readlines()]
@@ -226,7 +226,6 @@ def path_row_filter(
         else:
             _LOG.info(scene_path)
     all_scenes_list = ls5_list + ls7_list + ls8_list
-    count_all_scenes_list = len(all_scenes_list)
     if out_dir is None:
         out_dir = Path.cwd()
     scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
@@ -235,7 +234,7 @@ def path_row_filter(
     _write(out_dir.joinpath("DataCube_L05_Level1.txt"), ls5_list)
     _write(out_dir.joinpath("no_file_pattern_matching.txt"), to_process)
     _write(scenes_filepath, all_scenes_list)
-    return scenes_filepath, count_all_scenes_list
+    return scenes_filepath, all_scenes_list
 
 
 def mgrs_filter(
@@ -336,6 +335,8 @@ def get_landsat_level1_from_datacube_childless(
     days_delta: int = 21,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
+    import datacube
+
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
@@ -649,11 +650,12 @@ def main(
 
     # apply path_row filter and
     # 
-    scenes_filepath, count_all_scenes_list = path_row_filter(
+    scenes_filepath, all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
         out_dir=jobdir,
     )
+    count_all_scenes_list = len(all_scenes_list)
 
     # Estimate the number of nodes needed
     if ard_click_params['nodes'] is None:
@@ -686,6 +688,8 @@ def main(
     # run the script
     if run_ard is True:
         subprocess.run([run_ard_pathfile])
+    return all_scenes_list
+
 
 if __name__ == "__main__":
     main()
