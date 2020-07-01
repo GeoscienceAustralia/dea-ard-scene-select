@@ -299,9 +299,15 @@ def _do_parent_search(dc, product, days_delta=0):
         }
         processed_ard_scene_ids = {chopped_scene_id(s) for s in processed_ard_scene_ids}
     else:
+        # scene select has its own mapping for l1 product to ard product
+        # (ARD_PARENT_PRODUCT_MAPPING).
+        # If there is a l1 product that is not in this mapping this warning
+        # is logged.
+        # Scene select uses the l1 product to ard mapping to filter out
+        # updated l1 scenes that have been processed using the old l1 scene.
         processed_ard_scene_ids = None
-        _LOG.info(
-           "Child ARD not know for product: (%s)", product
+        _LOG.warning(
+           "THE ARD ODC product name after ARD processing for %s is not known.", product
         )
 
     for dataset in dc.index.datasets.search(product=product):
@@ -424,7 +430,7 @@ def dict2ard_arg_string(ard_click_params):
     return ard_arg_string
 
 
-def make_ard_pbd(**ard_click_params):
+def make_ard_pbs(**ard_click_params):
     level1_list = ard_click_params['level1_list']
     env = ard_click_params['env']
 
@@ -598,19 +604,15 @@ def main(
     workdir = Path(workdir).resolve()
     # set up the scene select job dir in the work dir
     jobid = uuid.uuid4().hex[0:6]
-    jobdir = Path(os.path.join(workdir, FMT2.format(jobid=jobid)))
-
+    jobdir = workdir.joinpath(FMT2.format(jobid=jobid))
+    jobdir.mkdir(exist_ok=True)
     #
     print("Job directory: " + str(jobdir))
-    log_filepath = os.path.join(jobdir, LOG_FILE)
-    if not os.path.exists(jobdir):
-        os.makedirs(jobdir)
+    log_filepath = jobdir.joinpath(LOG_FILE)
     logging.basicConfig(filename=log_filepath, level=logging.INFO) # INFO
 
-
-
     if not usgs_level1_files:
-        usgs_level1_files = os.path.join(jobdir, ODC_FILTERED_FILE)
+        usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         if search_datacube:
             get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config,
                                                        days_delta=days_delta,
@@ -668,11 +670,10 @@ def main(
     # The workdir is used by ard_pbs
     ard_click_params['workdir'] = workdir
     ard_click_params['level1_list'] = scenes_filepath
-    pbs_script_text = make_ard_pbd(**ard_click_params)
-
+    pbs_script_text = make_ard_pbs(**ard_click_params)
 
     # write pbs script
-    run_ard_pathfile = os.path.join(jobdir, "run_ard_pbs.sh") 
+    run_ard_pathfile = jobdir.joinpath("run_ard_pbs.sh")
     with open(run_ard_pathfile, 'w') as src:
         src.write(pbs_script_text)
 
