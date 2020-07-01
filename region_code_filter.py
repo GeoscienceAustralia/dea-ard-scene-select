@@ -1,35 +1,47 @@
 #!/usr/bin/env python3
 
-
 import os
 import sys
+import stat
+import math
 import logging
 from pathlib import Path
 from typing import List, Optional, Union
 import re
 import concurrent.futures
-
-import datacube
+import uuid
+import subprocess
 import click
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
 from datetime import datetime, timedelta
 
+
+LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
-
+ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
+LOG_FILE = "ignored_scenes_list.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
+FMT2 = 'filter-jobid-{jobid}'
 
+# No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
                                "ga_ls7e_level1_3": "ga_ls7e_ard_3",
-                               "ga_ls8c_level1_3": "ga_ls8c_ard_3",
                                "usgs_ls5t_level1_1": "ga_ls5t_ard_3",
                                "usgs_ls7e_level1_1": "ga_ls7e_ard_3",
                                "usgs_ls8c_level1_1": "ga_ls8c_ard_3"
                                }
+
+NODE_TEMPLATE = ("""#!/bin/bash
+module unload dea
+source {env}
+
+ard_pbs --level1-list {scene_list} {ard_args}
+""")
 
 _LOG = logging.getLogger(__name__)
 
@@ -180,6 +192,7 @@ def path_row_filter(
         "{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1]))
         for item in path_row_list
     ]
+
     if isinstance(scenes_to_filter_list, Path):
         with open(scenes_to_filter_list, "r") as fid:
             scenes_to_filter_list = [line.rstrip() for line in fid.readlines()]
@@ -212,15 +225,16 @@ def path_row_filter(
 
         else:
             _LOG.info(scene_path)
-
+    all_scenes_list = ls5_list + ls7_list + ls8_list
     if out_dir is None:
         out_dir = Path.cwd()
-
-    _write(out_dir.joinpath("DataCube_L08_CollectionUpgrade_Level1_list.txt"), ls8_list)
-    _write(out_dir.joinpath("DataCube_L07_CollectionUpgrade_Level1_list.txt"), ls7_list)
-    _write(out_dir.joinpath("DataCube_L05_CollectionUpgrade_Level1_list.txt"), ls5_list)
-    _write(out_dir.joinpath("scenes_to_ARD_process_no_file_pattern_matching.txt"), to_process)
-    _write(out_dir.joinpath("scenes_to_ARD_process_pattern_matching.txt"), ls5_list + ls7_list + ls8_list)
+    scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
+    _write(out_dir.joinpath("DataCube_L08_Level1.txt"), ls8_list)
+    _write(out_dir.joinpath("DataCube_L07_Level1.txt"), ls7_list)
+    _write(out_dir.joinpath("DataCube_L05_Level1.txt"), ls5_list)
+    _write(out_dir.joinpath("no_file_pattern_matching.txt"), to_process)
+    _write(scenes_filepath, all_scenes_list)
+    return scenes_filepath, all_scenes_list
 
 
 def mgrs_filter(
@@ -285,9 +299,20 @@ def _do_parent_search(dc, product, days_delta=0):
         }
         processed_ard_scene_ids = {chopped_scene_id(s) for s in processed_ard_scene_ids}
     else:
+        # scene select has its own mapping for l1 product to ard product
+        # (ARD_PARENT_PRODUCT_MAPPING).
+        # If there is a l1 product that is not in this mapping this warning
+        # is logged.
+        # Scene select uses the l1 product to ard mapping to filter out
+        # updated l1 scenes that have been processed using the old l1 scene.
         processed_ard_scene_ids = None
+        _LOG.warning(
+           "THE ARD ODC product name after ARD processing for %s is not known.", product
+        )
 
     for dataset in dc.index.datasets.search(product=product):
+        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
+            ".tar").as_posix()
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info(
@@ -307,8 +332,6 @@ def _do_parent_search(dc, product, days_delta=0):
             )
             continue
 
-        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
-            ".tar").as_posix()
         yield file_path
 
 def get_landsat_level1_from_datacube_childless(
@@ -318,11 +341,30 @@ def get_landsat_level1_from_datacube_childless(
     days_delta: int = 21,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
+    import datacube
+
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
             for fp in _do_parent_search(dc, product, days_delta=days_delta):
                 fid.write(fp + "\n")
+
+                
+def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
+    """ Provides estimation of the number of nodes required to process granule count
+
+    >>> _calc_nodes_req(400, '20:59', 28)
+    2
+    >>> _calc_nodes_req(800, '20:00', 28)
+    3
+    """
+    hours, _, _ = [int(x) for x in walltime.split(':')]
+    # to avoid divide by zero errors
+    if hours == 0:
+        hours = 1
+    nodes = int(math.ceil(float(hours_per_granule * granule_count) \
+                          / (hours * workers)))
+    return nodes
 
 
 def get_landsat_level1_from_datacube(
@@ -369,6 +411,37 @@ def get_landsat_level1_file_paths(
                 for _fp in pt_list.result():
                     fid.write(_fp + "\n")
 
+
+def dict2ard_arg_string(ard_click_params):
+    ard_params = []
+    for key, value in ard_click_params.items():
+        if value is None:
+            continue
+        if key == "test":
+            if value is True:
+                ard_params.append("--" + key)
+            continue
+        ard_params.append("--" + key)
+        # Make path strings absolute
+        if key in ('logdir', 'pkgdir'):
+            value = Path(value).resolve()
+        ard_params.append(str(value))
+    ard_arg_string = " ".join(ard_params)
+    return ard_arg_string
+
+
+def make_ard_pbs(**ard_click_params):
+    level1_list = ard_click_params['level1_list']
+    env = ard_click_params['env']
+
+    # Use the template format to make sure 'level1_list' is there
+    del ard_click_params['level1_list']
+
+    ard_args_str = dict2ard_arg_string(ard_click_params)
+    pbs = NODE_TEMPLATE.format(env=env,
+                               scene_list=level1_list,
+                               ard_args=ard_args_str)
+    return pbs
 
 @click.command()
 @click.option(
@@ -461,26 +534,85 @@ def get_landsat_level1_file_paths(
     '[\"ga_ls5t_level1_3\", \"usgs_ls8c_level1_1\"]'",
     default=PRODUCTS
 )
+@click.option("--landsat-AOI", default=False, is_flag=True,
+              help="If true use the internal Landsat Area of Interest to "
+                    "filter scenes.  This overrides shape files and "
+              "allowed-codes.")
+@click.option("--workdir", type=click.Path(file_okay=False, writable=True),
+              help="The base output working directory.", default=Path.cwd())
+@click.option("--run-ard", default=False, is_flag=True,
+              help="Execute the ard_pbs script.")
+## This are passed on to ard processing
+@click.option("--test", default=False, is_flag=True,
+              help="Test job execution (Don't submit the job to the "
+                    "PBS queue).")
+@click.option("--walltime",
+              help="Job walltime in `hh:mm:ss` format.")
+@click.option("--email",
+              help="Notification email address.")
+@click.option("--project", default="v10", help="Project code to run under.")
+@click.option("--logdir", type=click.Path(file_okay=False, writable=True),
+              help="The base logging and scripts output directory.")
+@click.option("--pkgdir", type=click.Path(file_okay=False, writable=True),
+              help="The base output packaged directory.")
+@click.option("--env", type=click.Path(exists=True, readable=True),
+              help="Environment script to source.")
+@click.option("--workers", type=click.IntRange(1, 48),
+              help="The number of workers to request per node.")
+@click.option("--nodes", help="The number of nodes to request.")
+@click.option("--memory",
+              help="The memory in GB to request per node.")
+@click.option("--jobfs",
+              help="The jobfs memory in GB to request per node.")
 def main(
-    brdf_shapefile: click.Path,
-    one_deg_dsm_v1_shapefile: click.Path,
-    one_sec_dsm_v1_shapefile: click.Path,
-    one_deg_dsm_v2_shapefile: click.Path,
-    satellite_data_provider: str,
-    aerosol_shapefile: click.Path,
-    world_wrs_shapefile: click.Path,
-    world_mgrs_shapefile: click.Path,
-    usgs_level1_files: click.Path,
-    search_datacube: bool,
-    allowed_codes: click.Path,
-    nprocs: int,
-    config: click.Path,
-    days_delta: int,
-    products: list,
-):
+        brdf_shapefile: click.Path,
+        one_deg_dsm_v1_shapefile: click.Path,
+        one_sec_dsm_v1_shapefile: click.Path,
+        one_deg_dsm_v2_shapefile: click.Path,
+        satellite_data_provider: str,
+        aerosol_shapefile: click.Path,
+        world_wrs_shapefile: click.Path,
+        world_mgrs_shapefile: click.Path,
+        usgs_level1_files: click.Path,
+        search_datacube: bool,
+        allowed_codes: click.Path,
+        nprocs: int,
+        config: click.Path,
+        days_delta: int,
+        products: list,
+        workdir: click.Path,
+        run_ard: bool,
+        landsat_aoi: bool,
+        **ard_click_params: dict,
+    ):
+    """
+    The keys for ard_click_params;
+        test: bool,
+        logdir: click.Path,
+        pkgdir: click.Path,
+        env: click.Path,
+        ardworkers: int,
+        ardnodes: int,
+        ardmemory: int,
+        ardjobfs: int,
+        project: str,
+        walltime: str,
+        email: str
+
+    :return: list of scenes to ARD process
+    """
+    workdir = Path(workdir).resolve()
+    # set up the scene select job dir in the work dir
+    jobid = uuid.uuid4().hex[0:6]
+    jobdir = workdir.joinpath(FMT2.format(jobid=jobid))
+    jobdir.mkdir(exist_ok=True)
+    #
+    print("Job directory: " + str(jobdir))
+    log_filepath = jobdir.joinpath(LOG_FILE)
+    logging.basicConfig(filename=log_filepath, level=logging.INFO) # INFO
 
     if not usgs_level1_files:
-        usgs_level1_files = Path.cwd().joinpath("DataCube_all_landsat_scenes.txt")
+        usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         if search_datacube:
             get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config,
                                                        days_delta=days_delta,
@@ -494,6 +626,11 @@ def main(
                 nprocs=nprocs,
             )
 
+    # If needed build the allowed_codes using the landsat AOI
+    if landsat_aoi:
+        allowed_codes = DATA_DIR.joinpath(LANDSAT_AOI_FILE)
+            
+    # If needed build the allowed_codes using the shapefiles        
     if not allowed_codes:
         _extent_list = [
             brdf_shapefile,
@@ -508,12 +645,47 @@ def main(
             global_tiles_data, _extent_list, satellite_data_provider
         )
 
-    path_row_filter(
+    # apply path_row filter and
+    # 
+    scenes_filepath, all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
+        out_dir=jobdir,
     )
+    count_all_scenes_list = len(all_scenes_list)
+
+    # Estimate the number of nodes needed
+    if ard_click_params['nodes'] is None:
+        if ard_click_params['walltime'] is None:
+            walltime = "05:00:00"
+        else:
+            walltime = ard_click_params['walltime']
+        if ard_click_params['workers'] is None:
+            workers = 30
+        else:
+            workers = ard_click_params['workers']
+        ard_click_params['nodes'] = _calc_nodes_req(count_all_scenes_list,
+                                                    walltime, workers)
+
+    # The workdir is used by ard_pbs
+    ard_click_params['workdir'] = workdir
+    ard_click_params['level1_list'] = scenes_filepath
+    pbs_script_text = make_ard_pbs(**ard_click_params)
+
+    # write pbs script
+    run_ard_pathfile = jobdir.joinpath("run_ard_pbs.sh")
+    with open(run_ard_pathfile, 'w') as src:
+        src.write(pbs_script_text)
+
+    # Make the script executable
+    st = os.stat(run_ard_pathfile)
+    os.chmod(run_ard_pathfile, st.st_mode | stat.S_IEXEC)
+
+    # run the script
+    if run_ard is True:
+        subprocess.run([run_ard_pathfile])
+    return all_scenes_list
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="ignored_scenes_list.log", level=logging.INFO)
     main()
