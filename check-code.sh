@@ -4,8 +4,9 @@
 set -eu
 set -x
 
-python3 -m pycodestyle ard_scene_select --max-line-length 120
-
-python3 -m pylint -j 2 -d line-too-long --reports no ard_scene_select
-
+python3 -m pycodestyle scene_select --max-line-length 120
+python3 -m pylint -j 2 -d line-too-long --reports no scene_select
 python3 -m pytest tests
+
+# Run this to auto format the python code
+# black -l 120  tests/ scene_select/

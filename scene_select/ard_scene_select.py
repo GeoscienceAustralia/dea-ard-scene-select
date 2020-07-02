@@ -11,11 +11,11 @@ import re
 import concurrent.futures
 import uuid
 import subprocess
+from datetime import datetime, timedelta
 import click
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
-from datetime import datetime, timedelta
 
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
@@ -102,7 +102,7 @@ L5_PATTERN = (
 
 
 class PythonLiteralOption(click.Option):
-    """  """
+    """Load click value representing a Python list. """
 
     def type_cast_value(self, ctx, value):
         try:
@@ -357,6 +357,8 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
 
 def get_landsat_level1_from_datacube(outfile: Path, products: List[str], config: Optional[Path] = None) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
+    import datacube
+
     # fixme add conf to the datacube API
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
@@ -514,7 +516,7 @@ def make_ard_pbs(**ard_click_params):
     default=Path.cwd(),
 )
 @click.option("--run-ard", default=False, is_flag=True, help="Execute the ard_pbs script.")
-## This are passed on to ard processing
+# These are passed on to ard processing
 @click.option(
     "--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the " "PBS queue)."
 )
