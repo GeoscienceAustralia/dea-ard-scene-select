@@ -28,6 +28,14 @@ PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 FMT2 = 'filter-jobid-{jobid}'
 
+BRDFSHAPEFILE = EXTENT_DIR.joinpath("brdf_tiles_new.shp")
+ONEDEGDSMV1SHAPEFILE = EXTENT_DIR.joinpath("one-deg-dsm-v1.shp")
+ONESECDSMV1SHAPEFILE = EXTENT_DIR.joinpath("one-sec-dsm-v1.shp")
+ONEDEGDSMV2SHAPEFILE = EXTENT_DIR.joinpath("one-deg-dsm-v2.shp")
+AEROSOLSHAPEFILE = EXTENT_DIR.joinpath("aerosol.shp")
+WRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("wrsdall_Decending.shp")
+MGRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp")
+
 # No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
                                "ga_ls7e_level1_3": "ga_ls7e_ard_3",
@@ -448,25 +456,25 @@ def make_ard_pbs(**ard_click_params):
     "--brdf-shapefile",
     type=click.Path(dir_okay=False, file_okay=True),
     help="full path to brdf extent shapefile",
-    default=EXTENT_DIR.joinpath("brdf_tiles_new.shp"),
+    default=BRDFSHAPEFILE,
 )
 @click.option(
     "--one-deg-dsm-v1-shapefile",
     type=click.Path(dir_okay=False, file_okay=True),
     help="full path to one deg dsm version 1 extent shapefile",
-    default=EXTENT_DIR.joinpath("one-deg-dsm-v1.shp"),
+    default=ONEDEGDSMV1SHAPEFILE,
 )
 @click.option(
     "--one-sec-dsm-v1-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to one sec dsm version 1 shapefile",
-    default=EXTENT_DIR.joinpath("one-sec-dsm-v1.shp"),
+    default=ONESECDSMV1SHAPEFILE,
 )
 @click.option(
     "--one-deg-dsm-v2-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to dsm shapefile",
-    default=EXTENT_DIR.joinpath("one-deg-dsm-v2.shp"),
+    default=ONEDEGDSMV2SHAPEFILE,
 )
 @click.option(
     "--aerosol-shapefile",
@@ -484,13 +492,13 @@ def make_ard_pbs(**ard_click_params):
     "--world-wrs-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to global wrs shapefile",
-    default=GLOBAL_MGRS_WRS_DIR.joinpath("wrsdall_Decending.shp"),
+    default=WRSSHAPEFILE,
 )
 @click.option(
     "--world-mgrs-shapefile",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     help="full path to global mgrs shapefile",
-    default=GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp"),
+    default=MGRSSHAPEFILE,
 )
 @click.option(
     "--usgs-level1-files",
@@ -564,15 +572,10 @@ def make_ard_pbs(**ard_click_params):
               help="The memory in GB to request per node.")
 @click.option("--jobfs",
               help="The jobfs memory in GB to request per node.")
+# This isn't being used, so I'm taking it out
+# aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
 def main(
-        brdf_shapefile: click.Path,
-        one_deg_dsm_v1_shapefile: click.Path,
-        one_sec_dsm_v1_shapefile: click.Path,
-        one_deg_dsm_v2_shapefile: click.Path,
         satellite_data_provider: str,
-        aerosol_shapefile: click.Path,
-        world_wrs_shapefile: click.Path,
-        world_mgrs_shapefile: click.Path,
         usgs_level1_files: click.Path,
         search_datacube: bool,
         allowed_codes: click.Path,
@@ -583,6 +586,12 @@ def main(
         workdir: click.Path,
         run_ard: bool,
         landsat_aoi: bool,
+        brdf_shapefile: click.Path=BRDFSHAPEFILE,
+        one_deg_dsm_v1_shapefile: click.Path=ONEDEGDSMV1SHAPEFILE,
+        one_sec_dsm_v1_shapefile: click.Path=ONESECDSMV1SHAPEFILE,
+        one_deg_dsm_v2_shapefile: click.Path=ONEDEGDSMV2SHAPEFILE,
+        world_wrs_shapefile: click.Path=WRSSHAPEFILE,
+        world_mgrs_shapefile: click.Path=MGRSSHAPEFILE,
         **ard_click_params: dict,
     ):
     """
@@ -684,7 +693,7 @@ def main(
     # run the script
     if run_ard is True:
         subprocess.run([run_ard_pathfile])
-    return all_scenes_list
+    return scenes_filepath, all_scenes_list
 
 
 if __name__ == "__main__":
