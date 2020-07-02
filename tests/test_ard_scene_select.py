@@ -17,21 +17,22 @@ def test_main():
 
     dirpath = tempfile.mkdtemp()
     scenes_filepath, all_scenes_list = main.callback(
-    satellite_data_provider="ESA",
-    usgs_level1_files=L1EXAMPLES,
-    search_datacube=False,
-    allowed_codes=OZWRS,
-    nprocs=1,
-    config=None,
-    days_delta=None,
-    products=None,
-    workdir=dirpath,
-    run_ard=False,
-    landsat_aoi=True,
-    nodes=None,
-    walltime=None,
-    workers=None,
-    env=None)
+        satellite_data_provider="ESA",
+        usgs_level1_files=L1EXAMPLES,
+        search_datacube=False,
+        allowed_codes=OZWRS,
+        nprocs=1,
+        config=None,
+        days_delta=None,
+        products=None,
+        workdir=dirpath,
+        run_ard=False,
+        landsat_aoi=True,
+        nodes=None,
+        walltime=None,
+        workers=None,
+        env=None,
+    )
     standard = set(line.strip() for line in open(STANDARD_SCENES_SELECTED))
     results = set(all_scenes_list)
 

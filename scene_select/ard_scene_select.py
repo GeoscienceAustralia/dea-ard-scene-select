@@ -26,7 +26,7 @@ ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
 LOG_FILE = "ignored_scenes_list.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
-FMT2 = 'filter-jobid-{jobid}'
+FMT2 = "filter-jobid-{jobid}"
 
 BRDFSHAPEFILE = EXTENT_DIR.joinpath("brdf_tiles_new.shp")
 ONEDEGDSMV1SHAPEFILE = EXTENT_DIR.joinpath("one-deg-dsm-v1.shp")
@@ -37,19 +37,20 @@ WRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("wrsdall_Decending.shp")
 MGRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp")
 
 # No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
-ARD_PARENT_PRODUCT_MAPPING =  {"ga_ls5t_level1_3": "ga_ls5t_ard_3",
-                               "ga_ls7e_level1_3": "ga_ls7e_ard_3",
-                               "usgs_ls5t_level1_1": "ga_ls5t_ard_3",
-                               "usgs_ls7e_level1_1": "ga_ls7e_ard_3",
-                               "usgs_ls8c_level1_1": "ga_ls8c_ard_3"
-                               }
+ARD_PARENT_PRODUCT_MAPPING = {
+    "ga_ls5t_level1_3": "ga_ls5t_ard_3",
+    "ga_ls7e_level1_3": "ga_ls7e_ard_3",
+    "usgs_ls5t_level1_1": "ga_ls5t_ard_3",
+    "usgs_ls7e_level1_1": "ga_ls7e_ard_3",
+    "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
+}
 
-NODE_TEMPLATE = ("""#!/bin/bash
+NODE_TEMPLATE = """#!/bin/bash
 module unload dea
 source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
-""")
+"""
 
 _LOG = logging.getLogger(__name__)
 
@@ -102,12 +103,13 @@ L5_PATTERN = (
 
 class PythonLiteralOption(click.Option):
     """  """
+
     def type_cast_value(self, ctx, value):
         try:
             value = str(value)
-            assert value.count('[') == 1 and value.count(']') == 1
-            list_as_str = value.replace('"', "'").split('[')[1].split(']')[0]
-            list_of_items = [item.strip().strip("'") for item in list_as_str.split(',')]
+            assert value.count("[") == 1 and value.count("]") == 1
+            list_as_str = value.replace('"', "'").split("[")[1].split("]")[0]
+            list_of_items = [item.strip().strip("'") for item in list_as_str.split(",")]
             return list_of_items
         except Exception:
             raise click.BadParameter(value)
@@ -118,14 +120,10 @@ def read_shapefile(shapefile: Path) -> gpd.GeoDataFrame:
     return gpd.read_file(str(shapefile))
 
 
-def _get_auxiliary_extent(
-    gpd_df: gpd.GeoDataFrame, subset_key: Optional[str] = None
-) -> Polygon:
+def _get_auxiliary_extent(gpd_df: gpd.GeoDataFrame, subset_key: Optional[str] = None) -> Polygon:
     """Returns the extent of all auxiliary dataset or an extent by a subset_key"""
     if subset_key:
-        return cascaded_union(
-            [geom for geom in gpd_df[gpd_df.auxiliary_ == subset_key].geometry]
-        )
+        return cascaded_union([geom for geom in gpd_df[gpd_df.auxiliary_ == subset_key].geometry])
     return cascaded_union([geom for geom in gpd_df.geometry])
 
 
@@ -139,9 +137,7 @@ def _auxiliary_overlap_extent(_extents: List[Polygon]) -> Polygon:
     return overlap_extent
 
 
-def nbar_scene_filter(
-    nbar_auxiliary_extent: Polygon, df_scenes_to_filter: Union[gpd.GeoDataFrame, Path]
-) -> List[str]:
+def nbar_scene_filter(nbar_auxiliary_extent: Polygon, df_scenes_to_filter: Union[gpd.GeoDataFrame, Path]) -> List[str]:
     """Filtering method to check if acquisition can be used for nbar processing."""
 
     if isinstance(df_scenes_to_filter, Path):
@@ -157,16 +153,12 @@ def nbar_scene_filter(
 
 
 def subset_global_tiles_to_ga_extent(
-    _global_tiles_data: Path,
-    aux_extents_vectorfiles: List[Path],
-    _satellite_data_provider: str,
+    _global_tiles_data: Path, aux_extents_vectorfiles: List[Path], _satellite_data_provider: str
 ) -> List[str]:
     """Processing block for nbar scene filter."""
 
     # get extents from auxiliary vector files
-    extents = [
-        _get_auxiliary_extent(read_shapefile(fp)) for fp in aux_extents_vectorfiles
-    ]
+    extents = [_get_auxiliary_extent(read_shapefile(fp)) for fp in aux_extents_vectorfiles]
     nbar_aux_extent = _auxiliary_overlap_extent(extents)
 
     # filter global tile data to nbar_aux_extent
@@ -186,9 +178,7 @@ def _write(filename: Path, list_to_write: List) -> None:
 
 
 def path_row_filter(
-    scenes_to_filter_list: Union[List[str], Path],
-    path_row_list: Union[List[str], Path],
-    out_dir: Optional[Path] = None,
+    scenes_to_filter_list: Union[List[str], Path], path_row_list: Union[List[str], Path], out_dir: Optional[Path] = None
 ) -> None:
     """Filter scenes to check if path/row of a scene is allowed in a path row list."""
 
@@ -196,10 +186,7 @@ def path_row_filter(
         with open(path_row_list, "r") as fid:
             path_row_list = [line.rstrip() for line in fid.readlines()]
 
-    path_row_list = [
-        "{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1]))
-        for item in path_row_list
-    ]
+    path_row_list = ["{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1])) for item in path_row_list]
 
     if isinstance(scenes_to_filter_list, Path):
         with open(scenes_to_filter_list, "r") as fid:
@@ -245,9 +232,7 @@ def path_row_filter(
     return scenes_filepath, all_scenes_list
 
 
-def mgrs_filter(
-    scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[List[str], Path]
-) -> None:
+def mgrs_filter(scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[List[str], Path]) -> None:
     """Checks scenes to filter list if mrgs tile name are in mrgs list."""
     raise NotImplementedError
 
@@ -261,15 +246,20 @@ def process_scene(dataset, days_delta):
 
     days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
     if days_ago < dataset.time.end:
-        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
-            ".tar").as_posix()
-        _LOG.info("%s #Skipping dataset after time delta(days:%d, Date %s): %s",
-                  file_path,
-                  days_delta,
-                     days_ago.strftime('%Y-%m-%d'), dataset.id)
+        file_path = (
+            dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
+        )
+        _LOG.info(
+            "%s #Skipping dataset after time delta(days:%d, Date %s): %s",
+            file_path,
+            days_delta,
+            days_ago.strftime("%Y-%m-%d"),
+            dataset.id,
+        )
         return False
 
     return True
+
 
 def dataset_with_child(dc, dataset):
     """
@@ -278,9 +268,7 @@ def dataset_with_child(dc, dataset):
     :param dataset:
     :return:
     """
-    return any(not child_dataset.is_archived
-                for child_dataset in dc.index.datasets.get_derived(dataset.id)
-            )
+    return any(not child_dataset.is_archived for child_dataset in dc.index.datasets.get_derived(dataset.id))
 
 
 def chopped_scene_id(scene_id: str) -> str:
@@ -297,13 +285,13 @@ def chopped_scene_id(scene_id: str) -> str:
 
 
 def _do_parent_search(dc, product, days_delta=0):
-    #FIXME add expressions for more control
+    # FIXME add expressions for more control
     if product in ARD_PARENT_PRODUCT_MAPPING:
         processed_ard_scene_ids = {
-            result.landsat_scene_id for result in
-            dc.index.datasets.search_returning(
-                ('landsat_scene_id',),
-                product=ARD_PARENT_PRODUCT_MAPPING[product])
+            result.landsat_scene_id
+            for result in dc.index.datasets.search_returning(
+                ("landsat_scene_id",), product=ARD_PARENT_PRODUCT_MAPPING[product]
+            )
         }
         processed_ard_scene_ids = {chopped_scene_id(s) for s in processed_ard_scene_ids}
     else:
@@ -314,18 +302,15 @@ def _do_parent_search(dc, product, days_delta=0):
         # Scene select uses the l1 product to ard mapping to filter out
         # updated l1 scenes that have been processed using the old l1 scene.
         processed_ard_scene_ids = None
-        _LOG.warning(
-           "THE ARD ODC product name after ARD processing for %s is not known.", product
-        )
+        _LOG.warning("THE ARD ODC product name after ARD processing for %s is not known.", product)
 
     for dataset in dc.index.datasets.search(product=product):
-        file_path = dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(
-            ".tar").as_posix()
+        file_path = (
+            dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
+        )
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
-                _LOG.info(
-                   "%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id
-                )
+                _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
                 continue
 
         if process_scene(dataset, days_delta) is False:
@@ -335,18 +320,14 @@ def _do_parent_search(dc, product, days_delta=0):
         if dataset_with_child(dc, dataset):
             # Name of input folder treated as telemetry dataset name
             name = dataset.local_path.parent.name
-            _LOG.info(
-                "%s # Skipping dataset with children: (%s)", file_path, dataset.id
-            )
+            _LOG.info("%s # Skipping dataset with children: (%s)", file_path, dataset.id)
             continue
 
         yield file_path
 
+
 def get_landsat_level1_from_datacube_childless(
-    outfile: Path,
-    products: List[str],
-    config: Optional[Path] = None,
-    days_delta: int = 21,
+    outfile: Path, products: List[str], config: Optional[Path] = None, days_delta: int = 21
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
     import datacube
@@ -357,7 +338,7 @@ def get_landsat_level1_from_datacube_childless(
             for fp in _do_parent_search(dc, product, days_delta=days_delta):
                 fid.write(fp + "\n")
 
-                
+
 def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
     """ Provides estimation of the number of nodes required to process granule count
 
@@ -366,53 +347,41 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
     >>> _calc_nodes_req(800, '20:00', 28)
     3
     """
-    hours, _, _ = [int(x) for x in walltime.split(':')]
+    hours, _, _ = [int(x) for x in walltime.split(":")]
     # to avoid divide by zero errors
     if hours == 0:
         hours = 1
-    nodes = int(math.ceil(float(hours_per_granule * granule_count) \
-                          / (hours * workers)))
+    nodes = int(math.ceil(float(hours_per_granule * granule_count) / (hours * workers)))
     return nodes
 
 
-def get_landsat_level1_from_datacube(
-    outfile: Path,
-    products: List[str],
-    config: Optional[Path] = None,
-) -> None:
+def get_landsat_level1_from_datacube(outfile: Path, products: List[str], config: Optional[Path] = None) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
-    #fixme add conf to the datacube API
+    # fixme add conf to the datacube API
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
             results = [
-                item.local_path.parent.joinpath(item.metadata.landsat_product_id)
-                .with_suffix(".tar")
-                .as_posix()
+                item.local_path.parent.joinpath(item.metadata.landsat_product_id).with_suffix(".tar").as_posix()
                 for item in dc.index.datasets.search(product=product)
             ]
             for fp in results:
                 fid.write(fp + "\n")
 
-def get_landsat_level1_file_paths(
-    nci_dir: Path, out_file: Path, nprocs: Optional[int] = 1
-) -> None:
+
+def get_landsat_level1_file_paths(nci_dir: Path, out_file: Path, nprocs: Optional[int] = 1) -> None:
     """Write all the files with *.tar in nci_dir to a text file."""
 
     # this returns only folder name with PPP_RRR as is in NCI landsat archive
     nci_path_row_dirs = [
-        nci_dir.joinpath(item)
-        for item in nci_dir.iterdir()
-        if re.match(r"[0-9]{3}_[0-9]{3}", item.name)
+        nci_dir.joinpath(item) for item in nci_dir.iterdir() if re.match(r"[0-9]{3}_[0-9]{3}", item.name)
     ]
 
     # file paths searched using multiple threads
     with open(out_file, "w") as fid:
         with concurrent.futures.ThreadPoolExecutor(max_workers=nprocs) as executor:
             results = [
-                executor.submit(
-                    lambda x: [fp.as_posix() for fp in x.glob("**/*.tar")], path_row
-                )
+                executor.submit(lambda x: [fp.as_posix() for fp in x.glob("**/*.tar")], path_row)
                 for path_row in nci_path_row_dirs
             ]
             for pt_list in concurrent.futures.as_completed(results):
@@ -431,7 +400,7 @@ def dict2ard_arg_string(ard_click_params):
             continue
         ard_params.append("--" + key)
         # Make path strings absolute
-        if key in ('logdir', 'pkgdir'):
+        if key in ("logdir", "pkgdir"):
             value = Path(value).resolve()
         ard_params.append(str(value))
     ard_arg_string = " ".join(ard_params)
@@ -439,17 +408,16 @@ def dict2ard_arg_string(ard_click_params):
 
 
 def make_ard_pbs(**ard_click_params):
-    level1_list = ard_click_params['level1_list']
-    env = ard_click_params['env']
+    level1_list = ard_click_params["level1_list"]
+    env = ard_click_params["env"]
 
     # Use the template format to make sure 'level1_list' is there
-    del ard_click_params['level1_list']
+    del ard_click_params["level1_list"]
 
     ard_args_str = dict2ard_arg_string(ard_click_params)
-    pbs = NODE_TEMPLATE.format(env=env,
-                               scene_list=level1_list,
-                               ard_args=ard_args_str)
+    pbs = NODE_TEMPLATE.format(env=env, scene_list=level1_list, ard_args=ard_args_str)
     return pbs
+
 
 @click.command()
 @click.option(
@@ -506,10 +474,7 @@ def make_ard_pbs(**ard_click_params):
     help="full path to a text files containing all the level-1 USGS/ESA list to be filtered",
 )
 @click.option(
-    "--search-datacube",
-    type=bool,
-    help="whether query level1 files form database or file systems",
-    default=True,
+    "--search-datacube", type=bool, help="whether query level1 files form database or file systems", default=True
 )
 @click.option(
     "--allowed-codes",
@@ -517,83 +482,76 @@ def make_ard_pbs(**ard_click_params):
     help="full path to a text files containing path/row or MGRS tile name to act as a filter",
 )
 @click.option(
-    "--nprocs",
-    type=int,
-    help="number of processes to enable faster search through a  large file system",
-    default=1,
+    "--nprocs", type=int, help="number of processes to enable faster search through a  large file system", default=1
 )
 @click.option(
     "--config",
     type=click.Path(dir_okay=False, file_okay=True),
     help="full path to a datacube config text file",
-    default=None
+    default=None,
 )
-@click.option(
-    "--days_delta",
-    type=int,
-    help="Only process files older than days delta.",
-    default=14,
-)
+@click.option("--days_delta", type=int, help="Only process files older than days delta.", default=14)
 @click.option(
     "--products",
     cls=PythonLiteralOption,
     type=list,
-    help="List the ODC products to be processed. e.g. \
-    '[\"ga_ls5t_level1_3\", \"usgs_ls8c_level1_1\"]'",
-    default=PRODUCTS
+    help='List the ODC products to be processed. e.g. \
+    \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
+    default=PRODUCTS,
 )
-@click.option("--landsat-AOI", default=False, is_flag=True,
-              help="If true use the internal Landsat Area of Interest to "
-                    "filter scenes.  This overrides shape files and "
-              "allowed-codes.")
-@click.option("--workdir", type=click.Path(file_okay=False, writable=True),
-              help="The base output working directory.", default=Path.cwd())
-@click.option("--run-ard", default=False, is_flag=True,
-              help="Execute the ard_pbs script.")
+@click.option(
+    "--landsat-AOI",
+    default=False,
+    is_flag=True,
+    help="If true use the internal Landsat Area of Interest to "
+    "filter scenes.  This overrides shape files and "
+    "allowed-codes.",
+)
+@click.option(
+    "--workdir",
+    type=click.Path(file_okay=False, writable=True),
+    help="The base output working directory.",
+    default=Path.cwd(),
+)
+@click.option("--run-ard", default=False, is_flag=True, help="Execute the ard_pbs script.")
 ## This are passed on to ard processing
-@click.option("--test", default=False, is_flag=True,
-              help="Test job execution (Don't submit the job to the "
-                    "PBS queue).")
-@click.option("--walltime",
-              help="Job walltime in `hh:mm:ss` format.")
-@click.option("--email",
-              help="Notification email address.")
+@click.option(
+    "--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the " "PBS queue)."
+)
+@click.option("--walltime", help="Job walltime in `hh:mm:ss` format.")
+@click.option("--email", help="Notification email address.")
 @click.option("--project", default="v10", help="Project code to run under.")
-@click.option("--logdir", type=click.Path(file_okay=False, writable=True),
-              help="The base logging and scripts output directory.")
-@click.option("--pkgdir", type=click.Path(file_okay=False, writable=True),
-              help="The base output packaged directory.")
-@click.option("--env", type=click.Path(exists=True, readable=True),
-              help="Environment script to source.")
-@click.option("--workers", type=click.IntRange(1, 48),
-              help="The number of workers to request per node.")
+@click.option(
+    "--logdir", type=click.Path(file_okay=False, writable=True), help="The base logging and scripts output directory."
+)
+@click.option("--pkgdir", type=click.Path(file_okay=False, writable=True), help="The base output packaged directory.")
+@click.option("--env", type=click.Path(exists=True, readable=True), help="Environment script to source.")
+@click.option("--workers", type=click.IntRange(1, 48), help="The number of workers to request per node.")
 @click.option("--nodes", help="The number of nodes to request.")
-@click.option("--memory",
-              help="The memory in GB to request per node.")
-@click.option("--jobfs",
-              help="The jobfs memory in GB to request per node.")
+@click.option("--memory", help="The memory in GB to request per node.")
+@click.option("--jobfs", help="The jobfs memory in GB to request per node.")
 # This isn't being used, so I'm taking it out
 # aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
 def main(
-        satellite_data_provider: str,
-        usgs_level1_files: click.Path,
-        search_datacube: bool,
-        allowed_codes: click.Path,
-        nprocs: int,
-        config: click.Path,
-        days_delta: int,
-        products: list,
-        workdir: click.Path,
-        run_ard: bool,
-        landsat_aoi: bool,
-        brdf_shapefile: click.Path=BRDFSHAPEFILE,
-        one_deg_dsm_v1_shapefile: click.Path=ONEDEGDSMV1SHAPEFILE,
-        one_sec_dsm_v1_shapefile: click.Path=ONESECDSMV1SHAPEFILE,
-        one_deg_dsm_v2_shapefile: click.Path=ONEDEGDSMV2SHAPEFILE,
-        world_wrs_shapefile: click.Path=WRSSHAPEFILE,
-        world_mgrs_shapefile: click.Path=MGRSSHAPEFILE,
-        **ard_click_params: dict,
-    ):
+    satellite_data_provider: str,
+    usgs_level1_files: click.Path,
+    search_datacube: bool,
+    allowed_codes: click.Path,
+    nprocs: int,
+    config: click.Path,
+    days_delta: int,
+    products: list,
+    workdir: click.Path,
+    run_ard: bool,
+    landsat_aoi: bool,
+    brdf_shapefile: click.Path = BRDFSHAPEFILE,
+    one_deg_dsm_v1_shapefile: click.Path = ONEDEGDSMV1SHAPEFILE,
+    one_sec_dsm_v1_shapefile: click.Path = ONESECDSMV1SHAPEFILE,
+    one_deg_dsm_v2_shapefile: click.Path = ONEDEGDSMV2SHAPEFILE,
+    world_wrs_shapefile: click.Path = WRSSHAPEFILE,
+    world_mgrs_shapefile: click.Path = MGRSSHAPEFILE,
+    **ard_click_params: dict,
+):
     """
     The keys for ard_click_params;
         test: bool,
@@ -618,44 +576,35 @@ def main(
     #
     print("Job directory: " + str(jobdir))
     log_filepath = jobdir.joinpath(LOG_FILE)
-    logging.basicConfig(filename=log_filepath, level=logging.INFO) # INFO
+    logging.basicConfig(filename=log_filepath, level=logging.INFO)  # INFO
 
     if not usgs_level1_files:
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         if search_datacube:
-            get_landsat_level1_from_datacube_childless(usgs_level1_files, config=config,
-                                                       days_delta=days_delta,
-                                                       products=products)
+            get_landsat_level1_from_datacube_childless(
+                usgs_level1_files, config=config, days_delta=days_delta, products=products
+            )
         else:
             _LOG.warning("searching the file system is untested.")
 
             get_landsat_level1_file_paths(
-                Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"),
-                usgs_level1_files,
-                nprocs=nprocs,
+                Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"), usgs_level1_files, nprocs=nprocs
             )
 
     # If needed build the allowed_codes using the landsat AOI
     if landsat_aoi:
         allowed_codes = DATA_DIR.joinpath(LANDSAT_AOI_FILE)
-            
-    # If needed build the allowed_codes using the shapefiles        
+
+    # If needed build the allowed_codes using the shapefiles
     if not allowed_codes:
-        _extent_list = [
-            brdf_shapefile,
-            one_deg_dsm_v1_shapefile,
-            one_sec_dsm_v1_shapefile,
-            one_deg_dsm_v2_shapefile,
-        ]
+        _extent_list = [brdf_shapefile, one_deg_dsm_v1_shapefile, one_sec_dsm_v1_shapefile, one_deg_dsm_v2_shapefile]
         global_tiles_data = Path(world_wrs_shapefile)
         if satellite_data_provider == "ESA":
             global_tiles_data = Path(world_mgrs_shapefile)
-        allowed_codes = subset_global_tiles_to_ga_extent(
-            global_tiles_data, _extent_list, satellite_data_provider
-        )
+        allowed_codes = subset_global_tiles_to_ga_extent(global_tiles_data, _extent_list, satellite_data_provider)
 
     # apply path_row filter and
-    # 
+    #
     scenes_filepath, all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
@@ -664,26 +613,25 @@ def main(
     count_all_scenes_list = len(all_scenes_list)
 
     # Estimate the number of nodes needed
-    if ard_click_params['nodes'] is None:
-        if ard_click_params['walltime'] is None:
+    if ard_click_params["nodes"] is None:
+        if ard_click_params["walltime"] is None:
             walltime = "05:00:00"
         else:
-            walltime = ard_click_params['walltime']
-        if ard_click_params['workers'] is None:
+            walltime = ard_click_params["walltime"]
+        if ard_click_params["workers"] is None:
             workers = 30
         else:
-            workers = ard_click_params['workers']
-        ard_click_params['nodes'] = _calc_nodes_req(count_all_scenes_list,
-                                                    walltime, workers)
+            workers = ard_click_params["workers"]
+        ard_click_params["nodes"] = _calc_nodes_req(count_all_scenes_list, walltime, workers)
 
     # The workdir is used by ard_pbs
-    ard_click_params['workdir'] = workdir
-    ard_click_params['level1_list'] = scenes_filepath
+    ard_click_params["workdir"] = workdir
+    ard_click_params["level1_list"] = scenes_filepath
     pbs_script_text = make_ard_pbs(**ard_click_params)
 
     # write pbs script
     run_ard_pathfile = jobdir.joinpath("run_ard_pbs.sh")
-    with open(run_ard_pathfile, 'w') as src:
+    with open(run_ard_pathfile, "w") as src:
         src.write(pbs_script_text)
 
     # Make the script executable

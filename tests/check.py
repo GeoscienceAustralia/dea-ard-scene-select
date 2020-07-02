@@ -11,21 +11,15 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 def _get_allowed_path_rows(path_row_file: Path) -> List:
     with open(path_row_file, "r") as fid:
         return [
-            "{:03}{:03}".format(
-                int(item.rstrip().split("_")[0]), int(item.rstrip().split("_")[1])
-            )
+            "{:03}{:03}".format(int(item.rstrip().split("_")[0]), int(item.rstrip().split("_")[1]))
             for item in fid.readlines()
         ]
 
 
-def _check_level1_lists(
-    level1_list: Path, check_codes: dict, pathrows_allowed: List
-) -> None:
+def _check_level1_lists(level1_list: Path, check_codes: dict, pathrows_allowed: List) -> None:
 
     with open(level1_list, "r") as fid:
-        level1_list = [
-            os.path.basename(item.rstrip()).split("_") for item in fid.readlines()
-        ]
+        level1_list = [os.path.basename(item.rstrip()).split("_") for item in fid.readlines()]
 
     sensor = [item[0] for item in level1_list]
 
@@ -34,9 +28,7 @@ def _check_level1_lists(
 
     # check only allowed processing levels are in the list
     if check_codes["sensor"] == "L08":
-        assert set([item[1] for item in level1_list]) == set(
-            check_codes["process_level"]
-        )
+        assert set([item[1] for item in level1_list]) == set(check_codes["process_level"])
 
     # check there no path/rows other than allowed list of path rows
     assert len(set([item[2] for item in level1_list]) - set(pathrows_allowed)) == 0
@@ -51,21 +43,13 @@ def main():
     allowed_pathrows = _get_allowed_path_rows(Path(path_row_au))
 
     # check landsat8 level1 lists
-    _check_level1_lists(
-        Path(level1_ls8),
-        {"sensor": "L08", "process_level": ["L1TP", "L1GT"]},
-        allowed_pathrows,
-    )
+    _check_level1_lists(Path(level1_ls8), {"sensor": "L08", "process_level": ["L1TP", "L1GT"]}, allowed_pathrows)
 
     # check landsat7 level1 lists
-    _check_level1_lists(
-        Path(level1_ls7), {"sensor": "L07", "process_level": ["L1TP"]}, allowed_pathrows
-    )
+    _check_level1_lists(Path(level1_ls7), {"sensor": "L07", "process_level": ["L1TP"]}, allowed_pathrows)
 
     # check landsat5 level1 lists
-    _check_level1_lists(
-        Path(level1_ls5), {"sensor": "L05", "process_level": ["L1TP"]}, allowed_pathrows
-    )
+    _check_level1_lists(Path(level1_ls5), {"sensor": "L05", "process_level": ["L1TP"]}, allowed_pathrows)
 
 
 if __name__ == "__main__":
