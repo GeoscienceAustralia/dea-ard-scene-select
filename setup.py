@@ -29,7 +29,7 @@ setup(
     setup_requires=['setuptools_scm'],
     entry_points={
         'console_scripts': [
-            'ard-scene-select = ard_scene_select.region_code_filter:main',
+            'ard-scene-select = ard_scene_select.ard_scene_select:main',
         ]
     },
 )
