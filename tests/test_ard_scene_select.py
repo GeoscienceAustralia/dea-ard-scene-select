@@ -48,13 +48,11 @@ def test_scene_select_main():
     # ... do stuff with dirpath
     shutil.rmtree(dirpath)
 
+
 def test_generate_aoi_main():
 
     dirpath = tempfile.mkdtemp()
-    _, allowed_codes = generate_region.callback(
-        satellite_data_provider="USGS",
-        workdir=dirpath,
-    )
+    _, allowed_codes = generate_region.callback(satellite_data_provider="USGS", workdir=dirpath)
     standard = set(line.strip() for line in open(STANDARD_WRS_AOI))
     results = set(allowed_codes)
 

@@ -23,8 +23,9 @@ ONEDEGDSMV2SHAPEFILE = EXTENT_DIR.joinpath("one-deg-dsm-v2.shp")
 AEROSOLSHAPEFILE = EXTENT_DIR.joinpath("aerosol.shp")
 WRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("wrsdall_Decending.shp")
 MGRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp")
-
+DEF_SAT_PROVIDER = "USGS"
 FMT2 = "generte-aoi-jobid-{jobid}"
+
 
 def read_shapefile(shapefile: Path) -> gpd.GeoDataFrame:
     """Code to read a shapefile and return its content as a geopandas dataframe"""
@@ -116,7 +117,7 @@ def subset_global_tiles_to_ga_extent(
     "--satellite-data-provider",
     type=click.Choice(["ESA", "USGS"]),
     help="satellite data provider (ESA or USGS)",
-    default="USGS",
+    default=DEF_SAT_PROVIDER,
 )
 @click.option(
     "--world-wrs-shapefile",
@@ -139,7 +140,7 @@ def subset_global_tiles_to_ga_extent(
 # This isn't being used, so I'm taking it out
 # aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
 def generate_region(
-    satellite_data_provider: str="USGS",
+    satellite_data_provider: str = DEF_SAT_PROVIDER,
     workdir: click.Path,
     brdf_shapefile: click.Path = BRDFSHAPEFILE,
     one_deg_dsm_v1_shapefile: click.Path = ONEDEGDSMV1SHAPEFILE,
@@ -147,7 +148,7 @@ def generate_region(
     one_deg_dsm_v2_shapefile: click.Path = ONEDEGDSMV2SHAPEFILE,
     world_wrs_shapefile: click.Path = WRSSHAPEFILE,
     world_mgrs_shapefile: click.Path = MGRSSHAPEFILE,
-    aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
+    aerosol_shapefile: click.Path = AEROSOLSHAPEFILE,
 ):
     """
 
@@ -171,9 +172,11 @@ def generate_region(
     allowed_codes = subset_global_tiles_to_ga_extent(global_tiles_data, _extent_list, satellite_data_provider)
     # AOI_FILE
     aoi_filepath = jobdir.joinpath(AOI_FILE)
-    with open(aoi_filepath, 'w') as f:
+    with open(aoi_filepath, "w") as f:
         for item in allowed_codes:
             f.write("%s\n" % item)
-    return aoi_filepath, allowed_codes   # This is used for testing
+    return aoi_filepath, allowed_codes  # This is used for testing
+
+
 if __name__ == "__main__":
     generate_region()
