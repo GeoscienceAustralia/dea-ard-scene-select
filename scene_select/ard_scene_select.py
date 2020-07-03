@@ -22,7 +22,6 @@ LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
-ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
 LOG_FILE = "ignored_scenes_list.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
@@ -170,7 +169,7 @@ def subset_global_tiles_to_ga_extent(
     return list(scenes_df.Name.values)
 
 
-def _write(filename: Path, list_to_write: List) -> None:
+def write(filename: Path, list_to_write: List) -> None:
     """A helper method to write contents in a list to a file."""
     with open(filename, "w") as fid:
         for item in list_to_write:
@@ -224,11 +223,11 @@ def path_row_filter(
     if out_dir is None:
         out_dir = Path.cwd()
     scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
-    _write(out_dir.joinpath("DataCube_L08_Level1.txt"), ls8_list)
-    _write(out_dir.joinpath("DataCube_L07_Level1.txt"), ls7_list)
-    _write(out_dir.joinpath("DataCube_L05_Level1.txt"), ls5_list)
-    _write(out_dir.joinpath("no_file_pattern_matching.txt"), to_process)
-    _write(scenes_filepath, all_scenes_list)
+    write(out_dir.joinpath("DataCube_L08_Level1.txt"), ls8_list)
+    write(out_dir.joinpath("DataCube_L07_Level1.txt"), ls7_list)
+    write(out_dir.joinpath("DataCube_L05_Level1.txt"), ls5_list)
+    write(out_dir.joinpath("no_file_pattern_matching.txt"), to_process)
+    write(scenes_filepath, all_scenes_list)
     return scenes_filepath, all_scenes_list
 
 
@@ -534,7 +533,7 @@ def make_ard_pbs(**ard_click_params):
 @click.option("--jobfs", help="The jobfs memory in GB to request per node.")
 # This isn't being used, so I'm taking it out
 # aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
-def main(
+def scene_select(
     satellite_data_provider: str,
     usgs_level1_files: click.Path,
     search_datacube: bool,
@@ -647,4 +646,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    scene_select()
