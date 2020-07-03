@@ -108,12 +108,6 @@ def subset_global_tiles_to_ga_extent(
     default=ONEDEGDSMV2SHAPEFILE,
 )
 @click.option(
-    "--aerosol-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    help="full path to aerosol shapefile",
-    default=EXTENT_DIR.joinpath("aerosol.shp"),
-)
-@click.option(
     "--satellite-data-provider",
     type=click.Choice(["ESA", "USGS"]),
     help="satellite data provider (ESA or USGS)",
@@ -137,18 +131,15 @@ def subset_global_tiles_to_ga_extent(
     help="The base output working directory.",
     default=Path.cwd(),
 )
-# This isn't being used, so I'm taking it out
-# aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
 def generate_region(
-    satellite_data_provider: str = DEF_SAT_PROVIDER,
     workdir: click.Path,
+    satellite_data_provider: str = DEF_SAT_PROVIDER,
     brdf_shapefile: click.Path = BRDFSHAPEFILE,
     one_deg_dsm_v1_shapefile: click.Path = ONEDEGDSMV1SHAPEFILE,
     one_sec_dsm_v1_shapefile: click.Path = ONESECDSMV1SHAPEFILE,
     one_deg_dsm_v2_shapefile: click.Path = ONEDEGDSMV2SHAPEFILE,
     world_wrs_shapefile: click.Path = WRSSHAPEFILE,
     world_mgrs_shapefile: click.Path = MGRSSHAPEFILE,
-    aerosol_shapefile: click.Path = AEROSOLSHAPEFILE,
 ):
     """
 
