@@ -20,7 +20,6 @@ def test_scene_select_main():
 
     dirpath = tempfile.mkdtemp()
     scenes_filepath, all_scenes_list = scene_select.callback(
-        satellite_data_provider="ESA",
         usgs_level1_files=L1EXAMPLES,
         search_datacube=False,
         allowed_codes=OZWRS,

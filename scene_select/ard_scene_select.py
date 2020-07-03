@@ -22,6 +22,7 @@ LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
+ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
 LOG_FILE = "ignored_scenes_list.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
@@ -112,61 +113,6 @@ class PythonLiteralOption(click.Option):
             return list_of_items
         except Exception:
             raise click.BadParameter(value)
-
-
-def read_shapefile(shapefile: Path) -> gpd.GeoDataFrame:
-    """Code to read a shapefile and return its content as a geopandas dataframe"""
-    return gpd.read_file(str(shapefile))
-
-
-def _get_auxiliary_extent(gpd_df: gpd.GeoDataFrame, subset_key: Optional[str] = None) -> Polygon:
-    """Returns the extent of all auxiliary dataset or an extent by a subset_key"""
-    if subset_key:
-        return cascaded_union([geom for geom in gpd_df[gpd_df.auxiliary_ == subset_key].geometry])
-    return cascaded_union([geom for geom in gpd_df.geometry])
-
-
-def _auxiliary_overlap_extent(_extents: List[Polygon]) -> Polygon:
-    """Returns the overlaped regions from list of extents derived from auxiliary datasets."""
-
-    overlap_extent = _extents[0]
-    for idx, extent in enumerate(_extents, start=1):
-        overlap_extent = overlap_extent.intersection(extent)
-
-    return overlap_extent
-
-
-def nbar_scene_filter(nbar_auxiliary_extent: Polygon, df_scenes_to_filter: Union[gpd.GeoDataFrame, Path]) -> List[str]:
-    """Filtering method to check if acquisition can be used for nbar processing."""
-
-    if isinstance(df_scenes_to_filter, Path):
-        df_scenes_to_filter = read_shapefile(df_scenes_to_filter)
-
-    # initial filter is to check if scene intersects with auxiliary data extent
-    aux_overlaped_gdf = gpd.GeoDataFrame()
-    for idx, geom in enumerate(df_scenes_to_filter.geometry):
-        if geom.intersects(nbar_auxiliary_extent):
-            aux_overlaped_gdf = aux_overlaped_gdf.append(df_scenes_to_filter.iloc[idx])
-
-    return aux_overlaped_gdf
-
-
-def subset_global_tiles_to_ga_extent(
-    _global_tiles_data: Path, aux_extents_vectorfiles: List[Path], _satellite_data_provider: str
-) -> List[str]:
-    """Processing block for nbar scene filter."""
-
-    # get extents from auxiliary vector files
-    extents = [_get_auxiliary_extent(read_shapefile(fp)) for fp in aux_extents_vectorfiles]
-    nbar_aux_extent = _auxiliary_overlap_extent(extents)
-
-    # filter global tile data to nbar_aux_extent
-    scenes_df = nbar_scene_filter(nbar_aux_extent, _global_tiles_data)
-
-    if _satellite_data_provider == "USGS":
-        return list(scenes_df.PATH_ROW.values)
-
-    return list(scenes_df.Name.values)
 
 
 def write(filename: Path, list_to_write: List) -> None:
@@ -338,6 +284,20 @@ def get_landsat_level1_from_datacube_childless(
                 fid.write(fp + "\n")
 
 
+def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
+    # Estimate the number of nodes needed
+    if ard_click_params["nodes"] is None:
+        if ard_click_params["walltime"] is None:
+            walltime = "05:00:00"
+        else:
+            walltime = ard_click_params["walltime"]
+        if ard_click_params["workers"] is None:
+            workers = 30
+        else:
+            workers = ard_click_params["workers"]
+        ard_click_params["nodes"] = _calc_nodes_req(count_all_scenes_list, walltime, workers)
+
+
 def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
     """ Provides estimation of the number of nodes required to process granule count
 
@@ -408,12 +368,9 @@ def dict2ard_arg_string(ard_click_params):
     return ard_arg_string
 
 
-def make_ard_pbs(**ard_click_params):
-    level1_list = ard_click_params["level1_list"]
+def make_ard_pbs(level1_list, workdir, **ard_click_params):
+    ard_click_params["workdir"] = workdir
     env = ard_click_params["env"]
-
-    # Use the template format to make sure 'level1_list' is there
-    del ard_click_params["level1_list"]
 
     ard_args_str = dict2ard_arg_string(ard_click_params)
     pbs = NODE_TEMPLATE.format(env=env, scene_list=level1_list, ard_args=ard_args_str)
@@ -421,54 +378,6 @@ def make_ard_pbs(**ard_click_params):
 
 
 @click.command()
-@click.option(
-    "--brdf-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to brdf extent shapefile",
-    default=BRDFSHAPEFILE,
-)
-@click.option(
-    "--one-deg-dsm-v1-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to one deg dsm version 1 extent shapefile",
-    default=ONEDEGDSMV1SHAPEFILE,
-)
-@click.option(
-    "--one-sec-dsm-v1-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    help="full path to one sec dsm version 1 shapefile",
-    default=ONESECDSMV1SHAPEFILE,
-)
-@click.option(
-    "--one-deg-dsm-v2-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    help="full path to dsm shapefile",
-    default=ONEDEGDSMV2SHAPEFILE,
-)
-@click.option(
-    "--aerosol-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    help="full path to aerosol shapefile",
-    default=EXTENT_DIR.joinpath("aerosol.shp"),
-)
-@click.option(
-    "--satellite-data-provider",
-    type=click.Choice(["ESA", "USGS"]),
-    help="satellite data provider (ESA or USGS)",
-    default="USGS",
-)
-@click.option(
-    "--world-wrs-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    help="full path to global wrs shapefile",
-    default=WRSSHAPEFILE,
-)
-@click.option(
-    "--world-mgrs-shapefile",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    help="full path to global mgrs shapefile",
-    default=MGRSSHAPEFILE,
-)
 @click.option(
     "--usgs-level1-files",
     type=click.Path(dir_okay=False, file_okay=True),
@@ -480,6 +389,7 @@ def make_ard_pbs(**ard_click_params):
 @click.option(
     "--allowed-codes",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
+    default=DATA_DIR.joinpath(LANDSAT_AOI_FILE),
     help="full path to a text files containing path/row or MGRS tile name to act as a filter",
 )
 @click.option(
@@ -534,7 +444,6 @@ def make_ard_pbs(**ard_click_params):
 # This isn't being used, so I'm taking it out
 # aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
 def scene_select(
-    satellite_data_provider: str,
     usgs_level1_files: click.Path,
     search_datacube: bool,
     allowed_codes: click.Path,
@@ -544,13 +453,6 @@ def scene_select(
     products: list,
     workdir: click.Path,
     run_ard: bool,
-    landsat_aoi: bool,
-    brdf_shapefile: click.Path = BRDFSHAPEFILE,
-    one_deg_dsm_v1_shapefile: click.Path = ONEDEGDSMV1SHAPEFILE,
-    one_sec_dsm_v1_shapefile: click.Path = ONESECDSMV1SHAPEFILE,
-    one_deg_dsm_v2_shapefile: click.Path = ONEDEGDSMV2SHAPEFILE,
-    world_wrs_shapefile: click.Path = WRSSHAPEFILE,
-    world_mgrs_shapefile: click.Path = MGRSSHAPEFILE,
     **ard_click_params: dict,
 ):
     """
@@ -576,8 +478,7 @@ def scene_select(
     jobdir.mkdir(exist_ok=True)
     #
     print("Job directory: " + str(jobdir))
-    log_filepath = jobdir.joinpath(LOG_FILE)
-    logging.basicConfig(filename=log_filepath, level=logging.INFO)  # INFO
+    logging.basicConfig(filename=jobdir.joinpath(LOG_FILE), level=logging.INFO)  # INFO
 
     if not usgs_level1_files:
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
@@ -592,52 +493,24 @@ def scene_select(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"), usgs_level1_files, nprocs=nprocs
             )
 
-    # If needed build the allowed_codes using the landsat AOI
-    if landsat_aoi:
-        allowed_codes = DATA_DIR.joinpath(LANDSAT_AOI_FILE)
-
-    # If needed build the allowed_codes using the shapefiles
-    if not allowed_codes:
-        _extent_list = [brdf_shapefile, one_deg_dsm_v1_shapefile, one_sec_dsm_v1_shapefile, one_deg_dsm_v2_shapefile]
-        global_tiles_data = Path(world_wrs_shapefile)
-        if satellite_data_provider == "ESA":
-            global_tiles_data = Path(world_mgrs_shapefile)
-        allowed_codes = subset_global_tiles_to_ga_extent(global_tiles_data, _extent_list, satellite_data_provider)
-
     # apply path_row filter and
-    #
+    # processing level filtering
     scenes_filepath, all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
         out_dir=jobdir,
     )
-    count_all_scenes_list = len(all_scenes_list)
 
-    # Estimate the number of nodes needed
-    if ard_click_params["nodes"] is None:
-        if ard_click_params["walltime"] is None:
-            walltime = "05:00:00"
-        else:
-            walltime = ard_click_params["walltime"]
-        if ard_click_params["workers"] is None:
-            workers = 30
-        else:
-            workers = ard_click_params["workers"]
-        ard_click_params["nodes"] = _calc_nodes_req(count_all_scenes_list, walltime, workers)
-
-    # The workdir is used by ard_pbs
-    ard_click_params["workdir"] = workdir
-    ard_click_params["level1_list"] = scenes_filepath
-    pbs_script_text = make_ard_pbs(**ard_click_params)
+    _calc_node_with_defaults(ard_click_params, len(all_scenes_list))
 
     # write pbs script
     run_ard_pathfile = jobdir.joinpath("run_ard_pbs.sh")
     with open(run_ard_pathfile, "w") as src:
-        src.write(pbs_script_text)
+        src.write(make_ard_pbs(scenes_filepath, workdir, **ard_click_params))
 
     # Make the script executable
-    st = os.stat(run_ard_pathfile)
-    os.chmod(run_ard_pathfile, st.st_mode | stat.S_IEXEC)
+    # st = os.stat(run_ard_pathfile)
+    os.chmod(run_ard_pathfile, os.stat(run_ard_pathfile).st_mode | stat.S_IEXEC)
 
     # run the script
     if run_ard is True:

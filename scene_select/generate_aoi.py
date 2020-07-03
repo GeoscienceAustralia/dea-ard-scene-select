@@ -152,8 +152,7 @@ def generate_region(
     jobdir.mkdir(exist_ok=True)
     #
     print("Job directory: " + str(jobdir))
-    log_filepath = jobdir.joinpath(LOG_FILE)
-    logging.basicConfig(filename=log_filepath, level=logging.INFO)  # INFO
+    logging.basicConfig(filename=jobdir.joinpath(LOG_FILE), level=logging.INFO)  # INFO
 
     # needed build the allowed_codes using the shapefiles
     _extent_list = [brdf_shapefile, one_deg_dsm_v1_shapefile, one_sec_dsm_v1_shapefile, one_deg_dsm_v2_shapefile]
