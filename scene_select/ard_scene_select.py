@@ -13,6 +13,7 @@ import uuid
 import subprocess
 from datetime import datetime, timedelta
 import click
+
 try:
     import datacube
 except (ImportError, AttributeError) as error:
