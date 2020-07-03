@@ -26,5 +26,5 @@ setup(
     install_requires=open("requirements.txt").read().strip().split("\n"),
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    entry_points={"console_scripts": ["ard-scene-select = ard_scene_select.ard_scene_select:main"]},
+    entry_points={"console_scripts": ["ard-scene-select = scene_select.ard_scene_select:scene_select"]},
 )
