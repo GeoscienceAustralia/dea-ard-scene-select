@@ -507,12 +507,11 @@ def scene_select(
         src.write(make_ard_pbs(scenes_filepath, workdir, **ard_click_params))
 
     # Make the script executable
-    # st = os.stat(run_ard_pathfile)
     os.chmod(run_ard_pathfile, os.stat(run_ard_pathfile).st_mode | stat.S_IEXEC)
 
     # run the script
     if run_ard is True:
-        subprocess.run([run_ard_pathfile])
+        subprocess.run([run_ard_pathfile], check=True)
     return scenes_filepath, all_scenes_list
 
 
