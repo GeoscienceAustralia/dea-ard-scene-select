@@ -13,10 +13,10 @@ import uuid
 import subprocess
 from datetime import datetime, timedelta
 import click
-import geopandas as gpd
-from shapely.geometry import Polygon
-from shapely.ops import cascaded_union
-
+try:
+    import datacube
+except (ImportError, AttributeError) as error:
+    print("Could not import Datacube")
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
@@ -275,7 +275,6 @@ def get_landsat_level1_from_datacube_childless(
     outfile: Path, products: List[str], config: Optional[Path] = None, days_delta: int = 21
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
-    import datacube
 
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
@@ -316,7 +315,6 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
 
 def get_landsat_level1_from_datacube(outfile: Path, products: List[str], config: Optional[Path] = None) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
-    import datacube
 
     # fixme add conf to the datacube API
     dc = datacube.Datacube(app="gen-list", config=config)

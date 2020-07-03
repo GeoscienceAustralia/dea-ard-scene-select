@@ -35,8 +35,8 @@ def read_shapefile(shapefile: Path) -> gpd.GeoDataFrame:
 def _get_auxiliary_extent(gpd_df: gpd.GeoDataFrame, subset_key: Optional[str] = None) -> Polygon:
     """Returns the extent of all auxiliary dataset or an extent by a subset_key"""
     if subset_key:
-        return cascaded_union([geom for geom in gpd_df[gpd_df.auxiliary_ == subset_key].geometry])
-    return cascaded_union([geom for geom in gpd_df.geometry])
+        return cascaded_union(list(gpd_df[gpd_df.auxiliary_ == subset_key].geometry))
+    return cascaded_union(list(gpd_df.geometry))
 
 
 def _auxiliary_overlap_extent(_extents: List[Polygon]) -> Polygon:
