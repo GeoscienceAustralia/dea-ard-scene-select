@@ -22,7 +22,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Operating System :: OS Independent",
     ],
-    packages=find_packages(exclude=("tests",)),
+    packages=find_packages(exclude=("tests", "modules",)),
     include_package_data=True,
     install_requires=open("requirements.txt").read().strip().split("\n"),
     use_scm_version=True,
