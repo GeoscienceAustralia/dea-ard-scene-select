@@ -6,6 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ard-scene-select",
+    version="0.2.0",
     description="Select scenes to be processed by ARD.",
     keywords="ard-scene-select",
     url="https://github.com/GeoscienceAustralia/landsat_sentinel2_scene_filter",
@@ -26,5 +27,6 @@ setup(
     install_requires=open("requirements.txt").read().strip().split("\n"),
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    entry_points={"console_scripts": ["ard-scene-select = scene_select.ard_scene_select:scene_select"]},
+    entry_points={"console_scripts": ["ard-scene-select = scene_select.ard_scene_select:scene_select",
+                                      "generate-aoi = scene_select.generate_aoi:generate_region"]},
 )

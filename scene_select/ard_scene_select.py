@@ -410,14 +410,6 @@ def make_ard_pbs(level1_list, workdir, **ard_click_params):
     default=PRODUCTS,
 )
 @click.option(
-    "--landsat-AOI",
-    default=False,
-    is_flag=True,
-    help="If true use the internal Landsat Area of Interest to "
-    "filter scenes.  This overrides shape files and "
-    "allowed-codes.",
-)
-@click.option(
     "--workdir",
     type=click.Path(file_okay=False, writable=True),
     help="The base output working directory.",
