@@ -10,13 +10,13 @@ module load dea
 # python3 ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project v10 --walltime 05:00:00 #--run-ard
 
 # local work dir and skipping odc
-#python3 ard_scene_select.py --usgs-level1-files data/small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project v10 --walltime 05:00:00 #--run-ard
+#python3 ard_scene_select.py --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project v10 --walltime 05:00:00 #--run-ard
 
 # local work dir and skipping odc
-ard-scene-select --usgs-level1-files data/small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project v10 --walltime 05:00:00 #--run-ard
+ard-scene-select --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project v10 --walltime 05:00:00 #--run-ard
 
 # skipping odc
-#python3 ard_scene_select.py  --usgs-level1-files data/small_Landsat_Level1_Nci_Files.txt
+#python3 ard_scene_select.py  --usgs-level1-files small_Landsat_Level1_Nci_Files.txt
 
 # using Australian_Wrs_list.txt
 #python3 ard_scene_select.py  --usgs-level1-files data/All_Landsat_Level1_Nci_Files.txt  --workdir scratch/ --allowed-codes data/Australian_Wrs_list.txt
