@@ -92,7 +92,7 @@ log/*
 local*
 zlocal*
 private*
-scratch/*
+scratch*
 
 .pytest_cache/
 .vscode

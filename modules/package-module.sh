@@ -90,8 +90,8 @@ then
 
     echo
     echo "Installing ard-scene-select"
-    installrepo ard-scene-select   develop          git@github.com:GeoscienceAustralia/dea-ard-scene-select.git
-
+    #installrepo ard-scene-select   develop          git@github.com:GeoscienceAustralia/dea-ard-scene-select.git
+    installrepo ard-scene-select   develop          https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
     echo
     echo "Writing modulefile"
     modulefile_dir="${module_dir}/modulefiles/${package_name}"
