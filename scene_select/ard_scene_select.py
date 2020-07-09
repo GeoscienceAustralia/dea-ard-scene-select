@@ -47,7 +47,8 @@ ARD_PARENT_PRODUCT_MAPPING = {
 }
 
 NODE_TEMPLATE = """#!/bin/bash
-module unload dea
+module purge
+module load pbs
 source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
