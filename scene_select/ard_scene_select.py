@@ -359,7 +359,7 @@ def dict2ard_arg_string(ard_click_params):
                 ard_params.append("--" + key)
             continue
         # convert underscores to dashes
-        key = key.replace('_', '-')
+        key = key.replace("_", "-")
         ard_params.append("--" + key)
         # Make path strings absolute
         if key in ("logdir", "pkgdir", "env", "index-datacube-env"):
