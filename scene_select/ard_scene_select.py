@@ -47,8 +47,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
 }
 
 NODE_TEMPLATE = """#!/bin/bash
-module purge
-module load pbs
+.
 source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
@@ -359,9 +358,11 @@ def dict2ard_arg_string(ard_click_params):
             if value is True:
                 ard_params.append("--" + key)
             continue
+        # convert underscores to dashes
+        key = key.replace('_', '-')
         ard_params.append("--" + key)
         # Make path strings absolute
-        if key in ("logdir", "pkgdir"):
+        if key in ("logdir", "pkgdir", "env", "index-datacube-env"):
             value = Path(value).resolve()
         ard_params.append(str(value))
     ard_arg_string = " ".join(ard_params)

@@ -29,7 +29,6 @@ def test_scene_select_main():
         products=None,
         workdir=dirpath,
         run_ard=False,
-        landsat_aoi=True,
         nodes=None,
         walltime=None,
         workers=None,
