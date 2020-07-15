@@ -13,7 +13,7 @@
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 
-module load ard-scene-select-py3-dea/20200709
+module load ard-scene-select-py3-dea/20200715
 
 # local work dir and skipping odc
 ../scene_select/ard_scene_select.py --workdir $PWD/workdir --pkgdir $PWD/pkgdir --logdir $PWD/logdir --env $PWD/prod-wagl.env --index-datacube-env $PWD/c3-samples-index-datacube.env  --project u46 --walltime 03:00:00 #--run-ard
