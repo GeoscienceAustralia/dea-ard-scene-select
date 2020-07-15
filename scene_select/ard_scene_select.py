@@ -429,7 +429,11 @@ def make_ard_pbs(level1_list, workdir, **ard_click_params):
 )
 @click.option("--pkgdir", type=click.Path(file_okay=False, writable=True), help="The base output packaged directory.")
 @click.option("--env", type=click.Path(exists=True, readable=True), help="Environment script to source.")
-@click.option("--index-datacube-env", type=click.Path(exists=True, readable=True), help="Datacube indexing environment. Add this to index the ARD results.")
+@click.option(
+    "--index-datacube-env",
+    type=click.Path(exists=True, readable=True),
+    help="Datacube indexing environment. Add this to index the ARD results.",
+)
 @click.option("--workers", type=click.IntRange(1, 48), help="The number of workers to request per node.")
 @click.option("--nodes", help="The number of nodes to request.")
 @click.option("--memory", help="The memory in GB to request per node.")
