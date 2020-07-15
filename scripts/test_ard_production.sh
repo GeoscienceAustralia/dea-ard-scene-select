@@ -8,7 +8,7 @@
 #PBS -l ncpus=1
 
 # Note it is assumed the user lpgs will be executing this script with;
-# qsub ard_production
+# qsub test_ard_production.sh
 
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
