@@ -23,7 +23,7 @@ module load ard-scene-select-py3-dea/20200716
 # ard-scene-select --products '["ga_ls5t_level1_3"]' --workdir scratch/ 
 
 # setting up a working ard call.  Should fail trying to connect to the db
-ard-scene-select  --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --env prod-wagl.env  --index-datacube-env index-datacube.env --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 05:00:00 #--run-ard
+ard-scene-select  --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --env prod-wagl.env  --index-datacube-env c3-samples-index-datacube.env --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 05:00:00 #--run-ard
 
 # need access to v10 for this to work
 # ard-scene-select --workdir /g/data/v10/projects/landsat_c3/wagl_workdir  --pkgdir  /g/data/xu18/ga --logdir /g/data/v10/projects/landsat_c3/wagl_logdir --env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project v10 --walltime 05:00:00 #--run-ard
