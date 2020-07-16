@@ -47,7 +47,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
 }
 
 NODE_TEMPLATE = """#!/bin/bash
-.
+
 source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
@@ -362,7 +362,7 @@ def dict2ard_arg_string(ard_click_params):
         key = key.replace("_", "-")
         ard_params.append("--" + key)
         # Make path strings absolute
-        if key in ("logdir", "pkgdir", "env", "index-datacube-env"):
+        if key in ("logdir", "pkgdir", "index-datacube-env"):
             value = Path(value).resolve()
         ard_params.append(str(value))
     ard_arg_string = " ".join(ard_params)
@@ -371,7 +371,13 @@ def dict2ard_arg_string(ard_click_params):
 
 def make_ard_pbs(level1_list, workdir, **ard_click_params):
     ard_click_params["workdir"] = workdir
-    env = ard_click_params["env"]
+
+    if ard_click_params["env"] is None:
+        # Don't error out, just
+        # fill env with a bad value
+        env = "None"
+    else:
+        env = Path(ard_click_params["env"]).resolve()
 
     ard_args_str = dict2ard_arg_string(ard_click_params)
     pbs = NODE_TEMPLATE.format(env=env, scene_list=level1_list, ard_args=ard_args_str)
