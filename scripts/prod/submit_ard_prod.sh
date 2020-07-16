@@ -4,4 +4,4 @@
 INIT_PWD=$PWD
 RUN_DIR='/g/data/v10/work/c3_ard/logdir/jobdir'
 cd $RUN_DIR
-qsub $INIT_PWD/job_ard_prod.sh
+qsub $INIT_PWD/job_ard_prod.sh $INIT_PWD
