@@ -9,10 +9,11 @@
 
 # Note it is assumed the user lpgs will be executing this script via;
 # ./submit_ard_prod.sh
+# Note the submit_ard_prod.sh sets the $INIT_PWD variable 
 
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 
-module load ard-scene-select-py3-dea/20200716
+module load ard-scene-select-py3-dea/20200717
 
 ard-scene-select --workdir /g/data/v10/work/c3_ard/workdir --pkgdir /g/data/xu18/ga --logdir /g/data/v10/work/c3_ard/logdir --env $INIT_PWD/prod-wagl.env --index-datacube-env $INIT_PWD/index-datacube.env  --project v10 --walltime 05:00:00 --run-ard
