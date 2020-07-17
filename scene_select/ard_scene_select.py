@@ -47,6 +47,8 @@ ARD_PARENT_PRODUCT_MAPPING = {
 }
 
 NODE_TEMPLATE = """#!/bin/bash
+module purge
+module load pbs
 
 source {env}
 
