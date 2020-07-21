@@ -6,8 +6,8 @@ import structlog
 import h5py
 import numpy
 import pandas
-#from wagl.hdf5 import read_h5_table
 
+# from wagl.hdf5 import read_h5_table
 
 
 LOG = structlog.get_logger()
@@ -20,12 +20,12 @@ ACQ_DATES = [
     datetime.datetime(2001, 12, 31),
     datetime.datetime(2003, 10, 11),
     datetime.datetime.now(),
-    datetime.datetime.now()- datetime.timedelta(days=1),
-    datetime.datetime.now()- datetime.timedelta(days=2),
-    datetime.datetime.now()- datetime.timedelta(days=3),
-    datetime.datetime.now()- datetime.timedelta(days=4),
-    datetime.datetime.now()- datetime.timedelta(days=5),
-    datetime.datetime.now()- datetime.timedelta(days=6),
+    datetime.datetime.now() - datetime.timedelta(days=1),
+    datetime.datetime.now() - datetime.timedelta(days=2),
+    datetime.datetime.now() - datetime.timedelta(days=3),
+    datetime.datetime.now() - datetime.timedelta(days=4),
+    datetime.datetime.now() - datetime.timedelta(days=5),
+    datetime.datetime.now() - datetime.timedelta(days=6),
 ]
 
 # from wagl
@@ -54,16 +54,14 @@ def read_h5_table(fid, dataset_name, dataframe=True):
     idx_names = None
 
     # grab the index names if we have them
-    idx_names = dset.attrs.get('index_names')
+    idx_names = dset.attrs.get("index_names")
 
     if dataframe:
-        if dset.attrs.get('python_type') == '`Pandas.DataFrame`':
+        if dset.attrs.get("python_type") == "`Pandas.DataFrame`":
             col_names = dset.dtype.names
-            dtypes = [dset.attrs['{}_dtype'.format(name)] for name in
-                      col_names]
+            dtypes = [dset.attrs["{}_dtype".format(name)] for name in col_names]
             dtype = numpy.dtype(list(zip(col_names, dtypes)))
-            data = pandas.DataFrame.from_records(dset[:].astype(dtype),
-                                                 index=idx_names)
+            data = pandas.DataFrame.from_records(dset[:].astype(dtype), index=idx_names)
         else:
             data = pandas.DataFrame.from_records(dset[:], index=idx_names)
     else:
@@ -72,7 +70,7 @@ def read_h5_table(fid, dataset_name, dataframe=True):
     return data
 
 
-def filter(acquisition_datetime, brdf_dir, water_vapour_dir, wv_days_tolerance=1):
+def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
     brdf_path = Path(brdf_dir)
     wv_path = Path(water_vapour_dir)
 
@@ -83,28 +81,28 @@ def filter(acquisition_datetime, brdf_dir, water_vapour_dir, wv_days_tolerance=1
     year = acquisition_datetime.year
     wv_pathname = wv_path.joinpath(WV_FMT.format(year=year))
     if wv_pathname.exists():
-        with h5py.File(str(wv_pathname), 'r') as fid:
-            index = read_h5_table(fid, 'INDEX')
+        with h5py.File(str(wv_pathname), "r") as fid:
+            index = read_h5_table(fid, "INDEX")
 
         # 1 day tolerance
-        max_tolerance = (- datetime.timedelta(days=wv_days_tolerance))
+        max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
         time_delta = index.timestamp - acquisition_datetime
         result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > max_tolerance)]
 
         if result.shape[0] == 0:
-           LOG.info("Skipping", acquisition_datetime=acquisition_datetime)
+            return False
         else:
             if acquisition_datetime < DEFINITIVE_START_DATE:
-                LOG.info("Appending", acquisition_datetime=acquisition_datetime)
+                return True
             else:
-                ymd = acquisition_datetime.strftime('%Y.%m.%d')
+                ymd = acquisition_datetime.strftime("%Y.%m.%d")
                 brdf_day_of_interest = brdf_path.joinpath(ymd)
                 if brdf_day_of_interest.exists:
-                    LOG.info("Appending", acquisition_datetime=acquisition_datetime)
+                    return True
                 else:
-                    LOG.info("Skipping", acquisition_datetime=acquisition_datetime)
+                    return False
     else:
-        LOG.info("Skipping", acquisition_datetime=acquisition_datetime)
+        return False
 
 
 if __name__ == "__main__":
