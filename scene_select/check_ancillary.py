@@ -28,10 +28,10 @@ ACQ_DATES = [
     datetime.datetime.now() - datetime.timedelta(days=6),
 ]
 
-# from wagl
-def read_h5_table(fid, dataset_name, dataframe=True):
+
+def read_h5_table(fid, dataset_name):
     """
-    Read a HDF5 `TABLE` as a `pandas.DataFrame`.
+    From Wagl. Read a HDF5 `TABLE` as a `pandas.DataFrame`.
 
     :param fid:
         A h5py `Group` or `File` object from which to read the
@@ -56,17 +56,13 @@ def read_h5_table(fid, dataset_name, dataframe=True):
     # grab the index names if we have them
     idx_names = dset.attrs.get("index_names")
 
-    if dataframe:
-        if dset.attrs.get("python_type") == "`Pandas.DataFrame`":
-            col_names = dset.dtype.names
-            dtypes = [dset.attrs["{}_dtype".format(name)] for name in col_names]
-            dtype = numpy.dtype(list(zip(col_names, dtypes)))
-            data = pandas.DataFrame.from_records(dset[:].astype(dtype), index=idx_names)
-        else:
-            data = pandas.DataFrame.from_records(dset[:], index=idx_names)
+    if dset.attrs.get("python_type") == "`Pandas.DataFrame`":
+        col_names = dset.dtype.names
+        dtypes = [dset.attrs["{}_dtype".format(name)] for name in col_names]
+        dtype = numpy.dtype(list(zip(col_names, dtypes)))
+        data = pandas.DataFrame.from_records(dset[:].astype(dtype), index=idx_names)
     else:
-        data = dset[:]
-
+        data = pandas.DataFrame.from_records(dset[:], index=idx_names)
     return data
 
 
@@ -97,14 +93,11 @@ def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_va
             else:
                 ymd = acquisition_datetime.strftime("%Y.%m.%d")
                 brdf_day_of_interest = brdf_path.joinpath(ymd)
-                if brdf_day_of_interest.exists:
-                    return True
-                else:
-                    return False
+                return bool(brdf_day_of_interest.exists)
     else:
         return False
 
 
 if __name__ == "__main__":
     for dt in ACQ_DATES:
-        filter(dt, BRDF_DIR, WV_DIR)
+        print(definitive_ancillary_files(dt))
