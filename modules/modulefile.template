@@ -16,6 +16,10 @@ set base          ${module_dir}
 
 module-whatis   "${package_description} ${version}"
 
+if { ! [is-loaded wagl/5.4.1] } {
+   module use /g/data/v10/private/modules/modulefiles
+   module load  wagl/5.4.1
+}
 if { ! [is-loaded ${dea_module}] } {
     module load ${dea_module}
 }

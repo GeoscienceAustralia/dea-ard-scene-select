@@ -11,7 +11,7 @@ echo
 echo "module_dir = ${module_dir:=/home/547/dsg547/devmodules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
-echo "dea_module = ${dea_module:=dea/20200617}"
+echo "dea_module = ${dea_module:=dea/20190329}"
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
 echo "instance = ${instance}"
