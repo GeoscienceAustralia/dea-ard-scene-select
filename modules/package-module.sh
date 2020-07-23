@@ -7,21 +7,19 @@ umask 002
 
 echo "##########################"
 echo
-#echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
-echo "module_dir = ${module_dir:=/home/547/dsg547/devmodules}"
+echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
+#echo "module_dir = ${module_dir:=/home/547/dsg547/devmodules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
 echo "dea_module = ${dea_module:=dea/20190329}"
+echo "wagl_module = ${wagl_module:=wagl/5.4.1}"
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
 echo "instance = ${instance}"
 echo
-echo "eodatasets_head = ${eodatasets_head:=develop}"
-echo "gqa_head = ${gqa_head:=develop}"
-echo "gaip_head = ${gaip_head:=develop}"
 echo
 echo "##########################"
-export module_dir dea_module
+export module_dir dea_module wagl_module
 
 echoerr() { echo "$@" 1>&2; }
 
