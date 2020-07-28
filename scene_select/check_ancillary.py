@@ -6,6 +6,7 @@ import structlog
 import h5py
 import numpy
 import pandas
+import pytz
 
 # from wagl.hdf5 import read_h5_table
 
@@ -66,7 +67,7 @@ def read_h5_table(fid, dataset_name):
     return data
 
 
-def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
+def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1, timezone=None):
     brdf_path = Path(brdf_dir)
     wv_path = Path(water_vapour_dir)
 
@@ -82,17 +83,21 @@ def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_va
 
         # 1 day tolerance
         max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
-        time_delta = index.timestamp - acquisition_datetime
+        wv_datetime = pandas.to_datetime(index.timestamp, utc=False)
+        # Removing timezone info since different UTC formats were clashing.
+        acquisition_no_tz = acquisition_datetime.replace(tzinfo=None)
+        time_delta = wv_datetime - acquisition_no_tz
         result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > max_tolerance)]
 
         if result.shape[0] == 0:
             return False
         else:
-            if acquisition_datetime < DEFINITIVE_START_DATE:
+            if acquisition_no_tz < DEFINITIVE_START_DATE:
                 return True
             else:
                 ymd = acquisition_datetime.strftime("%Y.%m.%d")
                 brdf_day_of_interest = brdf_path.joinpath(ymd)
+
                 return bool(brdf_day_of_interest.exists)
     else:
         return False

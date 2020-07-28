@@ -19,6 +19,8 @@ try:
 except (ImportError, AttributeError) as error:
     print("Could not import Datacube")
 
+from scene_select.check_ancillary import definitive_ancillary_files
+    
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
@@ -193,6 +195,15 @@ def process_scene(dataset, days_delta):
     assert dataset.local_path.name.endswith("metadata.yaml")
 
     days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
+    # Continue here if definitive cannot be procduced
+    # since the ancillary files are not there
+    if definitive_ancillary_files(dataset.time.end, timezone=dataset.time.end.tzinfo) is False:
+        _LOG.info(
+            "%s #Skipping dataset ancillary files not ready: %s",
+            file_path,
+            dataset.id,
+        )
+        
     if days_ago < dataset.time.end:
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
@@ -260,7 +271,7 @@ def _do_parent_search(dc, product, days_delta=0):
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
                 continue
-
+         
         if process_scene(dataset, days_delta) is False:
             continue
 
