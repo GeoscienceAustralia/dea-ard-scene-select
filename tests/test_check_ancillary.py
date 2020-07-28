@@ -15,13 +15,14 @@ def test_definitive_ancillary_files():
     assert definitive_ancillary_files(datetime.datetime(2001, 12, 31, tzinfo=pytz.UTC))
     assert definitive_ancillary_files(datetime.datetime(2003, 10, 11, tzinfo=pytz.UTC))
 
+
 def test_definitive_ancillary_filesII():
     # Crap test, since it is relying on a location on gadi and certain files being there
     assert not definitive_ancillary_files(datetime.datetime(1944, 6, 4, tzinfo=datetime.timezone.utc))
     assert definitive_ancillary_files(datetime.datetime(2001, 12, 31, tzinfo=datetime.timezone.utc))
     assert definitive_ancillary_files(datetime.datetime(2003, 10, 11, tzinfo=datetime.timezone.utc))
 
-    
+
 def test_definitive_ancillary_files_the_future():
     # Crap test, since it is relying on a location on gadi and certain files being there
     # Introducing my first YK3 bug
