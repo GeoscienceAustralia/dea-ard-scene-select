@@ -11,7 +11,7 @@ echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
 #echo "module_dir = ${module_dir:=/home/547/dsg547/devmodules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
-echo "dea_module = ${dea_module:=dea/20190329}"
+echo "dea_module = ${dea_module:=dea/20200617}"
 echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
