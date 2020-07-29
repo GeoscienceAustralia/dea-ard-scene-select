@@ -16,8 +16,8 @@ set base          ${module_dir}
 
 module-whatis   "${package_description} ${version}"
 
-if { ! [is-loaded ${wagl_module}] } {
-   module load  ${wagl_module}
+if { ! [is-loaded ${dep_module}] } {
+   module load  ${dep_module}
 }
 if { ! [is-loaded ${dea_module}] } {
     module load ${dea_module}

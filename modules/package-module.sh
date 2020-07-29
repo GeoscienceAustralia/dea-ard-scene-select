@@ -12,14 +12,14 @@ echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
 echo "dea_module = ${dea_module:=dea/20190329}"
-echo "wagl_module = ${wagl_module:=wagl/5.4.1}"
+echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
 echo "instance = ${instance}"
 echo
 echo
 echo "##########################"
-export module_dir dea_module wagl_module
+export module_dir dea_module dep_module
 
 echoerr() { echo "$@" 1>&2; }
 
