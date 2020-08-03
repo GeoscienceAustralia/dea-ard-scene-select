@@ -67,9 +67,7 @@ def read_h5_table(fid, dataset_name):
     return data
 
 
-def definitive_ancillary_files(
-    acquisition_datetime, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1
-):
+def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
     brdf_path = Path(brdf_dir)
     wv_path = Path(water_vapour_dir)
 
