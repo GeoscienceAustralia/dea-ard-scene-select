@@ -8,26 +8,12 @@ import numpy
 import pandas
 import pytz
 
-# from wagl.hdf5 import read_h5_table
-
 
 LOG = structlog.get_logger()
 DEFINITIVE_START_DATE = datetime.datetime(2002, 7, 1)
 BRDF_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.006"
 WV_DIR = "/g/data/v10/eoancillarydata-2/water_vapour"
 WV_FMT = "pr_wtr.eatm.{year}.h5"
-ACQ_DATES = [
-    datetime.datetime(1944, 6, 4),
-    datetime.datetime(2001, 12, 31),
-    datetime.datetime(2003, 10, 11),
-    datetime.datetime.now(),
-    datetime.datetime.now() - datetime.timedelta(days=1),
-    datetime.datetime.now() - datetime.timedelta(days=2),
-    datetime.datetime.now() - datetime.timedelta(days=3),
-    datetime.datetime.now() - datetime.timedelta(days=4),
-    datetime.datetime.now() - datetime.timedelta(days=5),
-    datetime.datetime.now() - datetime.timedelta(days=6),
-]
 
 
 def read_h5_table(fid, dataset_name):
@@ -102,5 +88,4 @@ def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_va
 
 
 if __name__ == "__main__":
-    for dt in ACQ_DATES:
-        print(definitive_ancillary_files(dt))
+    pass
