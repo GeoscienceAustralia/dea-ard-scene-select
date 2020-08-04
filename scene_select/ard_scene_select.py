@@ -204,6 +204,7 @@ def process_scene(dataset, days_delta):
         _LOG.info(
             "%s #Skipping dataset ancillary files not ready: %s", file_path, dataset.id,
         )
+        return False
 
     if days_ago < dataset.time.end:
         file_path = (
@@ -453,7 +454,7 @@ def make_ard_pbs(level1_list, workdir, **ard_click_params):
 @click.option(
     "--index-datacube-env",
     type=click.Path(exists=True, readable=True),
-    help="Datacube indexing environment. Add this to index the ARD results.",
+    help="Path to the datacube indexing environment. Add this to index the ARD results.  If this option is not defined the ARD results will not be automatically indexed.",
 )
 @click.option("--workers", type=click.IntRange(1, 48), help="The number of workers to request per node.")
 @click.option("--nodes", help="The number of nodes to request.")
