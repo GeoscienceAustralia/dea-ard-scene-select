@@ -27,11 +27,6 @@ def read_h5_table(fid, dataset_name):
     :param dataset_name:
         A `str` containing the pathname of the dataset location.
 
-    :param dataframe:
-        A `bool` indicating whether to return as a `pandas.DataFrame`
-        or as NumPy structured array. Default is True
-        which is to return as a `pandas.DataFrame`.
-
     :return:
         Either a `pandas.DataFrame` (Default) or a NumPy structured
         array.
