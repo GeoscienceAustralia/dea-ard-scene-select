@@ -1,3 +1,4 @@
+# I haven't configured this.
 repos:
 -   repo: https://github.com/psf/black
     rev: stable
