@@ -16,7 +16,7 @@ def test_definitive_ancillary_files():
     assert definitive_ancillary_files(datetime.datetime(2003, 10, 11, tzinfo=pytz.UTC))
 
 
-def test_definitive_ancillary_filesII():
+def test_definitive_ancillary_files_different_utc():
     # Crap test, since it is relying on a location on gadi and certain files being there
     assert not definitive_ancillary_files(datetime.datetime(1944, 6, 4, tzinfo=datetime.timezone.utc))
     assert definitive_ancillary_files(datetime.datetime(2001, 12, 31, tzinfo=datetime.timezone.utc))

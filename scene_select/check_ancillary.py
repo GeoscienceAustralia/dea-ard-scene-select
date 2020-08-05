@@ -10,7 +10,7 @@ import pytz
 
 
 LOG = structlog.get_logger()
-DEFINITIVE_START_DATE = datetime.datetime(2002, 7, 1)
+BRDF_DEFINITIVE_START_DATE = datetime.datetime(2002, 7, 1)
 BRDF_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.006"
 WV_DIR = "/g/data/v10/eoancillarydata-2/water_vapour"
 WV_FMT = "pr_wtr.eatm.{year}.h5"
@@ -71,13 +71,13 @@ def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_va
         if result.shape[0] == 0:
             return False
         else:
-            if acquisition_datetime < DEFINITIVE_START_DATE:
+            if acquisition_datetime < BRDF_DEFINITIVE_START_DATE:
                 return True
             else:
                 ymd = acquisition_datetime.strftime("%Y.%m.%d")
                 brdf_day_of_interest = brdf_path.joinpath(ymd)
 
-                return bool(brdf_day_of_interest.exists)
+                return brdf_day_of_interest.exists
     else:
         return False
 
