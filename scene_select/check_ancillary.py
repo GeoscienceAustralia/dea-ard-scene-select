@@ -69,15 +69,15 @@ def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_va
         time_delta = index.timestamp - acquisition_datetime
         result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > max_tolerance)]
         if False:
-            print ('time delta')
-            print (time_delta)
-            print ('datetime.timedelta()')
-            print (datetime.timedelta())
-            print ('max_tolerance')
-            print (max_tolerance)
-            print ('result')
-            print (result)
-            print (result.shape[0])
+            print("time delta")
+            print(time_delta)
+            print("datetime.timedelta()")
+            print(datetime.timedelta())
+            print("max_tolerance")
+            print(max_tolerance)
+            print("result")
+            print(result)
+            print(result.shape[0])
         if result.shape[0] == 0:
             return False
         else:
