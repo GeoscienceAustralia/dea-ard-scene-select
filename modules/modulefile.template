@@ -16,9 +16,13 @@ set base          ${module_dir}
 
 module-whatis   "${package_description} ${version}"
 
+if { ! [is-loaded ${dep_module}] } {
+   module load  ${dep_module}
+}
 if { ! [is-loaded ${dea_module}] } {
     module load ${dea_module}
 }
+prepend-path PYTHONPATH /g/data/v10/private/modules/wagl/5.4.1/bin
 prepend-path PYTHONPATH ${python_dest}
 prepend-path PATH ${package_dest}/bin
 

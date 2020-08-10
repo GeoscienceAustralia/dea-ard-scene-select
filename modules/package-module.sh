@@ -12,16 +12,14 @@ echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
 echo "dea_module = ${dea_module:=dea/20200617}"
+echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
 echo "instance = ${instance}"
 echo
-echo "eodatasets_head = ${eodatasets_head:=develop}"
-echo "gqa_head = ${gqa_head:=develop}"
-echo "gaip_head = ${gaip_head:=develop}"
 echo
 echo "##########################"
-export module_dir dea_module
+export module_dir dea_module dep_module
 
 echoerr() { echo "$@" 1>&2; }
 
@@ -90,8 +88,9 @@ then
 
     echo
     echo "Installing ard-scene-select"
-    #installrepo ard-scene-select   develop          git@github.com:GeoscienceAustralia/dea-ard-scene-select.git
-    installrepo ard-scene-select   develop          https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+    #installrepo ard-scene-select   develop         https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+    installrepo ard-scene-select   master          https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+    #installrepo wagl              develop          https://github.com/GeoscienceAustralia/wagl.git
     echo
     echo "Writing modulefile"
     modulefile_dir="${module_dir}/modulefiles/${package_name}"

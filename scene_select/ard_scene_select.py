@@ -19,6 +19,8 @@ try:
 except (ImportError, AttributeError) as error:
     print("Could not import Datacube")
 
+from scene_select.check_ancillary import definitive_ancillary_files
+
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
@@ -49,6 +51,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
 NODE_TEMPLATE = """#!/bin/bash
 module purge
 module load pbs
+
 source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
@@ -192,6 +195,17 @@ def process_scene(dataset, days_delta):
     assert dataset.local_path.name.endswith("metadata.yaml")
 
     days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
+    # Continue here if definitive cannot be procduced
+    # since the ancillary files are not there
+    if definitive_ancillary_files(dataset.time.end) is False:
+        file_path = (
+            dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
+        )
+        _LOG.info(
+            "%s #Skipping dataset ancillary files not ready: %s", file_path, dataset.id,
+        )
+        return False
+
     if days_ago < dataset.time.end:
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
@@ -359,9 +373,11 @@ def dict2ard_arg_string(ard_click_params):
             if value is True:
                 ard_params.append("--" + key)
             continue
+        # convert underscores to dashes
+        key = key.replace("_", "-")
         ard_params.append("--" + key)
         # Make path strings absolute
-        if key in ("logdir", "pkgdir"):
+        if key in ("logdir", "pkgdir", "index-datacube-env"):
             value = Path(value).resolve()
         ard_params.append(str(value))
     ard_arg_string = " ".join(ard_params)
@@ -370,7 +386,13 @@ def dict2ard_arg_string(ard_click_params):
 
 def make_ard_pbs(level1_list, workdir, **ard_click_params):
     ard_click_params["workdir"] = workdir
-    env = ard_click_params["env"]
+
+    if ard_click_params["env"] is None:
+        # Don't error out, just
+        # fill env with a bad value
+        env = "None"
+    else:
+        env = Path(ard_click_params["env"]).resolve()
 
     ard_args_str = dict2ard_arg_string(ard_click_params)
     pbs = NODE_TEMPLATE.format(env=env, scene_list=level1_list, ard_args=ard_args_str)
@@ -429,6 +451,13 @@ def make_ard_pbs(level1_list, workdir, **ard_click_params):
 )
 @click.option("--pkgdir", type=click.Path(file_okay=False, writable=True), help="The base output packaged directory.")
 @click.option("--env", type=click.Path(exists=True, readable=True), help="Environment script to source.")
+@click.option(
+    "--index-datacube-env",
+    type=click.Path(exists=True, readable=True),
+    help="Path to the datacube indexing environment. "
+    "Add this to index the ARD results.  "
+    "If this option is not defined the ARD results will not be automatically indexed.",
+)
 @click.option("--workers", type=click.IntRange(1, 48), help="The number of workers to request per node.")
 @click.option("--nodes", help="The number of nodes to request.")
 @click.option("--memory", help="The memory in GB to request per node.")
