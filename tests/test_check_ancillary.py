@@ -11,6 +11,7 @@ from scene_select.check_ancillary import definitive_ancillary_files
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("test_data", "BRDF")
 WV_TEST_DIR = Path(__file__).parent.joinpath("test_data", "water_vapour")
 
+
 def test_definitive_ancillary_files_local():
     # no water v data for these years
     a_dt = datetime.datetime(1944, 6, 4, tzinfo=pytz.UTC)
@@ -37,10 +38,3 @@ def test_definitive_ancillary_files_local():
     #  water v data  BRDF - different time zone format
     a_dt = datetime.datetime(2020, 8, 1, tzinfo=datetime.timezone.utc)
     assert definitive_ancillary_files(a_dt, brdf_dir=BRDF_TEST_DIR, water_vapour_dir=WV_TEST_DIR)
-
-
-
-def Xtest_definitive_ancillary_files_the_future():
-    # Crap test, since it is relying on a location on gadi and certain files being there
-    # Introducing my first YK3 bug
-    assert not definitive_ancillary_files(datetime.datetime(3000, 10, 11, tzinfo=pytz.UTC))
