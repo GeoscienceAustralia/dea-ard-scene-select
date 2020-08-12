@@ -3,7 +3,8 @@
 import datetime
 from pathlib import Path
 import structlog
-import hdf5plugin
+# This is needed when testing locally
+#import hdf5plugin
 import h5py
 import numpy
 import pandas
