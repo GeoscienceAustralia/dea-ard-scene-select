@@ -13,6 +13,6 @@ SSPATH=$PWD/../
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 #echo $PYTHONPATH
 
-#pytest -s test_check_ancillary.py -k 'test_definitive_ancillary_files_baaad'
+pytest -s test_check_ancillary.py -k 'test_definitive_ancillary_files_local'
 #pytest -s test_check_ancillary.py 
-./timing_check_ancillary.py
+#./timing_check_ancillary.py
