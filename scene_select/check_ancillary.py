@@ -3,6 +3,7 @@
 import datetime
 from pathlib import Path
 import structlog
+import hdf5plugin
 import h5py
 import numpy
 import pandas
@@ -78,7 +79,7 @@ def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_va
                 ymd = acquisition_datetime.strftime("%Y.%m.%d")
                 brdf_day_of_interest = brdf_path.joinpath(ymd)
 
-                return brdf_day_of_interest.exists
+                return brdf_day_of_interest.exists()
     else:
         return False
 
