@@ -86,5 +86,12 @@ def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_va
         return False
 
 
+class AncillaryFiles:
+    def __init__(self, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR):
+        self.brdf_dir = brdf_dir
+        self.water_vapour_dir = water_vapour_dir
+        self.indexes = {}
+
+
 if __name__ == "__main__":
     pass

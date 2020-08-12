@@ -201,9 +201,7 @@ def process_scene(dataset, days_delta):
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
         )
-        _LOG.info(
-            "%s #Skipping dataset ancillary files not ready: %s", file_path, dataset.id,
-        )
+        _LOG.info("%s #Skipping dataset ancillary files not ready: %s", file_path, dataset.id)
         return False
 
     if days_ago < dataset.time.end:

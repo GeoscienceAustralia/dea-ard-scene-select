@@ -32,7 +32,9 @@ d_end = datetime.datetime(2020, 8, 1, tzinfo=pytz.UTC)
 
 t_start = time.time()
 
-for i in range(1000):
+# Use 1000 for 5 sec at nci
+# Use 170000 on laptop
+for i in range(170000):
     a_date = random_date(d_start, d_end)
     # datetime.datetime(2001, 12, 31, tzinfo=pytz.UTC)
     definitive_ancillary_files(a_date)
