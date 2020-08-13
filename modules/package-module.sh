@@ -7,8 +7,8 @@ umask 002
 
 echo "##########################"
 echo
-echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
-#echo "module_dir = ${module_dir:=/home/547/dsg547/devmodules}"
+#echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
+echo "module_dir = ${module_dir:=/home/547/dsg547/devmodules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
 echo "dea_module = ${dea_module:=dea/20200617}"
@@ -88,8 +88,9 @@ then
 
     echo
     echo "Installing ard-scene-select"
+    installrepo ard-scene-select   pbs         https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
     #installrepo ard-scene-select   develop         https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
-    installrepo ard-scene-select   master          https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+    #installrepo ard-scene-select   master          https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
     #installrepo wagl              develop          https://github.com/GeoscienceAustralia/wagl.git
     echo
     echo "Writing modulefile"

@@ -19,7 +19,7 @@ try:
 except (ImportError, AttributeError) as error:
     print("Could not import Datacube")
 
-from scene_select.check_ancillary import definitive_ancillary_files
+from scene_select.check_ancillary import AncillaryFiles
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
@@ -187,7 +187,7 @@ def mgrs_filter(scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[
     raise NotImplementedError
 
 
-def process_scene(dataset, days_delta):
+def process_scene(dataset, ancillary_ob, days_delta):
     if not dataset.local_path:
         _LOG.warning("Skipping dataset without local paths: %s", dataset.id)
         return False
@@ -197,7 +197,8 @@ def process_scene(dataset, days_delta):
     days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
     # Continue here if definitive cannot be procduced
     # since the ancillary files are not there
-    if definitive_ancillary_files(dataset.time.end) is False:
+    # if definitive_ancillary_files(dataset.time.end) is False:
+    if ancillary_ob.definitive_ancillary_files(dataset.time.end) is False:
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
         )
@@ -263,6 +264,7 @@ def _do_parent_search(dc, product, days_delta=0):
         processed_ard_scene_ids = None
         _LOG.warning("THE ARD ODC product name after ARD processing for %s is not known.", product)
 
+    ancillary_ob = AncillaryFiles()
     for dataset in dc.index.datasets.search(product=product):
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
@@ -272,7 +274,7 @@ def _do_parent_search(dc, product, days_delta=0):
                 _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
                 continue
 
-        if process_scene(dataset, days_delta) is False:
+        if process_scene(dataset, ancillary_ob, days_delta) is False:
             continue
 
         # If any child exists that isn't archived

@@ -52,43 +52,10 @@ def read_h5_table(fid, dataset_name):
     return data
 
 
-def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
-    brdf_path = Path(brdf_dir)
-    wv_path = Path(water_vapour_dir)
-
-    # get year of acquisition to confirm definitive data
-    wv_pathname = wv_path.joinpath(WV_FMT.format(year=acquisition_datetime.year))
-    if wv_pathname.exists():
-        with h5py.File(str(wv_pathname), "r") as fid:
-            index = read_h5_table(fid, "INDEX")
-
-        # 1 day tolerance
-        max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
-        # Removing timezone info since different UTC formats were clashing.
-        acquisition_datetime = acquisition_datetime.replace(tzinfo=None)
-
-        time_delta = index.timestamp - acquisition_datetime
-        result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > max_tolerance)]
-
-        if result.shape[0] == 0:
-            return False
-        else:
-            if acquisition_datetime < BRDF_DEFINITIVE_START_DATE:
-                return True
-            else:
-                ymd = acquisition_datetime.strftime("%Y.%m.%d")
-                brdf_day_of_interest = brdf_path.joinpath(ymd)
-
-                return brdf_day_of_interest.exists()
-    else:
-        return False
-
-
 class AncillaryFiles:
     def __init__(self, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
         self.brdf_path = Path(brdf_dir)
         self.wv_path = Path(water_vapour_dir)
-        self.wv_indexes = {}
         self.max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
 
     @lru_cache(maxsize=32)
@@ -100,9 +67,13 @@ class AncillaryFiles:
     def get_wv_index(self, acquisition_year):
         wv_pathname = self.wv_path.joinpath(WV_FMT.format(year=acquisition_year))
         with h5py.File(str(wv_pathname), "r") as fid:
-             index = read_h5_table(fid, "INDEX")
+            index = read_h5_table(fid, "INDEX")
         return index
 
+    @lru_cache(maxsize=20000)
+    def brdf_day_exists(self, ymd):
+        brdf_day_of_interest = self.brdf_path.joinpath(ymd)
+        return brdf_day_of_interest.exists()
 
     def definitive_ancillary_files(self, acquisition_datetime):
 
@@ -117,16 +88,7 @@ class AncillaryFiles:
 
         time_delta = index.timestamp - acquisition_datetime
         result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > self.max_tolerance)]
-        if True:
-            print("index.timestamp")
-            print(index.timestamp)
-            print("time delta")
-            print(time_delta)
-            print("datetime.timedelta()")
-            print(datetime.timedelta())
-            print("result")
-            print(result)
-            print(result.shape[0])
+
         if result.shape[0] == 0:
             return False
         else:
@@ -134,9 +96,8 @@ class AncillaryFiles:
                 return True
             else:
                 ymd = acquisition_datetime.strftime("%Y.%m.%d")
-                brdf_day_of_interest = self.brdf_path.joinpath(ymd)
+                return self.brdf_day_exists(ymd)
 
-                return brdf_day_of_interest.exists()
 
 if __name__ == "__main__":
     pass
