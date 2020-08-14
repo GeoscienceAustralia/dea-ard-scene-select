@@ -14,9 +14,12 @@
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 
-module load ard-scene-select-py3-dea/20200717
+module load ard-scene-select-py3-dea/20200814
 
 # For testing as a non-qsub execution
 #INIT_PWD=$PWD
 
-ard-scene-select --config $INIT_PWD/dsg547_dev.conf --products '["usgs_ls8c_level1_1"]' --workdir $INIT_PWD/scratch/ --pkgdir $INIT_PWD/scratch/ --logdir $INIT_PWD/scratch/ --env $INIT_PWD/prod-wagl.env --index-datacube-env $INIT_PWD/index-datacube.env  --project u46 --walltime 01:00:00 #--run-ard
+ard-scene-select --workdir $INIT_PWD/scratch/ --pkgdir $INIT_PWD/scratch/ --logdir $INIT_PWD/scratch/ --env $INIT_PWD/prod-wagl.env --index-datacube-env $INIT_PWD/index-datacube.env  --project u46 --walltime 01:00:00 #--run-ard
+
+# to use the dev db
+#  --config $INIT_PWD/dsg547_dev.conf --products '["usgs_ls8c_level1_1"]'
