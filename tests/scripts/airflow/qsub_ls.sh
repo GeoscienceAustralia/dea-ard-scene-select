@@ -1,7 +1,9 @@
 WORK_DIR='/home/547/dsg547/dump/airflow/qsub_ls_results'
 
 module use /g/data/v10/public/modules/modulefiles;
-module load dea;
+# module load dea; # not doing this so the output from this call is clean
+# if all goes well the output looks like
+# 10035142.gadi-pbs
 
 mkdir -p $WORK_DIR
 cd $WORK_DIR
@@ -14,5 +16,6 @@ qsub -N qsub_ls \
               -P u46 -o $WORK_DIR -e $WORK_DIR \
               -- /bin/bash -l -c \
                   "module use /g/data/v10/public/modules/modulefiles/; \
-                  module load dea; \
-                  datacube --version"
+                  module use /g/data/v10/private/modules/modulefiles/; \
+                  module load ard-scene-select-py3-dea/20200814; \
+                  ard-scene-select --help"
