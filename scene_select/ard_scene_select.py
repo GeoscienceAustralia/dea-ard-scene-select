@@ -327,7 +327,7 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
         hours = 1
     nodes = int(math.ceil(float(hours_per_granule * granule_count) / (hours * workers)))
     if nodes == 0:
-        # A zero node request to ard causes errors. 
+        # A zero node request to ard causes errors.
         nodes = 1
     return nodes
 
@@ -501,7 +501,7 @@ def scene_select(
     jobdir.mkdir(exist_ok=True)
 
     # logdir is used both  by scene select and ard
-    # So put it in the ard parameter dictionary 
+    # So put it in the ard parameter dictionary
     ard_click_params["logdir"] = logdir
     #
     print("Job directory: " + str(jobdir))
