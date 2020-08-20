@@ -380,15 +380,14 @@ def dict2ard_arg_string(ard_click_params):
         key = key.replace("_", "-")
         ard_params.append("--" + key)
         # Make path strings absolute
-        if key in ("logdir", "pkgdir", "index-datacube-env"):
+        if key in ("workdir", "logdir", "pkgdir", "index-datacube-env"):
             value = Path(value).resolve()
         ard_params.append(str(value))
     ard_arg_string = " ".join(ard_params)
     return ard_arg_string
 
 
-def make_ard_pbs(level1_list, workdir, **ard_click_params):
-    ard_click_params["workdir"] = workdir
+def make_ard_pbs(level1_list, **ard_click_params):
 
     if ard_click_params["env"] is None:
         # Don't error out, just
@@ -475,14 +474,14 @@ def scene_select(
     config: click.Path,
     days_delta: int,
     products: list,
-    workdir: click.Path,
+    logdir: click.Path,
     run_ard: bool,
     **ard_click_params: dict,
 ):
     """
     The keys for ard_click_params;
         test: bool,
-        logdir: click.Path,
+        logdir/[new]workdir: click.Path,
         pkgdir: click.Path,
         env: click.Path,
         ardworkers: int,
@@ -495,11 +494,15 @@ def scene_select(
 
     :return: list of scenes to ARD process
     """
-    workdir = Path(workdir).resolve()
+    logdir = Path(logdir).resolve()
     # set up the scene select job dir in the work dir
     jobid = uuid.uuid4().hex[0:6]
-    jobdir = workdir.joinpath(FMT2.format(jobid=jobid))
+    jobdir = logdir.joinpath(FMT2.format(jobid=jobid))
     jobdir.mkdir(exist_ok=True)
+
+    # logdir is used both  by scene select and ard
+    # So put it in the ard parameter dictionary 
+    ard_click_params["logdir"] = logdir
     #
     print("Job directory: " + str(jobdir))
     logging.basicConfig(filename=jobdir.joinpath(LOG_FILE), level=logging.INFO)  # INFO
@@ -530,7 +533,7 @@ def scene_select(
     # write pbs script
     run_ard_pathfile = jobdir.joinpath("run_ard_pbs.sh")
     with open(run_ard_pathfile, "w") as src:
-        src.write(make_ard_pbs(scenes_filepath, workdir, **ard_click_params))
+        src.write(make_ard_pbs(scenes_filepath, **ard_click_params))
 
     # Make the script executable
     os.chmod(run_ard_pathfile, os.stat(run_ard_pathfile).st_mode | stat.S_IEXEC)
