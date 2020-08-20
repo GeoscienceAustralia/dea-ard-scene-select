@@ -326,6 +326,9 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=1.5):
     if hours == 0:
         hours = 1
     nodes = int(math.ceil(float(hours_per_granule * granule_count) / (hours * workers)))
+    if nodes == 0:
+        # A zero node request to ard causes errors. 
+        nodes = 1
     return nodes
 
 
