@@ -27,7 +27,7 @@ def test_scene_select_main():
         config=None,
         days_delta=None,
         products=None,
-        workdir=dirpath,
+        logdir=dirpath,
         run_ard=False,
         nodes=None,
         walltime=None,
