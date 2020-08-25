@@ -15,5 +15,5 @@ SSPATH=$PWD/../
 #echo $PYTHONPATH
 
 #pytest -s test_check_ancillary.py #-k 'test_definitive_ancillary_files_local'
-pytest -s test_check_ancillary.py #-k 'test_NEMO_1323'
+pytest -s test_check_ancillary.py #-k 'test_ancillaryfiles_water'
 #./timing_check_ancillary.py

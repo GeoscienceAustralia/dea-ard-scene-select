@@ -78,7 +78,7 @@ class AncillaryFiles:
     def definitive_ancillary_files(self, acquisition_datetime):
 
         if not self.wv_file_exists(acquisition_datetime.year):
-            return False
+            return False, "Water vapour data for year {} does not exist.".format(acquisition_datetime.year)
 
         # get year of acquisition to confirm definitive data
         index = self.get_wv_index(acquisition_datetime.year)
@@ -90,13 +90,16 @@ class AncillaryFiles:
         result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > self.max_tolerance)]
 
         if result.shape[0] == 0:
-            return False
+            return False, "Water vapour data for {} does not exist.".format(acquisition_datetime)
         else:
             if acquisition_datetime < BRDF_DEFINITIVE_START_DATE:
-                return True
+                return True, ""
             else:
                 ymd = acquisition_datetime.strftime("%Y.%m.%d")
-                return self.brdf_day_exists(ymd)
+                if self.brdf_day_exists(ymd):
+                    return True, ""
+                else:
+                    return False, "BRDF data for {} does not exist.".format(ymd)
 
 
 if __name__ == "__main__":

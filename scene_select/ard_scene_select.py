@@ -197,12 +197,12 @@ def process_scene(dataset, ancillary_ob, days_delta):
     days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
     # Continue here if definitive cannot be procduced
     # since the ancillary files are not there
-    # if definitive_ancillary_files(dataset.time.end) is False:
-    if ancillary_ob.definitive_ancillary_files(dataset.time.end) is False:
+    ancill_there, msg = ancillary_ob.definitive_ancillary_files(dataset.time.end)
+    if ancill_there is False:
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
         )
-        _LOG.info("%s #Skipping dataset ancillary files not ready: %s", file_path, dataset.id)
+        _LOG.info("%s # %s Skipping dataset ancillary files not ready: %s", file_path, msg, dataset.id)
         return False
 
     if days_ago < dataset.time.end:
