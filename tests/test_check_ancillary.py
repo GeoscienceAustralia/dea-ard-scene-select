@@ -49,11 +49,9 @@ def test_ancillaryfiles_water():
     assert af_ob.definitive_ancillary_files(a_dt)
 
     #  BRDF there. one day out from wv data
-    af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, water_vapour_dir=WV_TEST_DIR)
     a_dt = datetime.datetime(2020, 8, 10, tzinfo=pytz.UTC)
     assert af_ob.definitive_ancillary_files(a_dt)
 
     #  BRDF there. two days out from wv data
-    af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, water_vapour_dir=WV_TEST_DIR)
     a_dt = datetime.datetime(2020, 8, 11, tzinfo=pytz.UTC)
     assert not af_ob.definitive_ancillary_files(a_dt)

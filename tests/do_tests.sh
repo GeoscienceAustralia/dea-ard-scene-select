@@ -2,9 +2,10 @@
 
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
-module load dea
 
 module load h5-compression-filters/20200612
+
+module load dea
 
 SSPATH=$PWD/../
 
@@ -14,5 +15,5 @@ SSPATH=$PWD/../
 #echo $PYTHONPATH
 
 #pytest -s test_check_ancillary.py #-k 'test_definitive_ancillary_files_local'
-#pytest -s test_check_ancillary.py 
-./timing_check_ancillary.py
+pytest -s test_check_ancillary.py #-k 'test_NEMO_1323'
+#./timing_check_ancillary.py
