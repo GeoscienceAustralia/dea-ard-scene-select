@@ -13,11 +13,13 @@
 
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
+module use /home/547/dsg547/devmodules/modulefiles
 
-module load ard-scene-select-py3-dea/20200821
+#module load ard-scene-select-py3-dea/20200821
+module load ard-scene-select-py3-dea/20200825
 
 # For testing as a non-qsub execution
-INIT_PWD=$PWD
+#INIT_PWD=$PWD
 
 ard-scene-select --workdir $INIT_PWD/scratch/ --pkgdir $INIT_PWD/scratch/ --logdir $INIT_PWD/scratch/ --env $INIT_PWD/prod-wagl.env --index-datacube-env $INIT_PWD/index-datacube.env  --project u46 --walltime 01:00:00 # --run-ard note will try and index
 
