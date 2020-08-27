@@ -13,6 +13,7 @@ import uuid
 import subprocess
 from datetime import datetime, timedelta
 import click
+from logging.config import fileConfig
 
 try:
     import datacube
@@ -22,6 +23,7 @@ except (ImportError, AttributeError) as error:
 from scene_select.check_ancillary import AncillaryFiles
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
+LOG_CONFIG_FILE = "log_config.ini"
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
@@ -445,6 +447,15 @@ def make_ard_pbs(level1_list, **ard_click_params):
 @click.option(
     "--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the " "PBS queue)."
 )
+@click.option(
+    "--log-config",
+    type=click.Path(dir_okay=False, file_okay=True, exists=True),
+    default=DATA_DIR.joinpath(LOG_CONFIG_FILE),
+    help="full path to the logging configuration file",
+)
+@click.option(
+    "--stop-logging", default=False, is_flag=True, help="Do not run logging."
+)
 @click.option("--walltime", help="Job walltime in `hh:mm:ss` format.")
 @click.option("--email", help="Notification email address.")
 @click.option("--project", default="v10", help="Project code to run under.")
@@ -475,6 +486,8 @@ def scene_select(
     days_delta: int,
     products: list,
     logdir: click.Path,
+    stop_logging: bool,
+    log_config: click.Path,
     run_ard: bool,
     **ard_click_params: dict,
 ):
@@ -494,6 +507,8 @@ def scene_select(
 
     :return: list of scenes to ARD process
     """
+    if not stop_logging:
+        fileConfig(log_config)
     logdir = Path(logdir).resolve()
     # set up the scene select job dir in the work dir
     jobid = uuid.uuid4().hex[0:6]
