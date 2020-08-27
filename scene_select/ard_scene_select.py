@@ -21,6 +21,7 @@ except (ImportError, AttributeError) as error:
     print("Could not import Datacube")
 
 from scene_select.check_ancillary import AncillaryFiles
+from scene_select.dass_logs import LOGGER
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 LOG_CONFIG_FILE = "log_config.ini"
@@ -509,6 +510,7 @@ def scene_select(
     """
     if not stop_logging:
         fileConfig(log_config)
+        LOGGER.info('Start logging')
     logdir = Path(logdir).resolve()
     # set up the scene select job dir in the work dir
     jobid = uuid.uuid4().hex[0:6]
