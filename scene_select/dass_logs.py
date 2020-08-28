@@ -37,4 +37,4 @@ class FormatJSONL(logging.Formatter):
         """ Disables printing separate stack traces """
         return
 
-LOGGER = get_wrapped_logger('task')
+LOGGER = get_wrapped_logger('general')

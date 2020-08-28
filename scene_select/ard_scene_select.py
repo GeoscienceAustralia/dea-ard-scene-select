@@ -30,6 +30,7 @@ GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
 DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "DataCube_all_landsat_scenes.txt"
 LOG_FILE = "ignored_scenes_list.log"
+GEN_LOG_FILE = "ard_scene_select.log"
 PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
                     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 FMT2 = "filter-jobid-{jobid}"
@@ -131,7 +132,7 @@ def write(filename: Path, list_to_write: List) -> None:
 
 
 def path_row_filter(
-    scenes_to_filter_list: Union[List[str], Path], path_row_list: Union[List[str], Path], out_dir: Optional[Path] = None
+        scenes_to_filter_list: Union[List[str], Path], path_row_list: Union[List[str], Path], scene_limit=None,out_dir: Optional[Path] = None
 ) -> None:
     """Filter scenes to check if path/row of a scene is allowed in a path row list."""
 
@@ -174,6 +175,8 @@ def path_row_filter(
         else:
             _LOG.info(scene_path)
     all_scenes_list = ls5_list + ls7_list + ls8_list
+    if not None:
+        all_scenes_list = all_scenes_list[:scene_limit]
     if out_dir is None:
         out_dir = Path.cwd()
     scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
@@ -300,7 +303,7 @@ def get_landsat_level1_from_datacube_childless(
         for product in products:
             for fp in _do_parent_search(dc, product, days_delta=days_delta):
                 fid.write(fp + "\n")
-
+                
 
 def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
     # Estimate the number of nodes needed
@@ -443,10 +446,12 @@ def make_ard_pbs(level1_list, **ard_click_params):
     help="The base output working directory.",
     default=Path.cwd(),
 )
+
+@click.option("--scene-limit", default=300, type=int, help="Maximum number of scenes to process in a run.  This is a safety limit.")
 @click.option("--run-ard", default=False, is_flag=True, help="Execute the ard_pbs script.")
 # These are passed on to ard processing
 @click.option(
-    "--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the " "PBS queue)."
+    "--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the PBS queue)."
 )
 @click.option(
     "--log-config",
@@ -489,33 +494,36 @@ def scene_select(
     logdir: click.Path,
     stop_logging: bool,
     log_config: click.Path,
+    scene_limit: Optional[int],
     run_ard: bool,
     **ard_click_params: dict,
 ):
     """
     The keys for ard_click_params;
         test: bool,
-        logdir/[new]workdir: click.Path,
+        workdir: click.Path,
         pkgdir: click.Path,
         env: click.Path,
-        ardworkers: int,
-        ardnodes: int,
-        ardmemory: int,
-        ardjobfs: int,
+        workers: int,
+        nodes: int,
+        memory: int,
+        jobfs: int,
         project: str,
         walltime: str,
         email: str
 
     :return: list of scenes to ARD process
     """
-    if not stop_logging:
-        fileConfig(log_config)
-        LOGGER.info('Start logging')
     logdir = Path(logdir).resolve()
-    # set up the scene select job dir in the work dir
+    # If we write a file we write it in the job dir
+    # set up the scene select job dir in the log dir
     jobid = uuid.uuid4().hex[0:6]
     jobdir = logdir.joinpath(FMT2.format(jobid=jobid))
     jobdir.mkdir(exist_ok=True)
+    if not stop_logging:
+        gen_log_file = jobdir.joinpath(GEN_LOG_FILE).resolve()
+        fileConfig(log_config, disable_existing_loggers=False, defaults={ 'genlogfilename' :  str(gen_log_file)})
+        LOGGER.info('Start logging')
 
     # logdir is used both  by scene select and ard
     # So put it in the ard parameter dictionary
@@ -536,12 +544,14 @@ def scene_select(
             get_landsat_level1_file_paths(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"), usgs_level1_files, nprocs=nprocs
             )
-
+    # there is a usgs_level1_files file with initial selected scenes
+    
     # apply path_row filter and
     # processing level filtering
     scenes_filepath, all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
+        scene_limit,
         out_dir=jobdir,
     )
 
