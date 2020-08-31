@@ -33,6 +33,9 @@ def test_scene_select_main():
         walltime=None,
         workers=None,
         env=None,
+        stop_logging=True,
+        log_config=None,
+        scene_limit=999999
     )
     standard = set(line.strip() for line in open(STANDARD_SCENES_SELECTED))
     results = set(all_scenes_list)
@@ -41,6 +44,7 @@ def test_scene_select_main():
     # Good for stopping new errors coming in
     # Will not pick up anything bad before then
     # Plus this does not cover the ODC code.
+    assert len(standard) == len(results)
     assert standard == results
 
     # ... do stuff with dirpath

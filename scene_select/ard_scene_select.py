@@ -132,7 +132,10 @@ def write(filename: Path, list_to_write: List) -> None:
 
 
 def path_row_filter(
-        scenes_to_filter_list: Union[List[str], Path], path_row_list: Union[List[str], Path], scene_limit=None,out_dir: Optional[Path] = None
+    scenes_to_filter_list: Union[List[str], Path],
+    path_row_list: Union[List[str], Path],
+    scene_limit=None,
+    out_dir: Optional[Path] = None,
 ) -> None:
     """Filter scenes to check if path/row of a scene is allowed in a path row list."""
 
@@ -303,7 +306,7 @@ def get_landsat_level1_from_datacube_childless(
         for product in products:
             for fp in _do_parent_search(dc, product, days_delta=days_delta):
                 fid.write(fp + "\n")
-                
+
 
 def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
     # Estimate the number of nodes needed
@@ -446,22 +449,22 @@ def make_ard_pbs(level1_list, **ard_click_params):
     help="The base output working directory.",
     default=Path.cwd(),
 )
-
-@click.option("--scene-limit", default=300, type=int, help="Maximum number of scenes to process in a run.  This is a safety limit.")
+@click.option(
+    "--scene-limit",
+    default=300,
+    type=int,
+    help="Maximum number of scenes to process in a run.  This is a safety limit.",
+)
 @click.option("--run-ard", default=False, is_flag=True, help="Execute the ard_pbs script.")
 # These are passed on to ard processing
-@click.option(
-    "--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the PBS queue)."
-)
+@click.option("--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the PBS queue).")
 @click.option(
     "--log-config",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     default=DATA_DIR.joinpath(LOG_CONFIG_FILE),
     help="full path to the logging configuration file",
 )
-@click.option(
-    "--stop-logging", default=False, is_flag=True, help="Do not run logging."
-)
+@click.option("--stop-logging", default=False, is_flag=True, help="Do not run logging.")
 @click.option("--walltime", help="Job walltime in `hh:mm:ss` format.")
 @click.option("--email", help="Notification email address.")
 @click.option("--project", default="v10", help="Project code to run under.")
@@ -522,8 +525,8 @@ def scene_select(
     jobdir.mkdir(exist_ok=True)
     if not stop_logging:
         gen_log_file = jobdir.joinpath(GEN_LOG_FILE).resolve()
-        fileConfig(log_config, disable_existing_loggers=False, defaults={ 'genlogfilename' :  str(gen_log_file)})
-        LOGGER.info('Start logging')
+        fileConfig(log_config, disable_existing_loggers=False, defaults={"genlogfilename": str(gen_log_file)})
+        LOGGER.info("Start logging")
 
     # logdir is used both  by scene select and ard
     # So put it in the ard parameter dictionary
@@ -545,7 +548,7 @@ def scene_select(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"), usgs_level1_files, nprocs=nprocs
             )
     # there is a usgs_level1_files file with initial selected scenes
-    
+
     # apply path_row filter and
     # processing level filtering
     scenes_filepath, all_scenes_list = path_row_filter(

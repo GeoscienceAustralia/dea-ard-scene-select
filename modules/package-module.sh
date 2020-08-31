@@ -7,8 +7,8 @@ umask 002
 
 echo "##########################"
 echo
-echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
-#echo "module_dir = ${module_dir:=/home/547/dsg547/devmodules}"
+#echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
+echo "module_dir = ${module_dir:=/g/data/u46/users/dsg547/devmodules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
 echo "dea_module = ${dea_module:=dea/20200617}"
