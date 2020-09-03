@@ -35,7 +35,7 @@ def test_scene_select_main():
         env=None,
         stop_logging=True,
         log_config=None,
-        scene_limit=999999
+        scene_limit=999999,
     )
     standard = set(line.strip() for line in open(STANDARD_SCENES_SELECTED))
     results = set(all_scenes_list)

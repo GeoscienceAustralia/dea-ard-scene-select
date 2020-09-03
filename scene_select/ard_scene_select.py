@@ -43,6 +43,16 @@ AEROSOLSHAPEFILE = EXTENT_DIR.joinpath("aerosol.shp")
 WRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("wrsdall_Decending.shp")
 MGRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp")
 
+# LOGGER events
+SCENEREMOVED = "scene removed"
+SCENEADDED = "scene removed"
+
+# LOGGER keys
+DATASETPATH = "dataset_path"
+REASON = "reason"
+MSG = "message"
+DATASETID = "dataset_id"
+
 # No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING = {
     "ga_ls5t_level1_3": "ga_ls5t_ard_3",
@@ -158,10 +168,16 @@ def path_row_filter(
             path_row = scene.split("_")[2]
         except IndexError:
             _LOG.info(scene_path)
+            kwargs = {DATASETPATH: scene_path, REASON: "Bad scene format", MSG: ("Bad scene format %s" % scene)}
+            LOGGER.warn(SCENEREMOVED, **kwargs)
+
             continue
 
         if path_row not in path_row_list:
             _LOG.info(scene_path)
+
+            kwargs = {DATASETPATH: scene_path, REASON: "Path row not in AOI", MSG: ("Path row %s" % path_row)}
+            LOGGER.info(SCENEREMOVED, **kwargs)
             continue
 
         to_process.append(scene_path)
@@ -177,6 +193,8 @@ def path_row_filter(
 
         else:
             _LOG.info(scene_path)
+            kwargs = {DATASETPATH: scene_path, REASON: "Processing level too low"}
+            LOGGER.info(SCENEREMOVED, **kwargs)
     all_scenes_list = ls5_list + ls7_list + ls8_list
     if not None:
         all_scenes_list = all_scenes_list[:scene_limit]
@@ -199,6 +217,12 @@ def mgrs_filter(scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[
 def process_scene(dataset, ancillary_ob, days_delta):
     if not dataset.local_path:
         _LOG.warning("Skipping dataset without local paths: %s", dataset.id)
+        kwargs = {
+            DATASETID: str(dataset.id),
+            REASON: "Skipping dataset without local paths",
+            MSG: ("Bad scene format %s" % scene),
+        }
+        LOGGER.warning(SCENEREMOVED, **kwargs)
         return False
 
     assert dataset.local_path.name.endswith("metadata.yaml")
@@ -212,6 +236,13 @@ def process_scene(dataset, ancillary_ob, days_delta):
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
         )
         _LOG.info("%s # %s Skipping dataset ancillary files not ready: %s", file_path, msg, dataset.id)
+        kwargs = {
+            DATASETPATH: file_path,
+            DATASETID: str(dataset.id),
+            REASON: "ancillary files not ready",
+            MSG: ("Not ready: %s" % msg),
+        }
+        LOGGER.info(SCENEREMOVED, **kwargs)
         return False
 
     if days_ago < dataset.time.end:
@@ -225,6 +256,13 @@ def process_scene(dataset, ancillary_ob, days_delta):
             days_ago.strftime("%Y-%m-%d"),
             dataset.id,
         )
+        kwargs = {
+            DATASETPATH: file_path,
+            DATASETID: str(dataset.id),
+            REASON: "Not processing recent data",
+            MSG: ("Not processing data after time delta(days:%d, Date %s)" % days_delta, days_ago.strftime("%Y-%m-%d")),
+        }
+        LOGGER.info(SCENEREMOVED, **kwargs)
         return False
 
     return True
@@ -272,6 +310,7 @@ def _do_parent_search(dc, product, days_delta=0):
         # updated l1 scenes that have been processed using the old l1 scene.
         processed_ard_scene_ids = None
         _LOG.warning("THE ARD ODC product name after ARD processing for %s is not known.", product)
+        LOGGER.warning("THE ARD ODC product name after ARD processing for %s is not known.", product)
 
     ancillary_ob = AncillaryFiles()
     for dataset in dc.index.datasets.search(product=product):
@@ -281,6 +320,8 @@ def _do_parent_search(dc, product, days_delta=0):
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
+                kwargs = {DATASETPATH: file_path, DATASETID: str(dataset.id), REASON: "The scene has been processed"}
+                LOGGER.info(SCENEREMOVED, **kwargs)
                 continue
 
         if process_scene(dataset, ancillary_ob, days_delta) is False:
