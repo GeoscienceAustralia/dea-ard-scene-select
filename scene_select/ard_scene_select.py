@@ -89,6 +89,13 @@ L8_PATTERN = (
     r"(?P<extension>.tar)$"
 )
 
+# L1TP and L1GT are all ortho-rectified with DEM.
+# The only difference is L1GT was processed without Ground Control Points
+#- but because LS8 orbit is very accurate so LS8 L1GT products with orbital
+# info is ~90% within one pixel.
+# (From Lan-Wei)
+# Therefore we use L1GT for ls8 but not ls7 or ls5.
+
 # landsat 7 filename pattern is configured to match only
 # processing level L1TP with .tar extension.
 L7_PATTERN = (
