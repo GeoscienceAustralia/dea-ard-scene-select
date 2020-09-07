@@ -12,6 +12,8 @@ import logging
 import structlog
 from structlog.processors import JSONRenderer
 
+import sys
+import traceback
 
 COMMON_PROCESSORS = [
     structlog.stdlib.add_log_level,
@@ -36,3 +38,21 @@ class FormatJSONL(logging.Formatter):
 
 
 LOGGER = get_wrapped_logger("general")
+
+import functools
+class LogMainFunction(object):
+    def __init__(self):
+        self.logger = LOGGER
+
+    def __call__(self, fn):
+        @functools.wraps(fn)
+        def decorated(*args, **kwargs):
+            try:
+                result = fn(*args, **kwargs)
+                return result
+            except Exception as ex:
+                self.logger.error("exception", exception=ex.__str__(), traceback=traceback.format_exc().splitlines())
+                raise ex
+            return result
+        return decorated
+

@@ -21,7 +21,7 @@ except (ImportError, AttributeError) as error:
     print("Could not import Datacube")
 
 from scene_select.check_ancillary import AncillaryFiles
-from scene_select.dass_logs import LOGGER
+from scene_select.dass_logs import LOGGER, LogMainFunction
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 LOG_CONFIG_FILE = "log_config.ini"
@@ -52,6 +52,7 @@ DATASETPATH = "dataset_path"
 REASON = "reason"
 MSG = "message"
 DATASETID = "dataset_id"
+SCENEID = "landsat_scene_id"
 
 # No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING = {
@@ -249,6 +250,7 @@ def process_scene(dataset, ancillary_ob, days_delta):
         _LOG.info("%s # %s Skipping dataset ancillary files not ready: %s", file_path, msg, dataset.id)
         kwargs = {
             DATASETPATH: file_path,
+            SCENEID:dataset.metadata.landsat_scene_id,
             REASON: "ancillary files not ready",
             MSG: ("Not ready: %s" % msg),
         }
@@ -329,7 +331,7 @@ def _do_parent_search(dc, product, days_delta=0):
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
-                kwargs = {DATASETPATH: file_path, REASON: "The scene has been processed"}
+                kwargs = {DATASETPATH: file_path, REASON: "The scene has been processed", SCENEID:dataset.metadata.landsat_scene_id}
                 LOGGER.debug(SCENEREMOVED, **kwargs)
                 continue
 
@@ -350,7 +352,6 @@ def get_landsat_level1_from_datacube_childless(
     outfile: Path, products: List[str], config: Optional[Path] = None, days_delta: int = 21
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
-
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
@@ -536,6 +537,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
 @click.option("--jobfs", help="The jobfs memory in GB to request per node.")
 # This isn't being used, so I'm taking it out
 # aerosol_shapefile: click.Path=AEROSOLSHAPEFILE,
+@LogMainFunction()
 def scene_select(
     usgs_level1_files: click.Path,
     search_datacube: bool,
