@@ -45,7 +45,7 @@ MGRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp")
 
 # LOGGER events
 SCENEREMOVED = "scene removed"
-SCENEADDED = "scene removed"
+SCENEADDED = "scene added"
 
 # LOGGER keys
 DATASETPATH = "dataset_path"
@@ -89,7 +89,7 @@ L8_PATTERN = (
     r"(?P<extension>.tar)$"
 )
 
-# landsat 8 filename pattern is configured to match only
+# landsat 7 filename pattern is configured to match only
 # processing level L1TP with .tar extension.
 L7_PATTERN = (
     r"^(?P<sensor>LE)"
@@ -177,7 +177,7 @@ def path_row_filter(
             _LOG.info(scene_path)
 
             kwargs = {DATASETPATH: scene_path, REASON: "Path row not in AOI", MSG: ("Path row %s" % path_row)}
-            LOGGER.info(SCENEREMOVED, **kwargs)
+            LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
         to_process.append(scene_path)
@@ -194,10 +194,14 @@ def path_row_filter(
         else:
             _LOG.info(scene_path)
             kwargs = {DATASETPATH: scene_path, REASON: "Processing level too low"}
-            LOGGER.info(SCENEREMOVED, **kwargs)
+            LOGGER.debug(SCENEREMOVED, **kwargs)
     all_scenes_list = ls5_list + ls7_list + ls8_list
     if not None:
         all_scenes_list = all_scenes_list[:scene_limit]
+        for scene in all_scenes_list:
+            kwargs = {DATASETPATH: scene_path}
+            LOGGER.info(SCENEADDED, **kwargs)
+            
     if out_dir is None:
         out_dir = Path.cwd()
     scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
@@ -321,7 +325,7 @@ def _do_parent_search(dc, product, days_delta=0):
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
                 kwargs = {DATASETPATH: file_path, DATASETID: str(dataset.id), REASON: "The scene has been processed"}
-                LOGGER.info(SCENEREMOVED, **kwargs)
+                LOGGER.debug(SCENEREMOVED, **kwargs)
                 continue
 
         if process_scene(dataset, ancillary_ob, days_delta) is False:
