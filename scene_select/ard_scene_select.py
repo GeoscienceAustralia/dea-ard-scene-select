@@ -249,7 +249,6 @@ def process_scene(dataset, ancillary_ob, days_delta):
         _LOG.info("%s # %s Skipping dataset ancillary files not ready: %s", file_path, msg, dataset.id)
         kwargs = {
             DATASETPATH: file_path,
-            DATASETID: str(dataset.id),
             REASON: "ancillary files not ready",
             MSG: ("Not ready: %s" % msg),
         }
@@ -269,7 +268,6 @@ def process_scene(dataset, ancillary_ob, days_delta):
         )
         kwargs = {
             DATASETPATH: file_path,
-            DATASETID: str(dataset.id),
             REASON: "Not processing recent data",
             MSG: ("Not processing data after time delta(days:%d, Date %s)" % days_delta, days_ago.strftime("%Y-%m-%d")),
         }
@@ -331,7 +329,7 @@ def _do_parent_search(dc, product, days_delta=0):
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
-                kwargs = {DATASETPATH: file_path, DATASETID: str(dataset.id), REASON: "The scene has been processed"}
+                kwargs = {DATASETPATH: file_path, REASON: "The scene has been processed"}
                 LOGGER.debug(SCENEREMOVED, **kwargs)
                 continue
 
