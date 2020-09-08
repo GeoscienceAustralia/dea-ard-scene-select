@@ -72,8 +72,6 @@ source {env}
 ard_pbs --level1-list {scene_list} {ard_args}
 """
 
-_LOG = logging.getLogger(__name__)
-
 # landsat 8 filename pattern is configured to match only
 # processing level L1TP and L1GT for acquisition containing
 # both the TIRS and OLI sensors with .tar extension.
@@ -175,15 +173,12 @@ def path_row_filter(
         try:
             path_row = scene.split("_")[2]
         except IndexError:
-            _LOG.info(scene_path)
             kwargs = {DATASETPATH: scene_path, REASON: "Bad scene format", MSG: ("Bad scene format %s" % scene)}
             LOGGER.warn(SCENEREMOVED, **kwargs)
 
             continue
 
         if path_row not in path_row_list:
-            _LOG.info(scene_path)
-
             kwargs = {DATASETPATH: scene_path, REASON: "Path row not in AOI", MSG: ("Path row %s" % path_row)}
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
@@ -200,7 +195,6 @@ def path_row_filter(
             ls5_list.append(scene_path)
 
         else:
-            _LOG.info(scene_path)
             kwargs = {DATASETPATH: scene_path, REASON: "Processing level too low"}
             LOGGER.debug(SCENEREMOVED, **kwargs)
     all_scenes_list = ls5_list + ls7_list + ls8_list
@@ -228,7 +222,6 @@ def mgrs_filter(scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[
 
 def process_scene(dataset, ancillary_ob, days_delta):
     if not dataset.local_path:
-        _LOG.warning("Skipping dataset without local paths: %s", dataset.id)
         kwargs = {
             DATASETID: str(dataset.id),
             REASON: "Skipping dataset without local paths",
@@ -247,7 +240,6 @@ def process_scene(dataset, ancillary_ob, days_delta):
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
         )
-        _LOG.info("%s # %s Skipping dataset ancillary files not ready: %s", file_path, msg, dataset.id)
         kwargs = {
             DATASETPATH: file_path,
             SCENEID: dataset.metadata.landsat_scene_id,
@@ -260,13 +252,6 @@ def process_scene(dataset, ancillary_ob, days_delta):
     if days_ago < dataset.time.end:
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
-        )
-        _LOG.info(
-            "%s #Skipping dataset after time delta(days:%d, Date %s): %s",
-            file_path,
-            days_delta,
-            days_ago.strftime("%Y-%m-%d"),
-            dataset.id,
         )
         kwargs = {
             DATASETPATH: file_path,
@@ -320,7 +305,6 @@ def _do_parent_search(dc, product, days_delta=0):
         # Scene select uses the l1 product to ard mapping to filter out
         # updated l1 scenes that have been processed using the old l1 scene.
         processed_ard_scene_ids = None
-        _LOG.warning("THE ARD ODC product name after ARD processing for %s is not known.", product)
         LOGGER.warning("THE ARD ODC product name after ARD processing for %s is not known.", product)
 
     ancillary_ob = AncillaryFiles()
@@ -330,7 +314,6 @@ def _do_parent_search(dc, product, days_delta=0):
         )
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
-                _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
                 kwargs = {
                     DATASETPATH: file_path,
                     REASON: "The scene has been processed",
@@ -344,9 +327,12 @@ def _do_parent_search(dc, product, days_delta=0):
 
         # If any child exists that isn't archived
         if dataset_with_child(dc, dataset):
-            # Name of input folder treated as telemetry dataset name
-            name = dataset.local_path.parent.name
-            _LOG.info("%s # Skipping dataset with children: (%s)", file_path, dataset.id)
+            kwargs = {
+                DATASETPATH: file_path,
+                REASON: "Skipping dataset with children",
+                SCENEID: dataset.metadata.landsat_scene_id,
+            }
+            LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
         yield file_path
@@ -598,7 +584,7 @@ def scene_select(
                 usgs_level1_files, config=config, days_delta=days_delta, products=products
             )
         else:
-            _LOG.warning("searching the file system is untested.")
+            LOGGER.warning("searching the file system is untested.")
 
             get_landsat_level1_file_paths(
                 Path("/g/data/da82/AODH/USGS/L1/Landsat/C1/"), usgs_level1_files, nprocs=nprocs
