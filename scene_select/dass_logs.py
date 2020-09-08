@@ -40,6 +40,8 @@ class FormatJSONL(logging.Formatter):
 LOGGER = get_wrapped_logger("general")
 
 import functools
+
+
 class LogMainFunction(object):
     def __init__(self):
         self.logger = LOGGER
@@ -54,5 +56,5 @@ class LogMainFunction(object):
                 self.logger.error("exception", exception=ex.__str__(), traceback=traceback.format_exc().splitlines())
                 raise ex
             return result
-        return decorated
 
+        return decorated

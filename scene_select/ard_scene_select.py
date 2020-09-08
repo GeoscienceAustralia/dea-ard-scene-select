@@ -92,7 +92,7 @@ L8_PATTERN = (
 
 # L1TP and L1GT are all ortho-rectified with DEM.
 # The only difference is L1GT was processed without Ground Control Points
-#- but because LS8 orbit is very accurate so LS8 L1GT products with orbital
+# - but because LS8 orbit is very accurate so LS8 L1GT products with orbital
 # info is ~90% within one pixel.
 # (From Lan-Wei)
 # Therefore we use L1GT for ls8 but not ls7 or ls5.
@@ -209,7 +209,7 @@ def path_row_filter(
         for scene in all_scenes_list:
             kwargs = {DATASETPATH: scene_path}
             LOGGER.info(SCENEADDED, **kwargs)
-            
+
     if out_dir is None:
         out_dir = Path.cwd()
     scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
@@ -250,7 +250,7 @@ def process_scene(dataset, ancillary_ob, days_delta):
         _LOG.info("%s # %s Skipping dataset ancillary files not ready: %s", file_path, msg, dataset.id)
         kwargs = {
             DATASETPATH: file_path,
-            SCENEID:dataset.metadata.landsat_scene_id,
+            SCENEID: dataset.metadata.landsat_scene_id,
             REASON: "ancillary files not ready",
             MSG: ("Not ready: %s" % msg),
         }
@@ -331,7 +331,11 @@ def _do_parent_search(dc, product, days_delta=0):
         if processed_ard_scene_ids:
             if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
                 _LOG.info("%s # Skipping dataset since scene id in ARD: (%s)", file_path, dataset.id)
-                kwargs = {DATASETPATH: file_path, REASON: "The scene has been processed", SCENEID:dataset.metadata.landsat_scene_id}
+                kwargs = {
+                    DATASETPATH: file_path,
+                    REASON: "The scene has been processed",
+                    SCENEID: dataset.metadata.landsat_scene_id,
+                }
                 LOGGER.debug(SCENEREMOVED, **kwargs)
                 continue
 
