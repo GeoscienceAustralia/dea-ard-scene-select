@@ -46,6 +46,7 @@ MGRSSHAPEFILE = GLOBAL_MGRS_WRS_DIR.joinpath("S2_tile.shp")
 # LOGGER events
 SCENEREMOVED = "scene removed"
 SCENEADDED = "scene added"
+SUMMARY = "summary"
 
 # LOGGER keys
 DATASETPATH = "dataset_path"
@@ -197,12 +198,16 @@ def path_row_filter(
         else:
             kwargs = {DATASETPATH: scene_path, REASON: "Processing level too low"}
             LOGGER.debug(SCENEREMOVED, **kwargs)
+    # SUMMARY
+    LOGGER.info(SUMMARY, max_ls8_scenes= len(ls8_list))
+    LOGGER.info(SUMMARY, max_ls7_scenes= len(ls7_list))
+    LOGGER.info(SUMMARY, max_ls5_scenes= len(ls5_list))
     all_scenes_list = ls5_list + ls7_list + ls8_list
-    if not None:
-        all_scenes_list = all_scenes_list[:scene_limit]
-        for scene in all_scenes_list:
-            kwargs = {DATASETPATH: scene_path}
-            LOGGER.info(SCENEADDED, **kwargs)
+    all_scenes_list = all_scenes_list[:scene_limit]
+    LOGGER.info(SUMMARY, all_scenes= len(all_scenes_list))
+    for scene in all_scenes_list:
+        kwargs = {DATASETPATH: scene_path}
+        LOGGER.info(SCENEADDED, **kwargs)
 
     if out_dir is None:
         out_dir = Path.cwd()
@@ -475,7 +480,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
     help="full path to a datacube config text file",
     default=None,
 )
-@click.option("--days_delta", type=int, help="Only process files older than days delta.", default=14)
+@click.option("--days_delta", type=int, help="Only process files older than days delta.", default=0)
 @click.option(
     "--products",
     cls=PythonLiteralOption,
@@ -565,17 +570,19 @@ def scene_select(
     jobid = uuid.uuid4().hex[0:6]
     jobdir = logdir.joinpath(FMT2.format(jobid=jobid))
     jobdir.mkdir(exist_ok=True)
+
+    # FIXME test this
     if not stop_logging:
         gen_log_file = jobdir.joinpath(GEN_LOG_FILE).resolve()
         fileConfig(log_config, disable_existing_loggers=False, defaults={"genlogfilename": str(gen_log_file)})
-        LOGGER.info("Start logging")
+    LOGGER.info("scene_select", **locals())
 
     # logdir is used both  by scene select and ard
     # So put it in the ard parameter dictionary
     ard_click_params["logdir"] = logdir
     #
+    LOGGER.info("info", jobdir=str(jobdir))
     print("Job directory: " + str(jobdir))
-    logging.basicConfig(filename=jobdir.joinpath(LOG_FILE), level=logging.INFO)  # INFO
 
     if not usgs_level1_files:
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
@@ -613,6 +620,7 @@ def scene_select(
     # run the script
     if run_ard is True:
         subprocess.run([run_ard_pathfile], check=True)
+
     return scenes_filepath, all_scenes_list
 
 
