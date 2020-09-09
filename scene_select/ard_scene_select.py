@@ -151,8 +151,8 @@ def write(filename: Path, list_to_write: List) -> None:
 def path_row_filter(
     scenes_to_filter_list: Union[List[str], Path],
     path_row_list: Union[List[str], Path],
+    out_dir: Path,
     scene_limit=None,
-    out_dir: Optional[Path] = None,
 ) -> None:
     """Filter scenes to check if path/row of a scene is allowed in a path row list."""
 
@@ -166,8 +166,9 @@ def path_row_filter(
         with open(scenes_to_filter_list, "r") as fid:
             scenes_to_filter_list = [line.rstrip() for line in fid.readlines()]
 
-    ls8_list, ls7_list, ls5_list, to_process = [], [], [], []
+    ls8_list, ls7_list, ls5_list = [], [], []
 
+    LOGGER.info(SUMMARY, scenes_list_interuim=len(scenes_to_filter_list))
     for scene_path in scenes_to_filter_list:
         scene = os.path.basename(scene_path)
 
@@ -184,8 +185,6 @@ def path_row_filter(
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
-        to_process.append(scene_path)
-
         if re.match(L8_PATTERN, scene):
             ls8_list.append(scene_path)
 
@@ -199,25 +198,25 @@ def path_row_filter(
             kwargs = {DATASETPATH: scene_path, REASON: "Processing level too low"}
             LOGGER.debug(SCENEREMOVED, **kwargs)
     # SUMMARY
-    LOGGER.info(SUMMARY, max_ls8_scenes= len(ls8_list))
-    LOGGER.info(SUMMARY, max_ls7_scenes= len(ls7_list))
-    LOGGER.info(SUMMARY, max_ls5_scenes= len(ls5_list))
+    LOGGER.info(SUMMARY, max_ls8_scenes=len(ls8_list))
+    LOGGER.info(SUMMARY, max_ls7_scenes=len(ls7_list))
+    LOGGER.info(SUMMARY, max_ls5_scenes=len(ls5_list))
     all_scenes_list = ls5_list + ls7_list + ls8_list
-    all_scenes_list = all_scenes_list[:scene_limit]
-    LOGGER.info(SUMMARY, all_scenes= len(all_scenes_list))
-    for scene in all_scenes_list:
-        kwargs = {DATASETPATH: scene_path}
+    scenes_list = all_scenes_list[:scene_limit]
+    overflow_scenes_list = all_scenes_list[scene_limit:]
+    LOGGER.info(SUMMARY, all_scenes=len(scenes_list))
+    for scene in scenes_list:
+        kwargs = {DATASETPATH: scene}
         LOGGER.info(SCENEADDED, **kwargs)
+    for scene in overflow_scenes_list:
+        kwargs = {DATASETPATH: scene, REASON: "Scene limit reached."}
+        LOGGER.info(SCENEREMOVED, **kwargs)
 
     if out_dir is None:
         out_dir = Path.cwd()
     scenes_filepath = out_dir.joinpath("scenes_to_ARD_process.txt")
-    write(out_dir.joinpath("DataCube_L08_Level1.txt"), ls8_list)
-    write(out_dir.joinpath("DataCube_L07_Level1.txt"), ls7_list)
-    write(out_dir.joinpath("DataCube_L05_Level1.txt"), ls5_list)
-    write(out_dir.joinpath("no_file_pattern_matching.txt"), to_process)
-    write(scenes_filepath, all_scenes_list)
-    return scenes_filepath, all_scenes_list
+    write(scenes_filepath, scenes_list)
+    return scenes_filepath, scenes_list
 
 
 def mgrs_filter(scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[List[str], Path]) -> None:
@@ -580,9 +579,6 @@ def scene_select(
     # logdir is used both  by scene select and ard
     # So put it in the ard parameter dictionary
     ard_click_params["logdir"] = logdir
-    #
-    LOGGER.info("info", jobdir=str(jobdir))
-    print("Job directory: " + str(jobdir))
 
     if not usgs_level1_files:
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
@@ -603,8 +599,8 @@ def scene_select(
     scenes_filepath, all_scenes_list = path_row_filter(
         Path(usgs_level1_files),
         Path(allowed_codes) if isinstance(allowed_codes, str) else allowed_codes,
-        scene_limit,
-        out_dir=jobdir,
+        jobdir,
+        scene_limit=scene_limit,
     )
 
     _calc_node_with_defaults(ard_click_params, len(all_scenes_list))
@@ -620,6 +616,9 @@ def scene_select(
     # run the script
     if run_ard is True:
         subprocess.run([run_ard_pathfile], check=True)
+
+    LOGGER.info("info", jobdir=str(jobdir))
+    print("Job directory: " + str(jobdir))
 
     return scenes_filepath, all_scenes_list
 

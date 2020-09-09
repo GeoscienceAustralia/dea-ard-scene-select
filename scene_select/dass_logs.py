@@ -8,12 +8,12 @@ Defines structured logging for:
 """
 
 import logging
-
+import functools
+import sys
+import traceback
 import structlog
 from structlog.processors import JSONRenderer
 
-import sys
-import traceback
 
 COMMON_PROCESSORS = [
     structlog.stdlib.add_log_level,
@@ -38,8 +38,6 @@ class FormatJSONL(logging.Formatter):
 
 
 LOGGER = get_wrapped_logger("general")
-
-import functools
 
 
 class LogMainFunction(object):
