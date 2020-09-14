@@ -20,7 +20,7 @@ try:
 except (ImportError, AttributeError) as error:
     print("Could not import Datacube")
 
-from scene_select.check_ancillary import AncillaryFiles
+from scene_select.check_ancillary import AncillaryFiles, BRDF_DIR, WV_DIR
 from scene_select.dass_logs import LOGGER, LogMainFunction
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
@@ -291,7 +291,7 @@ def chopped_scene_id(scene_id: str) -> str:
     return capture_id
 
 
-def _do_parent_search(dc, product, days_delta=0):
+def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
     # FIXME add expressions for more control
     if product in ARD_PARENT_PRODUCT_MAPPING:
         processed_ard_scene_ids = {
@@ -311,7 +311,7 @@ def _do_parent_search(dc, product, days_delta=0):
         processed_ard_scene_ids = None
         LOGGER.warning("THE ARD ODC product name after ARD processing for %s is not known.", product)
 
-    ancillary_ob = AncillaryFiles()
+    ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, water_vapour_dir=wvdir)
     for dataset in dc.index.datasets.search(product=product):
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
@@ -343,13 +343,13 @@ def _do_parent_search(dc, product, days_delta=0):
 
 
 def get_landsat_level1_from_datacube_childless(
-    outfile: Path, products: List[str], config: Optional[Path] = None, days_delta: int = 21
+    outfile: Path, products: List[str], brdfdir: Path, wvdir: Path, config: Optional[Path] = None, days_delta: int = 21
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
-            for fp in _do_parent_search(dc, product, days_delta=days_delta):
+            for fp in _do_parent_search(dc, product, brdfdir=brdfdir, wvdir=wvdir, days_delta=days_delta):
                 fid.write(fp + "\n")
 
 
@@ -495,6 +495,18 @@ def make_ard_pbs(level1_list, **ard_click_params):
     default=Path.cwd(),
 )
 @click.option(
+    "--brdfdir",
+    type=click.Path(file_okay=False),
+    help="The home directory of BRDF data used by scene select.",
+    default=BRDF_DIR,
+)
+@click.option(
+    "--wvdir",
+    type=click.Path(file_okay=False),
+    help="The home directory of water vapour data used by scene select.",
+    default=WV_DIR,
+)
+@click.option(
     "--scene-limit",
     default=300,
     type=int,
@@ -541,6 +553,8 @@ def scene_select(
     days_delta: int,
     products: list,
     logdir: click.Path,
+    brdfdir: click.Path,
+    wvdir: click.Path,
     stop_logging: bool,
     log_config: click.Path,
     scene_limit: Optional[int],
@@ -564,6 +578,8 @@ def scene_select(
     :return: list of scenes to ARD process
     """
     logdir = Path(logdir).resolve()
+    brdfdir = Path(brdfdir).resolve()
+    wvdir = Path(wvdir).resolve()
     # If we write a file we write it in the job dir
     # set up the scene select job dir in the log dir
     jobid = uuid.uuid4().hex[0:6]
@@ -584,7 +600,12 @@ def scene_select(
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         if search_datacube:
             get_landsat_level1_from_datacube_childless(
-                usgs_level1_files, config=config, days_delta=days_delta, products=products
+                usgs_level1_files,
+                products=products,
+                brdfdir=brdfdir,
+                wvdir=wvdir,
+                config=config,
+                days_delta=days_delta,
             )
         else:
             LOGGER.warning("searching the file system is untested.")

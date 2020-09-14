@@ -6,6 +6,7 @@ from pathlib import Path
 
 from scene_select.ard_scene_select import scene_select, DATA_DIR
 from scene_select.generate_aoi import generate_region
+from scene_select.check_ancillary import BRDF_DIR, WV_DIR
 
 OZWRS = DATA_DIR.joinpath("Australian_Wrs_list.txt")
 TEST_DATA_DIR = Path(__file__).parent.joinpath("test_data")
@@ -35,6 +36,8 @@ def test_scene_select_main():
         env=None,
         stop_logging=True,
         log_config=None,
+        brdfdir=BRDF_DIR,
+        wvdir=WV_DIR,
         scene_limit=999999,
     )
     standard = set(line.strip() for line in open(STANDARD_SCENES_SELECTED))
