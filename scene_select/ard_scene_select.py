@@ -237,7 +237,7 @@ def process_scene(dataset, ancillary_ob, days_delta):
     assert dataset.local_path.name.endswith("metadata.yaml")
 
     days_ago = datetime.now(dataset.time.end.tzinfo) - timedelta(days=days_delta)
-    # Continue here if definitive cannot be procduced
+    # Continue here if a maturity level of final cannot be procduced
     # since the ancillary files are not there
     ancill_there, msg = ancillary_ob.definitive_ancillary_files(dataset.time.end)
     if ancill_there is False:
