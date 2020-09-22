@@ -301,6 +301,7 @@ def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
             )
         }
         processed_ard_scene_ids = {chopped_scene_id(s) for s in processed_ard_scene_ids}
+        print (processed_ard_scene_ids)
     else:
         # scene select has its own mapping for l1 product to ard product
         # (ARD_PARENT_PRODUCT_MAPPING).
