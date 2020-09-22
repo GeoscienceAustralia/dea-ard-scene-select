@@ -294,14 +294,11 @@ def chopped_scene_id(scene_id: str) -> str:
 def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
     # FIXME add expressions for more control
     if product in ARD_PARENT_PRODUCT_MAPPING:
-        processed_ard_scene_ids = {
-            result.landsat_scene_id
-            for result in dc.index.datasets.search_returning(
-                ("landsat_scene_id",), product=ARD_PARENT_PRODUCT_MAPPING[product]
-            )
-        }
-        processed_ard_scene_ids = {chopped_scene_id(s) for s in processed_ard_scene_ids}
-        print (processed_ard_scene_ids)
+        processed_ard_scene_ids = {}
+        for result in dc.index.datasets.search_returning(
+            ("landsat_scene_id", "dataset_maturity"), product=ARD_PARENT_PRODUCT_MAPPING[product]
+        ):
+            processed_ard_scene_ids[chopped_scene_id(result.landsat_scene_id)] = result.dataset_maturity
     else:
         # scene select has its own mapping for l1 product to ard product
         # (ARD_PARENT_PRODUCT_MAPPING).
@@ -318,13 +315,18 @@ def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
         )
         if processed_ard_scene_ids:
-            if chopped_scene_id(dataset.metadata.landsat_scene_id) in processed_ard_scene_ids:
+            a_chopped_scene_id = chopped_scene_id(dataset.metadata.landsat_scene_id)
+            if a_chopped_scene_id in processed_ard_scene_ids:
                 kwargs = {
                     DATASETPATH: file_path,
                     REASON: "The scene has been processed",
                     SCENEID: dataset.metadata.landsat_scene_id,
                 }
                 LOGGER.debug(SCENEREMOVED, **kwargs)
+
+                # if processed_ard_scene_id[a_chopped_scene_id] == 'interim':
+                # lets build a list of uuid's to delete
+                # str(dataset.id)
                 continue
 
         if process_scene(dataset, ancillary_ob, days_delta) is False:
