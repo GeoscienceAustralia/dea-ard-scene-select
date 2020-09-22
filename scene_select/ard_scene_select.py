@@ -89,6 +89,19 @@ L8_PATTERN = (
     r"(?P<extension>.tar)$"
 )
 
+L8_PATTERN_NO_TAR = (
+    r"^(?P<sensor>LC)"
+    r"(?P<satellite>08)_"
+    r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+    r"(?P<wrsPath>[0-9]{3})"
+    r"(?P<wrsRow>[0-9]{3})_"
+    r"(?P<acquisitionDate>[0-9]{8})_"
+    r"(?P<processingDate>[0-9]{8})_"
+    r"(?P<collectionNumber>01)_"
+    r"(?P<collectionCategory>T1|T2)"
+    r"(?P<extension>)$"
+)
+
 # L1TP and L1GT are all ortho-rectified with DEM.
 # The only difference is L1GT was processed without Ground Control Points
 # - but because LS8 orbit is very accurate so LS8 L1GT products with orbital
@@ -99,6 +112,19 @@ L8_PATTERN = (
 # landsat 7 filename pattern is configured to match only
 # processing level L1TP with .tar extension.
 L7_PATTERN = (
+    r"^(?P<sensor>LE)"
+    r"(?P<satellite>07)_"
+    r"(?P<processingCorrectionLevel>L1TP)_"
+    r"(?P<wrsPath>[0-9]{3})"
+    r"(?P<wrsRow>[0-9]{3})_"
+    r"(?P<acquisitionDate>[0-9]{8})_"
+    r"(?P<processingDate>[0-9]{8})_"
+    r"(?P<collectionNumber>01)_"
+    r"(?P<collectionCategory>T1|T2)"
+    r"(?P<extension>.tar)$"
+)
+
+L7_PATTERN_NO_TAR = (
     r"^(?P<sensor>LE)"
     r"(?P<satellite>07)_"
     r"(?P<processingCorrectionLevel>L1TP)_"
@@ -123,8 +149,29 @@ L5_PATTERN = (
     r"(?P<processingDate>[0-9]{8})_"
     r"(?P<collectionNumber>01)_"
     r"(?P<collectionCategory>T1|T2)"
-    r"(?P<extension>.tar)$"
+    r"(?P<extension>)$"
 )
+
+L5_PATTERN_NO_TAR = (
+    r"^(?P<sensor>LT)"
+    r"(?P<satellite>05)_"
+    r"(?P<processingCorrectionLevel>L1TP)_"
+    r"(?P<wrsPath>[0-9]{3})"
+    r"(?P<wrsRow>[0-9]{3})_"
+    r"(?P<acquisitionDate>[0-9]{8})_"
+    r"(?P<processingDate>[0-9]{8})_"
+    r"(?P<collectionNumber>01)_"
+    r"(?P<collectionCategory>T1|T2)"
+    r"(?P<extension>)$"
+)
+
+PROCESSING_PATTERN_MAPPING = {
+    "ga_ls5t_level1_3": L5_PATTERN_NO_TAR,
+    "ga_ls7e_level1_3": L7_PATTERN_NO_TAR,
+    "usgs_ls5t_level1_1": L5_PATTERN_NO_TAR,
+    "usgs_ls7e_level1_1": L7_PATTERN_NO_TAR,
+    "usgs_ls8c_level1_1": L8_PATTERN_NO_TAR,
+}
 
 
 class PythonLiteralOption(click.Option):
@@ -195,7 +242,7 @@ def path_row_filter(
             ls5_list.append(scene_path)
 
         else:
-            kwargs = {DATASETPATH: scene_path, REASON: "Processing level too low"}
+            kwargs = {DATASETPATH: scene_path, REASON: "Processing level too low, old"}
             LOGGER.debug(SCENEREMOVED, **kwargs)
     # SUMMARY
     LOGGER.info(SUMMARY, max_ls8_scenes=len(ls8_list))
@@ -314,6 +361,7 @@ def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
         )
+
         if processed_ard_scene_ids:
             a_chopped_scene_id = chopped_scene_id(dataset.metadata.landsat_scene_id)
             if a_chopped_scene_id in processed_ard_scene_ids:
@@ -328,6 +376,11 @@ def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
                 # lets build a list of uuid's to delete
                 # str(dataset.id)
                 continue
+
+        if not re.match(PROCESSING_PATTERN_MAPPING[product], dataset.metadata.landsat_product_id):
+            kwargs = {REASON: "Processing level too low, new ", SCENEID: dataset.metadata.landsat_scene_id}
+            LOGGER.debug(SCENEREMOVED, **kwargs)
+            continue
 
         if process_scene(dataset, ancillary_ob, days_delta) is False:
             continue
