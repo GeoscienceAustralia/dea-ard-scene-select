@@ -195,6 +195,14 @@ def write(filename: Path, list_to_write: List) -> None:
             fid.write(item + "\n")
 
 
+def allowed_codes_to_region_codes(allowed_codes: Path) -> List:
+    """ Convert a file of allowed codes to a list of region codes. """
+    with open(allowed_codes, "r") as fid:
+        path_row_list = [line.rstrip() for line in fid.readlines()]
+    path_row_list = ["{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1])) for item in path_row_list]
+    return path_row_list
+
+
 def path_row_filter(
     scenes_to_filter_list: Union[List[str], Path],
     path_row_list: Union[List[str], Path],
@@ -338,7 +346,7 @@ def chopped_scene_id(scene_id: str) -> str:
     return capture_id
 
 
-def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
+def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, region_codes: List, days_delta=0):
     # FIXME add expressions for more control
     if product in ARD_PARENT_PRODUCT_MAPPING:
         processed_ard_scene_ids = {}
@@ -382,6 +390,17 @@ def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
+        # print (dataset.metadata.region_code)
+        # print (region_codes)
+        if dataset.metadata.region_code not in region_codes:
+            kwargs = {
+                SCENEID: dataset.metadata.landsat_scene_id,
+                REASON: "Region not in AOI",
+                MSG: ("Path row %s" % dataset.metadata.region_code),
+            }
+            LOGGER.debug(SCENEREMOVED, **kwargs)
+            continue
+
         if process_scene(dataset, ancillary_ob, days_delta) is False:
             continue
 
@@ -399,13 +418,21 @@ def _do_parent_search(dc, product, brdfdir: Path, wvdir: Path, days_delta=0):
 
 
 def get_landsat_level1_from_datacube_childless(
-    outfile: Path, products: List[str], brdfdir: Path, wvdir: Path, config: Optional[Path] = None, days_delta: int = 21
+    outfile: Path,
+    products: List[str],
+    brdfdir: Path,
+    wvdir: Path,
+    region_codes: List,
+    config: Optional[Path] = None,
+    days_delta: int = 21,
 ) -> None:
     """Writes all the files returned from datacube for level1 to a text file."""
     dc = datacube.Datacube(app="gen-list", config=config)
     with open(outfile, "w") as fid:
         for product in products:
-            for fp in _do_parent_search(dc, product, brdfdir=brdfdir, wvdir=wvdir, days_delta=days_delta):
+            for fp in _do_parent_search(
+                dc, product, brdfdir=brdfdir, wvdir=wvdir, region_codes=region_codes, days_delta=days_delta
+            ):
                 fid.write(fp + "\n")
 
 
@@ -652,6 +679,10 @@ def scene_select(
     # So put it in the ard parameter dictionary
     ard_click_params["logdir"] = logdir
 
+    # read in allowed_codes and convert to region codes format
+    region_codes = allowed_codes_to_region_codes(allowed_codes)
+
+    # FIXME add scene limit
     if not usgs_level1_files:
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         if search_datacube:
@@ -660,6 +691,7 @@ def scene_select(
                 products=products,
                 brdfdir=brdfdir,
                 wvdir=wvdir,
+                region_codes=region_codes,
                 config=config,
                 days_delta=days_delta,
             )
