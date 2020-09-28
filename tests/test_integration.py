@@ -17,45 +17,6 @@ STANDARD_WRS_AOI = TEST_DATA_DIR.joinpath("standard_wrs_list.txt")
 # actually, we done have the results file yet...
 
 
-def test_scene_select_main():
-
-    dirpath = tempfile.mkdtemp()
-    scenes_filepath, all_scenes_list = scene_select.callback(
-        usgs_level1_files=L1EXAMPLES,
-        search_datacube=False,
-        allowed_codes=OZWRS,
-        nprocs=1,
-        config=None,
-        days_delta=None,
-        products=None,
-        logdir=dirpath,
-        run_ard=False,
-        nodes=None,
-        walltime=None,
-        workers=None,
-        env=None,
-        stop_logging=True,
-        log_config=None,
-        brdfdir=BRDF_DIR,
-        wvdir=WV_DIR,
-        scene_limit=999999,
-    )
-    # FIXME this test should be removed when the filtering
-    # after loading the file is removed.
-    # standard = set(line.strip() for line in open(STANDARD_SCENES_SELECTED))
-    standard = 218483
-    results = set(all_scenes_list)
-
-    # Note this is just comparing the results from 2020-07-01 to when you ran the test
-    # Good for stopping new errors coming in
-    # Will not pick up anything bad before then
-    # Plus this does not cover the ODC code.
-    assert standard == len(results)
-
-    # ... do stuff with dirpath
-    shutil.rmtree(dirpath)
-
-
 def test_generate_aoi_main():
 
     dirpath = tempfile.mkdtemp()
