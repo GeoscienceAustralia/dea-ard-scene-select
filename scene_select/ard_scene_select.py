@@ -148,11 +148,6 @@ def allowed_codes_to_region_codes(allowed_codes: Path) -> List:
     return path_row_list
 
 
-def mgrs_filter(scenes_to_filter_list: Union[List[str], Path], mgrs_list: Union[List[str], Path]) -> None:
-    """Checks scenes to filter list if mrgs tile name are in mrgs list."""
-    raise NotImplementedError
-
-
 def process_scene(dataset, ancillary_ob, days_delta):
     if not dataset.local_path:
         kwargs = {
