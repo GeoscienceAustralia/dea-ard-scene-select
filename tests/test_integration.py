@@ -6,6 +6,7 @@ from pathlib import Path
 
 from scene_select.ard_scene_select import scene_select, DATA_DIR
 from scene_select.generate_aoi import generate_region
+from scene_select.check_ancillary import BRDF_DIR, WV_DIR
 
 OZWRS = DATA_DIR.joinpath("Australian_Wrs_list.txt")
 TEST_DATA_DIR = Path(__file__).parent.joinpath("test_data")
@@ -14,37 +15,6 @@ L1EXAMPLES = TEST_DATA_DIR.joinpath("All_Landsat_Level1_Nci_Files.txt")
 # The Worldwide Reference System (WRS) is a global notation system for Landsat data.
 STANDARD_WRS_AOI = TEST_DATA_DIR.joinpath("standard_wrs_list.txt")
 # actually, we done have the results file yet...
-
-
-def test_scene_select_main():
-
-    dirpath = tempfile.mkdtemp()
-    scenes_filepath, all_scenes_list = scene_select.callback(
-        usgs_level1_files=L1EXAMPLES,
-        search_datacube=False,
-        allowed_codes=OZWRS,
-        nprocs=1,
-        config=None,
-        days_delta=None,
-        products=None,
-        workdir=dirpath,
-        run_ard=False,
-        nodes=None,
-        walltime=None,
-        workers=None,
-        env=None,
-    )
-    standard = set(line.strip() for line in open(STANDARD_SCENES_SELECTED))
-    results = set(all_scenes_list)
-
-    # Note this is just comparing the results from 2020-07-01 to when you ran the test
-    # Good for stopping new errors coming in
-    # Will not pick up anything bad before then
-    # Plus this does not cover the ODC code.
-    assert standard == results
-
-    # ... do stuff with dirpath
-    shutil.rmtree(dirpath)
 
 
 def test_generate_aoi_main():

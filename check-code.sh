@@ -4,9 +4,10 @@
 # Other DEA check-code.sh's do not have this....
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
-module load dea
 
 module load h5-compression-filters/20200612
+
+module load dea
 
 set -eu
 set -x

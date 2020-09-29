@@ -3,6 +3,10 @@
 import datetime
 from pathlib import Path
 import structlog
+from functools import lru_cache
+
+# This is needed when testing locally
+# import hdf5plugin
 import h5py
 import numpy
 import pandas
@@ -48,38 +52,54 @@ def read_h5_table(fid, dataset_name):
     return data
 
 
-def definitive_ancillary_files(acquisition_datetime, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
-    brdf_path = Path(brdf_dir)
-    wv_path = Path(water_vapour_dir)
+class AncillaryFiles:
+    def __init__(self, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
+        self.brdf_path = Path(brdf_dir)
+        self.wv_path = Path(water_vapour_dir)
+        self.max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
 
-    # results
-    wv_metadata = {}
+    @lru_cache(maxsize=32)
+    def wv_file_exists(self, acquisition_year):
+        wv_pathname = self.wv_path.joinpath(WV_FMT.format(year=acquisition_year))
+        return wv_pathname.exists()
 
-    # get year of acquisition to confirm definitive data
-    wv_pathname = wv_path.joinpath(WV_FMT.format(year=acquisition_datetime.year))
-    if wv_pathname.exists():
+    @lru_cache(maxsize=32)
+    def get_wv_index(self, acquisition_year):
+        wv_pathname = self.wv_path.joinpath(WV_FMT.format(year=acquisition_year))
         with h5py.File(str(wv_pathname), "r") as fid:
             index = read_h5_table(fid, "INDEX")
+        return index
 
-        # 1 day tolerance
-        max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
+    @lru_cache(maxsize=20000)
+    def brdf_day_exists(self, ymd):
+        brdf_day_of_interest = self.brdf_path.joinpath(ymd)
+        return brdf_day_of_interest.exists()
+
+    def definitive_ancillary_files(self, acquisition_datetime):
+
+        if not self.wv_file_exists(acquisition_datetime.year):
+            return False, "Water vapour data for year {} does not exist.".format(acquisition_datetime.year)
+
+        # get year of acquisition to confirm definitive data
+        index = self.get_wv_index(acquisition_datetime.year)
+
         # Removing timezone info since different UTC formats were clashing.
         acquisition_datetime = acquisition_datetime.replace(tzinfo=None)
+
         time_delta = index.timestamp - acquisition_datetime
-        result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > max_tolerance)]
+        result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > self.max_tolerance)]
 
         if result.shape[0] == 0:
-            return False
+            return False, "Water vapour data for {} does not exist.".format(acquisition_datetime)
         else:
             if acquisition_datetime < BRDF_DEFINITIVE_START_DATE:
-                return True
+                return True, ""
             else:
                 ymd = acquisition_datetime.strftime("%Y.%m.%d")
-                brdf_day_of_interest = brdf_path.joinpath(ymd)
-
-                return brdf_day_of_interest.exists
-    else:
-        return False
+                if self.brdf_day_exists(ymd):
+                    return True, ""
+                else:
+                    return False, "BRDF data for {} does not exist.".format(ymd)
 
 
 if __name__ == "__main__":
