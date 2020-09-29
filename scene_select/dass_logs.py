@@ -40,7 +40,7 @@ class FormatJSONL(logging.Formatter):
 LOGGER = get_wrapped_logger("general")
 
 
-class LogMainFunction(object):
+class LogMainFunction:
     def __init__(self):
         self.logger = LOGGER
 

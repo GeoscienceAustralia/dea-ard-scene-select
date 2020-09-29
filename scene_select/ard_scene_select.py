@@ -14,7 +14,6 @@ import subprocess
 from datetime import datetime, timedelta
 import click
 from logging.config import fileConfig
-import filecmp
 
 try:
     import datacube
@@ -159,7 +158,7 @@ def process_scene(dataset, ancillary_ob, days_delta):
         kwargs = {
             DATASETID: str(dataset.id),
             REASON: "Skipping dataset without local paths",
-            MSG: ("Bad scene format %s" % scene),
+            MSG: ("Bad scene format"),
         }
         LOGGER.warning(SCENEREMOVED, **kwargs)
         return False
@@ -274,8 +273,6 @@ def l1_filter(dc, product, brdfdir: Path, wvdir: Path, region_codes: List, scene
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
-        # print (dataset.metadata.region_code)
-        # print (region_codes)
         if dataset.metadata.region_code not in region_codes:
             kwargs = {
                 SCENEID: dataset.metadata.landsat_scene_id,
@@ -417,12 +414,9 @@ def make_ard_pbs(level1_list, **ard_click_params):
     help="full path to a text files containing path/row or MGRS tile name to act as a filter",
 )
 @click.option(
-    "--nprocs", type=int, help="number of processes to enable faster search through a  large file system", default=1
-)
-@click.option(
     "--config",
     type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to a datacube config text file",
+    help="Full path to a datacube config text file. This describes the ODC database.",
     default=None,
 )
 @click.option("--days_delta", type=int, help="Only process files older than days delta.", default=0)
@@ -491,7 +485,6 @@ def make_ard_pbs(level1_list, **ard_click_params):
 def scene_select(
     usgs_level1_files: click.Path,
     allowed_codes: click.Path,
-    nprocs: int,
     config: click.Path,
     days_delta: int,
     products: list,
@@ -520,13 +513,14 @@ def scene_select(
 
     :return: list of scenes to ARD process
     """
+    # pylint: disable=R0913, R0914
+    # R0913: Too many arguments
+    # R0914: Too many local variables
+
     logdir = Path(logdir).resolve()
-    brdfdir = Path(brdfdir).resolve()
-    wvdir = Path(wvdir).resolve()
     # If we write a file we write it in the job dir
     # set up the scene select job dir in the log dir
-    jobid = uuid.uuid4().hex[0:6]
-    jobdir = logdir.joinpath(FMT2.format(jobid=jobid))
+    jobdir = logdir.joinpath(FMT2.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
 
     # FIXME test this
@@ -540,16 +534,13 @@ def scene_select(
     ard_click_params["logdir"] = logdir
 
     if not usgs_level1_files:
-        # read in allowed_codes and convert to region codes format
-        region_codes = allowed_codes_to_region_codes(allowed_codes)
-
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         l1_count = l1_scenes_to_process(
             usgs_level1_files,
             products=products,
-            brdfdir=brdfdir,
-            wvdir=wvdir,
-            region_codes=region_codes,
+            brdfdir=Path(brdfdir).resolve(),
+            wvdir=Path(wvdir).resolve(),
+            region_codes=allowed_codes_to_region_codes(allowed_codes),
             config=config,
             scene_limit=scene_limit,
             days_delta=days_delta,
