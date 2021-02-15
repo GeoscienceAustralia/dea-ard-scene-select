@@ -5,7 +5,6 @@ from pathlib import Path
 import datetime
 import pytz
 
-
 from scene_select.ard_scene_select import (
     dict2ard_arg_string,
     allowed_codes_to_region_codes,
@@ -13,7 +12,6 @@ from scene_select.ard_scene_select import (
     _calc_nodes_req,
     _calc_node_with_defaults,
 )
-
 
 
 def test_dict2ard_arg_string():
@@ -77,29 +75,19 @@ def test_exclude_days_empty():
 
 def test_calc_nodes_req():
     granule_count = 400
-<<<<<<< HEAD
-    walltime = "20:59:00"
-=======
+
     walltime = '20:59:00'
->>>>>>> adding a warning if the walltime is too low
     workers = 28
     hours_per_granule = 1.5
     results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
     assert results == 2
-<<<<<<< HEAD
 
     granule_count = 800
     walltime = "20:00:00"
-=======
-    
-    granule_count = 800
-    walltime = '20:00:00'
->>>>>>> adding a warning if the walltime is too low
     workers = 28
     hours_per_granule = 1.5
     results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
     assert results == 3
-<<<<<<< HEAD
 
     granule_count = 1
     walltime = "01:00:00"
@@ -107,33 +95,13 @@ def test_calc_nodes_req():
     hours_per_granule = 7
     results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
     print(results)
-=======
-    
-    granule_count = 1
-    walltime = '01:00:00'
-    workers = 1
-    hours_per_granule = 7
-    results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
-    print (results)
->>>>>>> adding a warning if the walltime is too low
-    assert results == 7
 
 
 def test_calc_nodes_req():
-<<<<<<< HEAD
     ard_click_params = {"walltime": "1:00:00", "nodes": None, "workers": None}
     count_all_scenes_list = 1
 
-=======
-    ard_click_params = {"walltime":"1:00:00", "nodes":None, "workers":None}
-    count_all_scenes_list = 1
-    
->>>>>>> adding a warning if the walltime is too low
     try:
         _calc_node_with_defaults(ard_click_params, count_all_scenes_list)
     except ValueError as err:
         assert len(err.args) >= 1
-<<<<<<< HEAD
-=======
-
->>>>>>> adding a warning if the walltime is too low
