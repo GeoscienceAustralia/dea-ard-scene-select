@@ -15,18 +15,24 @@ Branch Structure
    "develop", "The development branch."
    "module-prod", "The branch used to produce a module."
 
+
 Currently `develop` code is pushed to `production`.
 When Ops has more developers push to `master` then `production`.
 
 Module creation
 ---------------
 Modules are currently built off the develop branch. Create an annotated tag to tag a module build.
+=======
+Modules are built on the develop branch. Create an annotated tag to tag a module build.
+
 e.g.
 
     git tag -a "ard-scene-select-py3-dea/20201126" -m "my version 20201126"
 
 
 Production modules must be built as the `lpgs` user. This can be done using this sandbox;
+=======
+Production modules can be built as the lpgs user using this sandbox;
 
     /home/547/lpgs/sandbox/dea-ard-scene-select
 
