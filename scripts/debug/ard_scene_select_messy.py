@@ -199,8 +199,30 @@ def calc_processed_ard_scene_ids(dc, product):
 """
 
     if product in ARD_PARENT_PRODUCT_MAPPING:
-        print("**********     get_field_names    ************")
-        print(dc.index.datasets.get_field_names(product_name=ARD_PARENT_PRODUCT_MAPPING[product]))
+        #for prod in [product, ARD_PARENT_PRODUCT_MAPPING[product]]:
+        prod = product
+        print("**********     get_field_names   {} ************".format(prod))
+        field_names = dc.index.datasets.get_field_names(product_name=prod)
+        print(field_names)
+        for a_name in ['local_path', 'landsat_product_id', 'region_code',
+                       'id', 'time', ]:
+            if a_name in field_names:
+                print ("{} is in".format(a_name))
+            else:
+                print ("{} OUT!!!".format(a_name))
+
+    #sys.exit(0)
+
+    datasets = list(dc.index.datasets.search(product=product))
+    print (datasets[0].local_path)
+    print (datasets[0].metadata_doc)
+    #print (datasets[0].metadata_doc['uri'])
+
+    sys.exit(0)
+    #    file_path = (
+    #        dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix(
+
+    if product in ARD_PARENT_PRODUCT_MAPPING:
         print("**********    SUMMARIES    ************")
         summy = dc.index.datasets.search_summaries(product=ARD_PARENT_PRODUCT_MAPPING[product])
 
