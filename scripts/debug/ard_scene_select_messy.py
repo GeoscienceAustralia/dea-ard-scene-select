@@ -222,7 +222,7 @@ def search_summaries_landsat_product_id():
         #print (result.metadata_doc)
         #print (result.metadata_doc["properties"])
         print (result["metadata_doc"]["properties"]["landsat:landsat_product_id"])
-        break
+        
 
 def calc_processed_ard_scene_ids(dc, product):
     """Return None or a dictionary with key chopped_scene_id and value  maturity level.
