@@ -16,6 +16,10 @@ import pytz
 
 import pprint
 import sys
+import time
+import timeit
+
+#dc = None
 
 try:
     import datacube
@@ -193,26 +197,92 @@ def chopped_scene_id(scene_id: str) -> str:
     capture_id = scene_id[:-5]
     return capture_id
 
+def search_returning_landsat_product_id():
+    for result in dc_global.index.datasets.search_returning(
+            ("landsat_product_id",),
+            product='usgs_ls8c_level1_1'
+        ):
+        print (result.landsat_product_id)
+
+def search_landsat_product_id():
+    for result in dc_global.index.datasets.search(
+            product='usgs_ls8c_level1_1'
+        ):
+        #print (result.metadata_doc)
+        #print (result.metadata_doc["properties"])
+        print (result.metadata_doc["properties"]["landsat:landsat_product_id"])
+        #break
+
+
+
+def search_summaries_landsat_product_id():
+    for result in dc_global.index.datasets.search_summaries(
+            product='usgs_ls8c_level1_1'
+        ):
+        #print (result.metadata_doc)
+        #print (result.metadata_doc["properties"])
+        print (result["metadata_doc"]["properties"]["landsat:landsat_product_id"])
+        break
 
 def calc_processed_ard_scene_ids(dc, product):
     """Return None or a dictionary with key chopped_scene_id and value  maturity level.
 """
+    global dc_global
+    dc_global = dc
 
-    if product in ARD_PARENT_PRODUCT_MAPPING:
-        #for prod in [product, ARD_PARENT_PRODUCT_MAPPING[product]]:
-        prod = product
-        print("**********     get_field_names   {} ************".format(prod))
-        field_names = dc.index.datasets.get_field_names(product_name=prod)
-        print(field_names)
-        for a_name in ['local_path', 'landsat_product_id', 'region_code',
+    if False and product in ARD_PARENT_PRODUCT_MAPPING:
+        for prod in [product, ARD_PARENT_PRODUCT_MAPPING[product]]:
+            #prod = product
+            print("**********     get_field_names   {} ************".format(prod))
+            field_names = dc.index.datasets.get_field_names(product_name=prod)
+            print(field_names)
+            for a_name in ['local_path', 'landsat_product_id', 'region_code',
                        'id', 'time', ]:
-            if a_name in field_names:
-                print ("{} is in".format(a_name))
-            else:
-                print ("{} OUT!!!".format(a_name))
+                if a_name in field_names:
+                    print ("{} is in".format(a_name))
+                else:
+                    print ("{} OUT!!!".format(a_name))
+    if False:
+        t0 = time.time()
+        for result in dc.index.datasets.search_returning(
+                ("landsat_product_id",),
+                product='usgs_ls8c_level1_1'
+        ):
+            print (result["landsat_product_id"])
+        t1 = time.time()
+        
+        total = t1-t0
+        print ("total")
+        print (total)
+    print ('timeit start')
+    atime_search_returning_landsat_product_id = None
+    atime_search_summaries_landsat_product_id = None
+    atime_search_landsat_product_id = None
+    #print (timeit.timeit(search_returning_landsat_product_id, number=20))
+    atime_search_returning_landsat_product_id = min(timeit.Timer(search_returning_landsat_product_id).repeat(repeat=10, number=1))
+    atime_search_summaries_landsat_product_id = min(timeit.Timer(search_summaries_landsat_product_id).repeat(repeat=10, number=1))
+    atime_search_landsat_product_id = min(timeit.Timer(search_landsat_product_id).repeat(repeat=10, number=1))
+    print ('atime_search_returning_landsat_product_id')
+    print (atime_search_returning_landsat_product_id)
+    print ('atime_search_landsat_product_id')
+    print (atime_search_landsat_product_id)
+    print ('atime_search_summaries_landsat_product_id')
+    print (atime_search_summaries_landsat_product_id)
+    print ('timeit end')
+    sys.exit(0)
 
-    #sys.exit(0)
+    """
+atime_search_returning_landsat_product_id
+3.427654878993053
+atime_search_landsat_product_id
+18.267368010012433
 
+    t0 = time.time()
+    code_block
+    t1 = time.time()
+    
+    total = t1-t0
+    """
     datasets = list(dc.index.datasets.search(product=product))
     print (datasets[0].local_path)
     print (datasets[0].metadata_doc)
