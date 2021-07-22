@@ -5,12 +5,12 @@ module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 module use /g/data/u46/users/dsg547/devmodules/modulefiles
 
-#module load ard-scene-select-py3-dea/20210216
+module load ard-scene-select-py3-dea/20210216
 
-# /g/data/u46/users/dsg547/devmodules/
-module load ard-scene-select-py3-dea/20210722
-#module load h5-compression-filters/20200612
-exit
+#module load ard-scene-select-py3-dea/20210722
+
+module load h5-compression-filters/20200612
+
 
 SSPATH=$PWD/../../
 
