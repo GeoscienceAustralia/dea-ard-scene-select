@@ -7,13 +7,14 @@ umask 002
 
 echo "##########################"
 echo
-echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
-#echo "module_dir = ${module_dir:=/g/data/u46/users/dsg547/devmodules}"
+#echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
+echo "module_dir = ${module_dir:=/g/data/u46/users/dsg547/devmodules}"
 #echo "module_dir = ${module_dir:=/g/data/v10/public/test_modules}"
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
-echo "dea_module = ${dea_module:=dea/20200617}"
-echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
+echo "dea_module = ${dea_module:=dea/20200713}"
+#echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
+echo "dep_module = ${dep_module:=h5-compression-filters/20210722}"
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
 echo "instance = ${instance}"
