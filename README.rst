@@ -1,14 +1,6 @@
 ard-scene-select: select scenes to be processed by ARD
 =======================================================
 
-Module creation
----------------
-Overall execute `dea-ard-scene-select/modules/go.exe` to generate a new module.
-
-Change `echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"` to change the destination location of the module.
-=======
-ard-scene-select:
-=======================================================
 
 This code is used to select scenes to be processed by ARD. This Repo is deployed as a module to run at NCI.  It is used in production to generate Landsat collection 3 ARD.
 
@@ -24,6 +16,9 @@ Branch Structure
 
 Currently `develop` code is pushed to `production`.
 When Ops has more developers push to `master` then `production`.
+
+Module creation
+---------------
 Modules are built of the develop branch. Create an annotated tag to tag a module build.
 e.g.
 
@@ -37,6 +32,8 @@ Production modules must be built as the `lpgs` user. This can be done using this
 To produce the module run this script;
 
     dea-ard-scene-select/modules/go.sh
+
+Change `echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"` to change the destination location of the module.
 
 To update the .env files used in production manually git pull from the production branch at this location;
 
