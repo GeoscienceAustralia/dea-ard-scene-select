@@ -14,12 +14,9 @@ module load h5-compression-filters/20200612
 
 SSPATH=$PWD/../../
 
-<<<<<<< HEAD
-=======
 #PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
     #     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 
->>>>>>> adding a warning if the walltime is too low
 # You'll need a scratch directory
 # mkdir scratch
 
