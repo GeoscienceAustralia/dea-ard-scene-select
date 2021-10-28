@@ -10,16 +10,17 @@ Branch Structure
 .. csv-table:: Branches
    :header: "Branch name", "Use"
 
-   "master", "The latest reviewed code."
-   "production", "The code version used in production. It is the .env files that are used in production."
+   "master", "Stable code base"
+   "v10-prod", "The code version used in production. It is the .env files that are used in production."
    "develop", "The development branch."
+   "module-prod", "The branch used to produce a module."
 
 Currently `develop` code is pushed to `production`.
 When Ops has more developers push to `master` then `production`.
 
 Module creation
 ---------------
-Modules are built of the develop branch. Create an annotated tag to tag a module build.
+Modules are currently built off the develop branch. Create an annotated tag to tag a module build.
 e.g.
 
     git tag -a "ard-scene-select-py3-dea/20201126" -m "my version 20201126"
