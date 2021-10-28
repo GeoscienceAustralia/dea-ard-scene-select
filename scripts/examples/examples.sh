@@ -9,10 +9,8 @@ module load ard-scene-select-py3-dea/20210216
 
 #module load ard-scene-select-py3-dea/20210722
 
-<<<<<<< HEAD
-=======
 module load ard-scene-select-py3-dea/20210216
->>>>>>> update examples
+
 module load h5-compression-filters/20200612
 
 

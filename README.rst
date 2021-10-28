@@ -11,19 +11,15 @@ Branch Structure
    :header: "Branch name", "Use"
 
    "master", "Stable code base"
-   "v10-prod", "The code version used in production. It is the .env files that are used in production."
+   "v10-prod", "The branch used in production. It is the .env files that are used in production."
    "develop", "The development branch."
    "module-prod", "The branch used to produce a module."
 
 
-Currently `develop` code is pushed to `production`.
-When Ops has more developers push to `master` then `production`.
 
 Module creation
 ---------------
-Modules are currently built off the develop branch. Create an annotated tag to tag a module build.
-=======
-Modules are built on the develop branch. Create an annotated tag to tag a module build.
+Modules are built off the module-prod branch. Create an annotated tag to tag a module build.
 
 e.g.
 
