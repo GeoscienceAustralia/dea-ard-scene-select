@@ -33,7 +33,7 @@ def test_generate_aoi_main():
     # remove the dirpath
     shutil.rmtree(dirpath)
 
-    
+
 def test_generate_mgrs_aoi():
 
     dirpath = tempfile.mkdtemp()
@@ -45,7 +45,7 @@ def test_generate_mgrs_aoi():
     # Good for stopping new errors coming in
     # Will not pick up anything bad before then
     assert standard == results
-    print (dirpath)
+    print(dirpath)
 
     # delete dirpath
     shutil.rmtree(dirpath)
