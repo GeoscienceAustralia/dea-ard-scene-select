@@ -76,7 +76,7 @@ def test_exclude_days_empty():
 def test_calc_nodes_req():
     granule_count = 400
 
-    walltime = '20:59:00'
+    walltime = "20:59:00"
     workers = 28
     hours_per_granule = 1.5
     results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)

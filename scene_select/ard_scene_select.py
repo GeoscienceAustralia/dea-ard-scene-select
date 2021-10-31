@@ -258,7 +258,7 @@ def l1_filter(
         LOGGER.debug("location:start dataset main loop")
         file_path = (
             dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
-        )        
+        )
         LOGGER.debug("location:post file_path")
         # Filter out if the processing level is too low
         if not re.match(PROCESSING_PATTERN_MAPPING[product],
@@ -346,7 +346,7 @@ def l1_filter(
                 }
                 LOGGER.debug(SCENEREMOVED, **kwargs)
                 continue
-        
+
         LOGGER.debug("location:post find blocked")
         if processed_ard_scene_ids:
             a_chopped_scene_id = chopped_scene_id(dataset.metadata.landsat_scene_id)
@@ -376,7 +376,7 @@ def l1_filter(
 
         # WARNING any filter under here will not be executed when processing interim scenes
 
-        LOGGER.debug("location:pre dataset_with_child" )
+        LOGGER.debug("location:pre dataset_with_child")
         # If any child exists that isn't archived
         if dataset_with_child(dc, dataset):
             kwargs = {
