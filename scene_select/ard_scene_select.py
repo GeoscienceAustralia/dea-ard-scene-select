@@ -48,6 +48,8 @@ REASON = "reason"
 MSG = "message"
 DATASETID = "dataset_id"
 SCENEID = "landsat_scene_id"
+PRODUCTID = "landsat_product_id"
+
 
 # No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING = {
@@ -56,6 +58,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls5t_level1_1": "ga_ls5t_ard_3",
     "usgs_ls7e_level1_1": "ga_ls7e_ard_3",
     "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
+    "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
 }
 
 NODE_TEMPLATE = """#!/bin/bash
@@ -126,6 +129,7 @@ PROCESSING_PATTERN_MAPPING = {
     "usgs_ls5t_level1_1": L5_PATTERN,
     "usgs_ls7e_level1_1": L7_PATTERN,
     "usgs_ls8c_level1_1": L8_PATTERN,
+    "usgs_ls8c_level1_2": L8_PATTERN,
 }
 
 
@@ -257,9 +261,12 @@ def l1_filter(
         )        
         LOGGER.debug("location:post file_path")
         # Filter out if the processing level is too low
-        if not re.match(PROCESSING_PATTERN_MAPPING[product], dataset.metadata.landsat_product_id):
+        if not re.match(PROCESSING_PATTERN_MAPPING[product],
+                        dataset.metadata.landsat_product_id):
 
-            kwargs = {REASON: "Processing level too low, new ", SCENEID: dataset.metadata.landsat_scene_id}
+            kwargs = {REASON: "Processing level too low, new ",
+                      SCENEID: dataset.metadata.landsat_scene_id,
+                      PRODUCTID: dataset.metadata.landsat_product_id}
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
