@@ -126,4 +126,7 @@ def test_L8_PATTERN():
     if not re.match(L8_C2_PATTERN, landsat_product_id):
         print(re.match(L8_C2_PATTERN, landsat_product_id))
         assert False
-
+    landsat_product_id = 'LC08_L1TP_094073_20211014_20211019_02_T1'
+    if not re.match(L8_C2_PATTERN, landsat_product_id):
+        print(re.match(L8_C2_PATTERN, landsat_product_id))
+        assert False
