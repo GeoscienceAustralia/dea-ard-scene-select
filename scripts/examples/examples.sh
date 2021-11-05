@@ -13,6 +13,7 @@ module load ard-scene-select-py3-dea/20210216
 
 module load h5-compression-filters/20200612
 
+mkdir -p scratch
 
 SSPATH=$PWD/../../
 
@@ -36,15 +37,15 @@ SSPATH=$PWD/../../
 
 time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 05:00:00 --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
 
-time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls7e_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env #--find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
-
-
-time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
+#time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls7e_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env #--find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
 
 
 #time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
 
-time ard-scene-select --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env  --scene-limit 999999 #--find-blocked
+
+#time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
+
+#time ard-scene-select --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env  --scene-limit 999999 #--find-blocked
 
 
 #time python3 ../../scene_select/ard_scene_select.py --products '["ga_ls5t_level1_3"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 7:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
