@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 import datetime
 import pytz
+import re
 
 from scene_select.ard_scene_select import (
     dict2ard_arg_string,
@@ -105,3 +106,24 @@ def test_calc_nodes_req():
         _calc_node_with_defaults(ard_click_params, count_all_scenes_list)
     except ValueError as err:
         assert len(err.args) >= 1
+
+        
+L8_C2_PATTERN = (
+    r"^(?P<sensor>LC)"
+    r"(?P<satellite>08)_"
+    r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+    r"(?P<wrsPath>[0-9]{3})"
+    r"(?P<wrsRow>[0-9]{3})_"
+    r"(?P<acquisitionDate>[0-9]{8})_"
+    r"(?P<processingDate>[0-9]{8})_"
+    r"(?P<collectionNumber>02)_"
+    r"(?P<collectionCategory>T1|T2)"
+    r"(?P<extension>)$"
+)
+
+def test_L8_PATTERN():
+    landsat_product_id = 'LC08_L1TP_089078_20211026_20211104_02_T1'
+    if not re.match(L8_C2_PATTERN, landsat_product_id):
+        print(re.match(L8_C2_PATTERN, landsat_product_id))
+        assert False
+

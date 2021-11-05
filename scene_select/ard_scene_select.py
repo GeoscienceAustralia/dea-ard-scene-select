@@ -73,7 +73,7 @@ ard_pbs --level1-list {scene_list} {ard_args}
 # landsat 8 filename pattern is configured to match only
 # processing level L1TP and L1GT for acquisition containing
 # both the TIRS and OLI sensors with .tar extension.
-L8_PATTERN = (
+L8_C1_PATTERN = (
     r"^(?P<sensor>LC)"
     r"(?P<satellite>08)_"
     r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
@@ -86,6 +86,19 @@ L8_PATTERN = (
     r"(?P<extension>)$"
 )
 
+
+L8_C2_PATTERN = (
+    r"^(?P<sensor>LC)"
+    r"(?P<satellite>08)_"
+    r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+    r"(?P<wrsPath>[0-9]{3})"
+    r"(?P<wrsRow>[0-9]{3})_"
+    r"(?P<acquisitionDate>[0-9]{8})_"
+    r"(?P<processingDate>[0-9]{8})_"
+    r"(?P<collectionNumber>02)_"
+    r"(?P<collectionCategory>T1|T2)"
+    r"(?P<extension>)$"
+)
 # L1TP and L1GT are all ortho-rectified with DEM.
 # The only difference is L1GT was processed without Ground Control Points
 # - but because LS8 orbit is very accurate so LS8 L1GT products with orbital
@@ -95,7 +108,7 @@ L8_PATTERN = (
 
 # landsat 7 filename pattern is configured to match only
 # processing level L1TP with .tar extension.
-L7_PATTERN = (
+L7_C1_PATTERN = (
     r"^(?P<sensor>LE)"
     r"(?P<satellite>07)_"
     r"(?P<processingCorrectionLevel>L1TP)_"
@@ -104,6 +117,19 @@ L7_PATTERN = (
     r"(?P<acquisitionDate>[0-9]{8})_"
     r"(?P<processingDate>[0-9]{8})_"
     r"(?P<collectionNumber>01)_"
+    r"(?P<collectionCategory>T1|T2)"
+    r"(?P<extension>)$"
+)
+
+L7_C2_PATTERN = (
+    r"^(?P<sensor>LE)"
+    r"(?P<satellite>07)_"
+    r"(?P<processingCorrectionLevel>L1TP)_"
+    r"(?P<wrsPath>[0-9]{3})"
+    r"(?P<wrsRow>[0-9]{3})_"
+    r"(?P<acquisitionDate>[0-9]{8})_"
+    r"(?P<processingDate>[0-9]{8})_"
+    r"(?P<collectionNumber>02)_"
     r"(?P<collectionCategory>T1|T2)"
     r"(?P<extension>)$"
 )
@@ -125,11 +151,12 @@ L5_PATTERN = (
 
 PROCESSING_PATTERN_MAPPING = {
     "ga_ls5t_level1_3": L5_PATTERN,
-    "ga_ls7e_level1_3": L7_PATTERN,
+    "ga_ls7e_level1_3": L7_C1_PATTERN,
     "usgs_ls5t_level1_1": L5_PATTERN,
-    "usgs_ls7e_level1_1": L7_PATTERN,
-    "usgs_ls8c_level1_1": L8_PATTERN,
-    "usgs_ls8c_level1_2": L8_PATTERN,
+    "usgs_ls7e_level1_1": L7_C1_PATTERN,
+    "usgs_ls7e_level1_2": L7_C2_PATTERN,
+    "usgs_ls8c_level1_1": L8_C1_PATTERN,
+    "usgs_ls8c_level1_2": L8_C2_PATTERN,
 }
 
 
