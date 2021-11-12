@@ -1,25 +1,26 @@
 #!/bin/bash
 
-echo If module load breaks check on a clean environment
-module use /g/data/v10/public/modules/modulefiles
-module use /g/data/v10/private/modules/modulefiles
-module use /g/data/u46/users/dsg547/devmodules/modulefiles
+if [[ $HOSTNAME == *"gadi"* ]]; then
+	echo If module load breaks check on a clean environment
+	module use /g/data/v10/public/modules/modulefiles
+	module use /g/data/v10/private/modules/modulefiles
+	module use /g/data/u46/users/dsg547/devmodules/modulefiles
 
-module load ard-scene-select-py3-dea/20210216
+	#module load ard-scene-select-py3-dea/20210216
 
-#module load ard-scene-select-py3-dea/20210722
+	#module load ard-scene-select-py3-dea/20210722
 
-module load ard-scene-select-py3-dea/20210216
+	#module load ard-scene-select-py3-dea/20210216
 
-module load h5-compression-filters/20200612
+	#module load h5-compression-filters/20200612
+fi
 
 mkdir -p scratch
 
 SSPATH=$PWD/../../
 
 #PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
-    #     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
-
+#     "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
 
 # You'll need a scratch directory
 # mkdir scratch
@@ -35,21 +36,17 @@ SSPATH=$PWD/../../
 #  local code local work dir, all products
 # slow
 
-time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 05:00:00 --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
+#time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 05:00:00 --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
 
 #time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls7e_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env #--find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
 
-
 #time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
-
 
 #time python3 ../../scene_select/ard_scene_select.py --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
 
 #time ard-scene-select --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env  --scene-limit 999999 #--find-blocked
 
-
 #time python3 ../../scene_select/ard_scene_select.py --products '["ga_ls5t_level1_3"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 7:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
-
 
 # --products '["ga_ls5t_level1_3"]'
 
@@ -67,11 +64,11 @@ time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir
 # use ODC, fast for OEC#
 #time python3 ../../scene_select/ard_scene_select.py  --products '["usgs_ls8c_level1_1"]'  --logdir scratch/ #--workdir scratch/  --pkgdir  scratch/ #--env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project u46 --walltime 05:00:00 #--stop-logging #--run-ard
 
-#  local code local work dir # 
+#  local code local work dir #
 #python3 ../../scene_select/ard_scene_select.py  --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project u46 --walltime 05:00:00 #--run-ard
 
 # local code local work dir and skipping odc
-#python3 ../../scene_select/ard_scene_select.py --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --index-datacube-env c3-samples-index-datacube.env --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 05:00:00 #--run-ard  --env prod-wagl.env 
+python3 ../../scene_select/ard_scene_select.py --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/ --index-datacube-env c3-samples-index-datacube.env --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 05:00:00 #--run-ard  --env prod-wagl.env
 
 # prod module local work dir and skipping odc
 #ard-scene-select --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project v10 --walltime 05:00:00 #--run-ard

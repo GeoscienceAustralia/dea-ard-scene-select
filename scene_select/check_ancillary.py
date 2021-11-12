@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 
 import datetime
-from pathlib import Path
-import structlog
 from functools import lru_cache
+from pathlib import Path
 
 # This is needed when testing locally
 # import hdf5plugin
 import h5py
 import numpy
 import pandas
-
+import structlog
 
 LOG = structlog.get_logger()
 BRDF_DEFINITIVE_START_DATE = datetime.datetime(2002, 7, 1)
@@ -42,7 +41,7 @@ def read_h5_table(fid, dataset_name):
 
     if dset.attrs.get("python_type") == "`Pandas.DataFrame`":
         col_names = dset.dtype.names
-        dtypes = [dset.attrs["{}_dtype".format(name)] for name in col_names]
+        dtypes = [dset.attrs[f"{name}_dtype"] for name in col_names]
         dtype = numpy.dtype(list(zip(col_names, dtypes)))
         data = pandas.DataFrame.from_records(dset[:].astype(dtype), index=idx_names)
     else:
@@ -73,10 +72,12 @@ class AncillaryFiles:
         brdf_day_of_interest = self.brdf_path.joinpath(ymd)
         return brdf_day_of_interest.exists()
 
-    def definitive_ancillary_files(self, acquisition_datetime):
+    def ancillary_files(self, acquisition_datetime):
 
         if not self.wv_file_exists(acquisition_datetime.year):
-            return False, "Water vapour data for year {} does not exist.".format(acquisition_datetime.year)
+            return False, "Water vapour data for year {} does not exist.".format(
+                acquisition_datetime.year
+            )
 
         # get year of acquisition to confirm definitive data
         index = self.get_wv_index(acquisition_datetime.year)
@@ -85,10 +86,14 @@ class AncillaryFiles:
         acquisition_datetime = acquisition_datetime.replace(tzinfo=None)
 
         time_delta = index.timestamp - acquisition_datetime
-        result = time_delta[(time_delta < datetime.timedelta()) & (time_delta > self.max_tolerance)]
+        result = time_delta[
+            (time_delta < datetime.timedelta()) & (time_delta > self.max_tolerance)
+        ]
 
         if result.shape[0] == 0:
-            return False, "Water vapour data for {} does not exist.".format(acquisition_datetime)
+            return False, "Water vapour data for {} does not exist.".format(
+                acquisition_datetime
+            )
         else:
             if acquisition_datetime < BRDF_DEFINITIVE_START_DATE:
                 return True, ""
@@ -97,7 +102,7 @@ class AncillaryFiles:
                 if self.brdf_day_exists(ymd):
                     return True, ""
                 else:
-                    return False, "BRDF data for {} does not exist.".format(ymd)
+                    return False, f"BRDF data for {ymd} does not exist."
 
 
 if __name__ == "__main__":

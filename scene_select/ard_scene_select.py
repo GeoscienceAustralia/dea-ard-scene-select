@@ -62,7 +62,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
 }
 
-NODE_TEMPLATE = """#!/bin/bash
+PBS_JOB = """#!/bin/bash
 module purge
 module load pbs
 
@@ -169,11 +169,11 @@ class PythonLiteralOption(click.Option):
             value = str(value)
             assert value.count("[") == 1
             assert value.count("]") == 1
-            list_as_str = value.replace('"', "'").split("[")[1].split("]")[0]
-            list_of_items = [item.strip().strip("'") for item in list_as_str.split(",")]
-            if list_of_items == [""]:
-                list_of_items = []
-            return list_of_items
+            list_str = value.replace('"', "'").split("[")[1].split("]")[0]
+            l_items = [item.strip().strip("'") for item in list_str.split(",")]
+            if l_items == [""]:
+                l_items = []
+            return l_items
         except Exception:
             raise click.BadParameter(value)
 
@@ -241,8 +241,8 @@ def calc_processed_ard_scene_ids(dc, product):
                     old_uuid=old_uuid,
                     new_uuid=result.id,
                 )
-
-            processed_ard_scene_ids[chopped_scene_id(result.landsat_scene_id)] = {
+            chopped_scene = chopped_scene_id(result.landsat_scene_id)
+            processed_ard_scene_ids[chopped_scene] = {
                 "dataset_maturity": result.dataset_maturity,
                 "id": result.id,
             }
@@ -263,7 +263,8 @@ def calc_processed_ard_scene_ids(dc, product):
 
 def exclude_days(days_to_exclude: List, checkdatetime):
     """
-    days_to_exclude format example; '["2020-08-09:2020-08-30", "2020-09-02:2020-09-05"]'
+    days_to_exclude format example;
+    '["2020-08-09:2020-08-30", "2020-09-02:2020-09-05"]'
     """
     for period in days_to_exclude:
         start, end = period.split(":")
@@ -306,21 +307,18 @@ def l1_filter(
     uuids2archive = []
     for dataset in dc.index.datasets.search(product=product):
         LOGGER.debug("location:start dataset main loop")
-        file_path = (
-            dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id)
-            .with_suffix(".tar")
-            .as_posix()
-        )
+        product_id = dataset.metadata.landsat_product_id
+        a_path = dataset.local_path.parent.joinpath(product_id)
+        file_path = a_path.with_suffix(".tar").as_posix()
         LOGGER.debug("location:post file_path")
         # Filter out if the processing level is too low
-        if not re.match(
-            PROCESSING_PATTERN_MAPPING[product], dataset.metadata.landsat_product_id
-        ):
+        prod_pattern = PROCESSING_PATTERN_MAPPING[product]
+        if not re.match(prod_pattern, product_id):
 
             kwargs = {
                 REASON: "Processing level too low, new ",
                 SCENEID: dataset.metadata.landsat_scene_id,
-                PRODUCTID: dataset.metadata.landsat_product_id,
+                PRODUCTID: product_id,
             }
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
@@ -330,7 +328,7 @@ def l1_filter(
             kwargs = {
                 SCENEID: dataset.metadata.landsat_scene_id,
                 REASON: "Region not in AOI",
-                "region_code": ("%s" % dataset.metadata.region_code),
+                "region_code": dataset.metadata.region_code,
                 "uuid": dataset.id,
             }
             LOGGER.debug(SCENEREMOVED, **kwargs)
@@ -349,7 +347,7 @@ def l1_filter(
 
         # Continue here if a maturity level of final cannot be procduced
         # since the ancillary files are not there
-        ancill_there, msg = ancillary_ob.definitive_ancillary_files(dataset.time.end)
+        ancill_there, msg = ancillary_ob.ancillary_files(dataset.time.end)
         if ancill_there is False:
             days_ago = datetime.datetime.now(
                 dataset.time.end.tzinfo
@@ -373,7 +371,7 @@ def l1_filter(
                     REASON: "ancillary files not ready",
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(dataset.time.end),
-                    MSG: ("Not ready: %s" % msg),
+                    MSG: (f"Not ready: {msg}"),
                 }
                 LOGGER.info(SCENEREMOVED, **kwargs)
                 continue
@@ -406,23 +404,21 @@ def l1_filter(
 
         LOGGER.debug("location:post find blocked")
         if processed_ard_scene_ids:
-            a_chopped_scene_id = chopped_scene_id(dataset.metadata.landsat_scene_id)
-            if a_chopped_scene_id in processed_ard_scene_ids:
+            a_scene_id = chopped_scene_id(dataset.metadata.landsat_scene_id)
+            if a_scene_id in processed_ard_scene_ids:
                 kwargs = {
                     DATASETPATH: file_path,
                     SCENEID: dataset.metadata.landsat_scene_id,
                 }
                 if removed_processed_scenes:
-                    kwargs[
-                        REASON
-                    ] = "Potential reprocessed scene blocked from ARD processing"
+                    kwargs[REASON] = "Potential blocked reprocessed scene."
                     # Could do this, but the info is in the file path
                     # kwargs['landsat_product_id']
                 else:
                     kwargs[REASON] = "The scene has been processed"
 
                 LOGGER.debug(SCENEREMOVED, **kwargs)
-                produced_ard = processed_ard_scene_ids[a_chopped_scene_id]
+                produced_ard = processed_ard_scene_ids[a_scene_id]
                 if (
                     produced_ard["dataset_maturity"] == "interim"
                     and ancill_there is True
@@ -436,7 +432,8 @@ def l1_filter(
                     files2process.append(file_path)
                 continue
 
-        # WARNING any filter under here will not be executed when processing interim scenes
+        # WARNING any filter under here will not be executed
+        # when processing interim scenes
 
         LOGGER.debug("location:pre dataset_with_child")
         # If any child exists that isn't archived
@@ -466,7 +463,7 @@ def l1_scenes_to_process(
     find_blocked: bool,
     config: Optional[Path] = None,
 ) -> Tuple[int, List[str]]:
-    """Writes all the files returned from datacube for level1 to a text file."""
+    """Writes all the files returned from datacube for level1 to a file."""
     dc = datacube.Datacube(app="gen-list", config=config)
     l1_count = 0
     with open(outfile, "w") as fid:
@@ -525,7 +522,8 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=7.5):
     # to avoid divide by zero errors
     if hours == 0:
         hours = 1
-    nodes = int(math.ceil(float(hours_per_granule * granule_count) / (hours * workers)))
+    total_hours = float(hours_per_granule * granule_count)
+    nodes = int(math.ceil(total_hours / (hours * workers)))
     if nodes == 0:
         # A zero node request to ard causes errors.
         nodes = 1
@@ -561,8 +559,8 @@ def make_ard_pbs(level1_list, **ard_click_params):
     else:
         env = Path(ard_click_params["env"]).resolve()
 
-    ard_args_str = dict2ard_arg_string(ard_click_params)
-    pbs = NODE_TEMPLATE.format(env=env, scene_list=level1_list, ard_args=ard_args_str)
+    ard_args = dict2ard_arg_string(ard_click_params)
+    pbs = PBS_JOB.format(env=env, scene_list=level1_list, ard_args=ard_args)
     return pbs
 
 
@@ -570,26 +568,29 @@ def make_ard_pbs(level1_list, **ard_click_params):
 @click.option(
     "--usgs-level1-files",
     type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to a text files containing all the level-1 USGS/ESA list to be filtered",
+    help="full path to a text files containing all "
+    "the level-1 USGS/ESA list to be filtered",
 )
 @click.option(
     "--allowed-codes",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     default=DATA_DIR.joinpath(LANDSAT_AOI_FILE),
-    help="full path to a text files containing path/row or MGRS tile name to act as a filter",
+    help="full path to a text files containing path/row or "
+    "MGRS tile name to act as a filter",
 )
 @click.option(
     "--config",
     type=click.Path(dir_okay=False, file_okay=True),
-    help="Full path to a datacube config text file. This describes the ODC database.",
+    help="Full path to a datacube config text file."
+    " This describes the ODC database.",
     default=None,
 )
 @click.option(
     "--products",
     cls=PythonLiteralOption,
     type=list,
-    help='List the ODC products to be processed. e.g. \
-    \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
+    help="List the ODC products to be processed. e.g."
+    ' \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
     default=PRODUCTS,
 )
 @click.option(
@@ -614,24 +615,29 @@ def make_ard_pbs(level1_list, **ard_click_params):
     "--scene-limit",
     default=300,
     type=int,
-    help="Maximum number of scenes to process in a run.  This is a safety limit.",
+    help="Safety limit: Maximum number of scenes to process in a run.",
 )
 @click.option(
     "--interim-days-wait",
     default=35,
     type=int,
-    help="Maximum number of days to wait for ancillary data before processing ARD to an interim maturity level.",
+    help="Maxi days to wait for ancillary data before processing ARD to "
+    "an interim maturity level.",
 )
 @click.option(
     "--days-to-exclude",
     cls=PythonLiteralOption,
     type=list,
-    help='List of ranges of dates to not process, as (start date: end date) with format (yyyy-mm-dd:yyyy-mm-dd). e.g. \
-    \'["2019-12-22:2019-12-25", "2020-08-09:2020-09-03"]\'',
+    help="List of ranges of dates to not process, "
+    "as (start date: end date) with format (yyyy-mm-dd:yyyy-mm-dd). e.g."
+    ' \'["2019-12-22:2019-12-25", "2020-08-09:2020-09-03"]\'',
     default=[],
 )
 @click.option(
-    "--run-ard", default=False, is_flag=True, help="Execute the ard_pbs script."
+    "--run-ard",
+    default=False,
+    is_flag=True,
+    help="Produce ARD scenes by executing the ard_pbs script.",
 )
 # These are passed on to ard processing
 @click.option(
@@ -646,7 +652,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
     default=DATA_DIR.joinpath(LOG_CONFIG_FILE),
     help="full path to the logging configuration file",
 )
-@click.option("--stop-logging", default=False, is_flag=True, help="Do not run logging.")
+@click.option("--stop-logging", default=False, is_flag=True, help="No logs.")
 @click.option("--walltime", help="Job walltime in `hh:mm:ss` format.")
 @click.option("--email", help="Notification email address.")
 @click.option("--project", default="v10", help="Project code to run under.")
@@ -670,7 +676,8 @@ def make_ard_pbs(level1_list, **ard_click_params):
     type=click.Path(exists=True, readable=True),
     help="Path to the datacube indexing environment. "
     "Add this to index the ARD results.  "
-    "If this option is not defined the ARD results will not be automatically indexed.",
+    "If this option is not defined the ARD results "
+    "will not be automatically indexed.",
 )
 @click.option(
     "--workers",
@@ -684,7 +691,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
     "--find-blocked",
     default=False,
     is_flag=True,
-    help="Find l1 scenes that have no children but are not getting processed..",
+    help="Find l1 scenes with no children but are not getting processed..",
 )
 @LogMainFunction()
 def scene_select(
@@ -761,17 +768,10 @@ def scene_select(
         # ARCHIVE_FILE
         path_scenes_to_archive = jobdir.joinpath(ARCHIVE_FILE)
         with open(path_scenes_to_archive, "w") as fid:
-            for item in uuids2archive:
-                fid.write("%s\n" % item)
+            fid.write("\n".join(uuids2archive))
     else:
         uuids2archive = []
-        with open(usgs_level1_files) as f:
-            # Fixme, replace with l1_count = sum(1 for _ in open(usgs_level1_files))
-            # and test
-            i = 0
-            for i, l in enumerate(f):
-                pass
-            l1_count = i + 1
+        l1_count = sum(1 for _ in open(usgs_level1_files))
 
     try:
         _calc_node_with_defaults(ard_click_params, l1_count)

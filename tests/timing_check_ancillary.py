@@ -1,15 +1,13 @@
 #! /usr/bin/env python3
 
 import datetime
-import pytz
-import random
+import time
+from pathlib import Path
 from random import randrange
 
-from pathlib import Path
+import pytz
 
-from scene_select.check_ancillary import definitive_ancillary_files, AncillaryFiles
-
-import time
+from scene_select.check_ancillary import AncillaryFiles
 
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("test_data", "BRDF")
 WV_TEST_DIR = Path(__file__).parent.joinpath("test_data", "water_vapour")
@@ -41,9 +39,9 @@ t_start = time.time()
 
 # Use 1000 for 5 sec at nci
 # Use 170000 on laptop
-for i in range(1000):
+for _ in range(1000):
     a_date = random_date(d_start, d_end)
     # datetime.datetime(2001, 12, 31, tzinfo=pytz.UTC)
-    af_ob.definitive_ancillary_files(a_date)
+    af_ob.ancillary_files(a_date)
 t_end = time.time()
 print(t_end - t_start)
