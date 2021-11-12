@@ -782,16 +782,16 @@ def scene_select(
     # write pbs script
     if len(uuids2archive) > 0:
         ard_click_params["archive-list"] = path_scenes_to_archive
-    run_ard = jobdir.joinpath("run_ard_pbs.sh")
-    with open(run_ard, "w") as src:
+    script_path = jobdir.joinpath("run_ard_pbs.sh")
+    with open(script_path, "w") as src:
         src.write(make_ard_pbs(usgs_level1_files, **ard_click_params))
 
     # Make the script executable
-    os.chmod(run_ard, os.stat(run_ard).st_mode | stat.S_IEXEC)
+    os.chmod(script_path, os.stat(script_path).st_mode | stat.S_IEXEC)
 
     # run the script
     if run_ard is True:
-        subprocess.run([run_ard], check=True)
+        subprocess.run([script_path], check=True)
 
     LOGGER.info("info", jobdir=str(jobdir))
     print("Job directory: " + str(jobdir))
