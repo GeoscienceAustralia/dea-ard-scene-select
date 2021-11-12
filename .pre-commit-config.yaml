@@ -18,7 +18,7 @@ repos:
             - flake8-broken-line  # Don't escape newlines (surround in parens or simplify)
             - flake8-bugbear  # Lint-checks too opinionated for flake8 proper
             - flake8-builtins  # Don't allow built-in names like list
-            - flake8-coding  # Only UTF-8
+            # - flake8-coding  # Only UTF-8 # Couldn't fix C101 error
             - flake8-debugger  # Don't commit debugger calls
             - flake8-executable  # Check shebangs and executable permissions
             - flake8-logging-format  # Use log arguments, not string format

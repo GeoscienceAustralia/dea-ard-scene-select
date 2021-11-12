@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
 
-import os
-import stat
-import math
-from pathlib import Path
-from typing import List, Tuple, Optional
-import re
-import uuid
-import subprocess
 import datetime
-import click
+import math
+import os
+import re
+import stat
+import subprocess
+import uuid
 from logging.config import fileConfig
+from pathlib import Path
+from typing import List, Optional, Tuple
 
-import pytz
-import pprint
+import click
 
 try:
     import datacube
-except (ImportError, AttributeError) as error:
+except (ImportError, AttributeError):
     print("Could not import Datacube")
 
-from scene_select.check_ancillary import AncillaryFiles, BRDF_DIR, WV_DIR
+from scene_select.check_ancillary import BRDF_DIR, WV_DIR, AncillaryFiles
 from scene_select.dass_logs import LOGGER, LogMainFunction
 
 LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
 DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
-PRODUCTS = '["ga_ls5t_level1_3", "ga_ls7e_level1_3", \
-                    "usgs_ls5t_level1_1", "usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
+PRODUCTS = (
+    '["ga_ls5t_level1_3", "ga_ls7e_level1_3", "usgs_ls5t_level1_1", '
+    '"usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
+)
 FMT2 = "filter-jobid-{jobid}"
 
 # Logging
@@ -162,12 +162,13 @@ PROCESSING_PATTERN_MAPPING = {
 
 
 class PythonLiteralOption(click.Option):
-    """Load click value representing a Python list. """
+    """Load click value representing a Python list."""
 
     def type_cast_value(self, ctx, value):
         try:
             value = str(value)
-            assert value.count("[") == 1 and value.count("]") == 1
+            assert value.count("[") == 1
+            assert value.count("]") == 1
             list_as_str = value.replace('"', "'").split("[")[1].split("]")[0]
             list_of_items = [item.strip().strip("'") for item in list_as_str.split(",")]
             if list_of_items == [""]:
@@ -178,10 +179,13 @@ class PythonLiteralOption(click.Option):
 
 
 def allowed_codes_to_region_codes(allowed_codes: Path) -> List:
-    """ Convert a file of allowed codes to a list of region codes. """
-    with open(allowed_codes, "r") as fid:
+    """Convert a file of allowed codes to a list of region codes."""
+    with open(allowed_codes) as fid:
         path_row_list = [line.rstrip() for line in fid.readlines()]
-    path_row_list = ["{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1])) for item in path_row_list]
+    path_row_list = [
+        "{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1]))
+        for item in path_row_list
+    ]
     return path_row_list
 
 
@@ -194,7 +198,10 @@ def dataset_with_child(dc, dataset):
     """
     ds_w_child = []
     for child_dataset in dc.index.datasets.get_derived(dataset.id):
-        if not child_dataset.is_archived and child_dataset.metadata.dataset_maturity == "final":
+        if (
+            not child_dataset.is_archived
+            and child_dataset.metadata.dataset_maturity == "final"
+        ):
             ds_w_child.append(child_dataset)
     return any(ds_w_child)
 
@@ -213,19 +220,27 @@ def chopped_scene_id(scene_id: str) -> str:
 
 
 def calc_processed_ard_scene_ids(dc, product):
-    """Return None or a dictionary with key chopped_scene_id and value  maturity level.
-"""
+    """
+    Return None or
+    a dictionary with key chopped_scene_id and value maturity level.
+    """
 
     if product in ARD_PARENT_PRODUCT_MAPPING:
         processed_ard_scene_ids = {}
         for result in dc.index.datasets.search_returning(
-            ("landsat_scene_id", "dataset_maturity", "id"), product=ARD_PARENT_PRODUCT_MAPPING[product]
+            ("landsat_scene_id", "dataset_maturity", "id"),
+            product=ARD_PARENT_PRODUCT_MAPPING[product],
         ):
             choppped_id = chopped_scene_id(result.landsat_scene_id)
             if choppped_id in processed_ard_scene_ids:
                 # The same chopped scene id has multiple scenes
                 old_uuid = processed_ard_scene_ids[choppped_id]["id"]
-                LOGGER.warning(MANYSCENES, SCENEID=result.landsat_scene_id, old_uuid=old_uuid, new_uuid=result.id)
+                LOGGER.warning(
+                    MANYSCENES,
+                    SCENEID=result.landsat_scene_id,
+                    old_uuid=old_uuid,
+                    new_uuid=result.id,
+                )
 
             processed_ard_scene_ids[chopped_scene_id(result.landsat_scene_id)] = {
                 "dataset_maturity": result.dataset_maturity,
@@ -239,7 +254,10 @@ def calc_processed_ard_scene_ids(dc, product):
         # This uses the l1 product to ard mapping to filter out
         # updated l1 scenes that have been processed using the old l1 scene.
         processed_ard_scene_ids = None
-        LOGGER.warning("THE ARD ODC product name after ARD processing is not known.", product=product)
+        LOGGER.warning(
+            "THE ARD ODC product name after ARD processing is not known.",
+            product=product,
+        )
     return processed_ard_scene_ids
 
 
@@ -251,8 +269,12 @@ def exclude_days(days_to_exclude: List, checkdatetime):
         start, end = period.split(":")
         # datetime.timezone.utc
         # pytz.UTC
-        start = datetime.datetime.strptime(start, "%Y-%m-%d").replace(tzinfo=checkdatetime.tzinfo)
-        end = datetime.datetime.strptime(end, "%Y-%m-%d").replace(tzinfo=checkdatetime.tzinfo)
+        start = datetime.datetime.strptime(start, "%Y-%m-%d").replace(
+            tzinfo=checkdatetime.tzinfo
+        )
+        end = datetime.datetime.strptime(end, "%Y-%m-%d").replace(
+            tzinfo=checkdatetime.tzinfo
+        )
 
         # let's make it the end of the day
         end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -271,7 +293,7 @@ def l1_filter(
     days_to_exclude: List,
     find_blocked: bool,
 ):
-    """return a list of file paths to ARD process """
+    """return a list of file paths to ARD process"""
     # pylint: disable=R0914
     # R0914: Too many local variables
 
@@ -285,16 +307,21 @@ def l1_filter(
     for dataset in dc.index.datasets.search(product=product):
         LOGGER.debug("location:start dataset main loop")
         file_path = (
-            dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id).with_suffix(".tar").as_posix()
+            dataset.local_path.parent.joinpath(dataset.metadata.landsat_product_id)
+            .with_suffix(".tar")
+            .as_posix()
         )
         LOGGER.debug("location:post file_path")
         # Filter out if the processing level is too low
-        if not re.match(PROCESSING_PATTERN_MAPPING[product],
-                        dataset.metadata.landsat_product_id):
+        if not re.match(
+            PROCESSING_PATTERN_MAPPING[product], dataset.metadata.landsat_product_id
+        ):
 
-            kwargs = {REASON: "Processing level too low, new ",
-                      SCENEID: dataset.metadata.landsat_scene_id,
-                      PRODUCTID: dataset.metadata.landsat_product_id}
+            kwargs = {
+                REASON: "Processing level too low, new ",
+                SCENEID: dataset.metadata.landsat_scene_id,
+                PRODUCTID: dataset.metadata.landsat_product_id,
+            }
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
@@ -324,7 +351,9 @@ def l1_filter(
         # since the ancillary files are not there
         ancill_there, msg = ancillary_ob.definitive_ancillary_files(dataset.time.end)
         if ancill_there is False:
-            days_ago = datetime.datetime.now(dataset.time.end.tzinfo) - datetime.timedelta(days=interim_days_wait)
+            days_ago = datetime.datetime.now(
+                dataset.time.end.tzinfo
+            ) - datetime.timedelta(days=interim_days_wait)
             if days_ago > dataset.time.end:
                 # If the ancillary files take too long to turn up
                 # process anyway
@@ -384,7 +413,9 @@ def l1_filter(
                     SCENEID: dataset.metadata.landsat_scene_id,
                 }
                 if removed_processed_scenes:
-                    kwargs[REASON] = "Potential reprocessed scene blocked from ARD processing"
+                    kwargs[
+                        REASON
+                    ] = "Potential reprocessed scene blocked from ARD processing"
                     # Could do this, but the info is in the file path
                     # kwargs['landsat_product_id']
                 else:
@@ -392,7 +423,10 @@ def l1_filter(
 
                 LOGGER.debug(SCENEREMOVED, **kwargs)
                 produced_ard = processed_ard_scene_ids[a_chopped_scene_id]
-                if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
+                if (
+                    produced_ard["dataset_maturity"] == "interim"
+                    and ancill_there is True
+                ):
                     # lets build a list of ARD uuid's to delete
                     uuids2archive.append(str(produced_ard["id"]))
 
@@ -470,22 +504,24 @@ def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
             workers = 30
         else:
             workers = ard_click_params["workers"]
-        ard_click_params["nodes"] = _calc_nodes_req(count_all_scenes_list, walltime, workers, hours_per_granule)
-    hours, _, _ = [int(x) for x in walltime.split(":")]
+        ard_click_params["nodes"] = _calc_nodes_req(
+            count_all_scenes_list, walltime, workers, hours_per_granule
+        )
+    hours, _, _ = (int(x) for x in walltime.split(":"))
 
     if hours <= hours_per_granule:
         raise ValueError("wall time <= hours per granule")
 
 
 def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=7.5):
-    """ Provides estimation of the number of nodes required to process granule count
+    """Provides estimation of the number of nodes required to process granule count
 
     >>> _calc_nodes_req(400, '20:59', 28)
     2
     >>> _calc_nodes_req(800, '20:00', 28)
     3
     """
-    hours, _, _ = [int(x) for x in walltime.split(":")]
+    hours, _, _ = (int(x) for x in walltime.split(":"))
     # to avoid divide by zero errors
     if hours == 0:
         hours = 1
@@ -594,9 +630,16 @@ def make_ard_pbs(level1_list, **ard_click_params):
     \'["2019-12-22:2019-12-25", "2020-08-09:2020-09-03"]\'',
     default=[],
 )
-@click.option("--run-ard", default=False, is_flag=True, help="Execute the ard_pbs script.")
+@click.option(
+    "--run-ard", default=False, is_flag=True, help="Execute the ard_pbs script."
+)
 # These are passed on to ard processing
-@click.option("--test", default=False, is_flag=True, help="Test job execution (Don't submit the job to the PBS queue).")
+@click.option(
+    "--test",
+    default=False,
+    is_flag=True,
+    help="Test job execution (Don't submit the job to the PBS queue).",
+)
 @click.option(
     "--log-config",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
@@ -608,10 +651,20 @@ def make_ard_pbs(level1_list, **ard_click_params):
 @click.option("--email", help="Notification email address.")
 @click.option("--project", default="v10", help="Project code to run under.")
 @click.option(
-    "--logdir", type=click.Path(file_okay=False, writable=True), help="The base logging and scripts output directory."
+    "--logdir",
+    type=click.Path(file_okay=False, writable=True),
+    help="The base logging and scripts output directory.",
 )
-@click.option("--pkgdir", type=click.Path(file_okay=False, writable=True), help="The base output packaged directory.")
-@click.option("--env", type=click.Path(exists=True, readable=True), help="Environment script to source.")
+@click.option(
+    "--pkgdir",
+    type=click.Path(file_okay=False, writable=True),
+    help="The base output packaged directory.",
+)
+@click.option(
+    "--env",
+    type=click.Path(exists=True, readable=True),
+    help="Environment script to source.",
+)
 @click.option(
     "--index-datacube-env",
     type=click.Path(exists=True, readable=True),
@@ -619,7 +672,11 @@ def make_ard_pbs(level1_list, **ard_click_params):
     "Add this to index the ARD results.  "
     "If this option is not defined the ARD results will not be automatically indexed.",
 )
-@click.option("--workers", type=click.IntRange(1, 48), help="The number of workers to request per node.")
+@click.option(
+    "--workers",
+    type=click.IntRange(1, 48),
+    help="The number of workers to request per node.",
+)
 @click.option("--nodes", help="The number of nodes to request.")
 @click.option("--memory", help="The memory in GB to request per node.")
 @click.option("--jobfs", help="The jobfs memory in GB to request per node.")
@@ -676,7 +733,11 @@ def scene_select(
     # FIXME test this
     if not stop_logging:
         gen_log_file = jobdir.joinpath(GEN_LOG_FILE).resolve()
-        fileConfig(log_config, disable_existing_loggers=False, defaults={"genlogfilename": str(gen_log_file)})
+        fileConfig(
+            log_config,
+            disable_existing_loggers=False,
+            defaults={"genlogfilename": str(gen_log_file)},
+        )
     LOGGER.info("scene_select", **locals())
 
     # logdir is used both  by scene select and ard
@@ -705,6 +766,8 @@ def scene_select(
     else:
         uuids2archive = []
         with open(usgs_level1_files) as f:
+            # Fixme, replace with l1_count = sum(1 for _ in open(usgs_level1_files))
+            # and test
             i = 0
             for i, l in enumerate(f):
                 pass
@@ -719,16 +782,16 @@ def scene_select(
     # write pbs script
     if len(uuids2archive) > 0:
         ard_click_params["archive-list"] = path_scenes_to_archive
-    run_ard_pathfile = jobdir.joinpath("run_ard_pbs.sh")
-    with open(run_ard_pathfile, "w") as src:
+    run_ard = jobdir.joinpath("run_ard_pbs.sh")
+    with open(run_ard, "w") as src:
         src.write(make_ard_pbs(usgs_level1_files, **ard_click_params))
 
     # Make the script executable
-    os.chmod(run_ard_pathfile, os.stat(run_ard_pathfile).st_mode | stat.S_IEXEC)
+    os.chmod(run_ard, os.stat(run_ard).st_mode | stat.S_IEXEC)
 
     # run the script
     if run_ard is True:
-        subprocess.run([run_ard_pathfile], check=True)
+        subprocess.run([run_ard], check=True)
 
     LOGGER.info("info", jobdir=str(jobdir))
     print("Job directory: " + str(jobdir))

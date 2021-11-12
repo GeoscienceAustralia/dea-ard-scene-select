@@ -40,4 +40,3 @@ Change `echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"` t
 To update the .env files used in production manually git pull from the production branch at this location;
 
    /g/data/v10/projects/c3_ard/dea-ard-scene-select/
-
