@@ -7,13 +7,12 @@ Defines structured logging for:
     * Luigi interface   -- qualname luigi-interface
 """
 
-import logging
 import functools
-import sys
+import logging
 import traceback
+
 import structlog
 from structlog.processors import JSONRenderer
-
 
 COMMON_PROCESSORS = [
     structlog.stdlib.add_log_level,
@@ -25,15 +24,17 @@ COMMON_PROCESSORS = [
 
 
 def get_wrapped_logger(logger_name: str = "root", **kwargs):
-    """ Returns a struct log equivalent for the named logger """
-    return structlog.wrap_logger(logging.getLogger(logger_name), COMMON_PROCESSORS, **kwargs)
+    """Returns a struct log equivalent for the named logger"""
+    return structlog.wrap_logger(
+        logging.getLogger(logger_name), COMMON_PROCESSORS, **kwargs
+    )
 
 
 class FormatJSONL(logging.Formatter):
-    """ Prevents printing of the stack trace to enable JSON lines output """
+    """Prevents printing of the stack trace to enable JSON lines output"""
 
     def formatException(self, ei):
-        """ Disables printing separate stack traces """
+        """Disables printing separate stack traces"""
         return
 
 
@@ -51,7 +52,11 @@ class LogMainFunction:
                 result = fn(*args, **kwargs)
                 return result
             except Exception as ex:
-                self.logger.error("exception", exception=ex.__str__(), traceback=traceback.format_exc().splitlines())
+                self.logger.error(
+                    "exception",
+                    exception=ex.__str__(),
+                    traceback=traceback.format_exc().splitlines(),
+                )
                 raise ex
             return result
 

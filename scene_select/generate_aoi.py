@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 import logging
+import uuid
 from pathlib import Path
 from typing import List, Optional, Union
-import uuid
+
 import click
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
-
 
 EXTENT_DIR = Path(__file__).parent.joinpath("auxiliary_extents")
 GLOBAL_MGRS_WRS_DIR = Path(__file__).parent.joinpath("global_wrs_mgrs_shps")
@@ -28,49 +28,59 @@ FMT2 = "generte-aoi-jobid-{jobid}"
 
 
 def read_shapefile(shapefile: Path) -> gpd.GeoDataFrame:
-    """Code to read a shapefile and return its content as a geopandas dataframe"""
+    """Read a shapefile and return a geopandas dataframe"""
     return gpd.read_file(str(shapefile))
 
 
-def _get_auxiliary_extent(gpd_df: gpd.GeoDataFrame, subset_key: Optional[str] = None) -> Polygon:
-    """Returns the extent of all auxiliary dataset or an extent by a subset_key"""
+def _get_auxiliary_extent(
+    gpd_df: gpd.GeoDataFrame, subset_key: Optional[str] = None
+) -> Polygon:
+    """
+    Returns the extent of all auxiliary dataset
+     or an extent by a subset_key
+    """
     if subset_key:
-        return cascaded_union(list(gpd_df[gpd_df.auxiliary_ == subset_key].geometry))
+        subsetted = list(gpd_df[gpd_df.auxiliary_ == subset_key].geometry)
+        return cascaded_union(subsetted)
     return cascaded_union(list(gpd_df.geometry))
 
 
 def _auxiliary_overlap_extent(_extents: List[Polygon]) -> Polygon:
-    """Returns the overlaped regions from list of extents derived from auxiliary datasets."""
+    """Returns the overlaped regions from list of extents
+    derived from auxiliary datasets."""
 
     overlap_extent = _extents[0]
-    for idx, extent in enumerate(_extents, start=1):
+    for _, extent in enumerate(_extents, start=1):
         overlap_extent = overlap_extent.intersection(extent)
 
     return overlap_extent
 
 
-def nbar_scene_filter(nbar_auxiliary_extent: Polygon, df_scenes_to_filter: Union[gpd.GeoDataFrame, Path]) -> List[str]:
-    """Filtering method to check if acquisition can be used for nbar processing."""
+def nbar_scene_filter(
+    aux_extent: Polygon, df_scenes_to_filter: Union[gpd.GeoDataFrame, Path]
+) -> List[str]:
+    """Check if acquisition can be used for nbar processing."""
 
     if isinstance(df_scenes_to_filter, Path):
         df_scenes_to_filter = read_shapefile(df_scenes_to_filter)
 
     # initial filter is to check if scene intersects with auxiliary data extent
-    aux_overlaped_gdf = gpd.GeoDataFrame()
+    intersect = gpd.GeoDataFrame()
     for idx, geom in enumerate(df_scenes_to_filter.geometry):
-        if geom.intersects(nbar_auxiliary_extent):
-            aux_overlaped_gdf = aux_overlaped_gdf.append(df_scenes_to_filter.iloc[idx])
-
-    return aux_overlaped_gdf
+        if geom.intersects(aux_extent):
+            intersect = intersect.append(df_scenes_to_filter.iloc[idx])
+    return intersect
 
 
 def subset_global_tiles_to_ga_extent(
-    _global_tiles_data: Path, aux_extents_vectorfiles: List[Path], _satellite_data_provider: str
+    _global_tiles_data: Path,
+    aux_extents: List[Path],
+    _satellite_data_provider: str,
 ) -> List[str]:
     """Processing block for nbar scene filter."""
 
     # get extents from auxiliary vector files
-    extents = [_get_auxiliary_extent(read_shapefile(fp)) for fp in aux_extents_vectorfiles]
+    extents = [_get_auxiliary_extent(read_shapefile(fp)) for fp in aux_extents]
     nbar_aux_extent = _auxiliary_overlap_extent(extents)
 
     # filter global tile data to nbar_aux_extent
@@ -152,19 +162,26 @@ def generate_region(
     jobdir.mkdir(exist_ok=True)
     #
     print("Job directory: " + str(jobdir))
-    logging.basicConfig(filename=jobdir.joinpath(LOG_FILE), level=logging.INFO)  # INFO
+    logging.basicConfig(filename=jobdir.joinpath(LOG_FILE), level=logging.INFO)
 
     # needed build the allowed_codes using the shapefiles
-    _extent_list = [brdf_shapefile, one_deg_dsm_v1_shapefile, one_sec_dsm_v1_shapefile, one_deg_dsm_v2_shapefile]
+    _extent_list = [
+        brdf_shapefile,
+        one_deg_dsm_v1_shapefile,
+        one_sec_dsm_v1_shapefile,
+        one_deg_dsm_v2_shapefile,
+    ]
     global_tiles_data = Path(world_wrs_shapefile)
     if satellite_data_provider == "ESA":
         global_tiles_data = Path(world_mgrs_shapefile)
-    allowed_codes = subset_global_tiles_to_ga_extent(global_tiles_data, _extent_list, satellite_data_provider)
+    allowed_codes = subset_global_tiles_to_ga_extent(
+        global_tiles_data, _extent_list, satellite_data_provider
+    )
     # AOI_FILE
     aoi_filepath = jobdir.joinpath(AOI_FILE)
-    with open(aoi_filepath, "w") as f:
-        for item in allowed_codes:
-            f.write("%s\n" % item)
+    with open(aoi_filepath, "w") as fid:
+        fid.write("\n".join(allowed_codes))
+        fid.write("\n")
     return aoi_filepath, allowed_codes  # This is used for testing
 
 
