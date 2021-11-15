@@ -3,9 +3,12 @@
 import datetime
 from pathlib import Path
 
+import hdf5plugin  # don't delete, needed to load plugins
 import pytz
 
 from scene_select.check_ancillary import AncillaryFiles
+
+__all__ = ("hdf5plugin",)  # Stop flake8 F401's
 
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("test_data", "BRDF")
 WV_TEST_DIR = Path(__file__).parent.joinpath("test_data", "water_vapour")
@@ -13,7 +16,7 @@ WV_TEST_DIR = Path(__file__).parent.joinpath("test_data", "water_vapour")
 
 def test_ancillaryfiles_local():
     # no water v data for these years
-    af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, water_vapour_dir=WV_TEST_DIR)
+    af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, wv_dir=WV_TEST_DIR)
     a_dt = datetime.datetime(1944, 6, 4, tzinfo=pytz.UTC)
     ancill_there, msg = af_ob.ancillary_files(a_dt)
     assert "year" in msg
@@ -55,7 +58,7 @@ def test_ancillaryfiles_local():
 def test_ancillaryfiles_water():
 
     # BRDF there. last day out of wv data
-    af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, water_vapour_dir=WV_TEST_DIR)
+    af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, wv_dir=WV_TEST_DIR)
     a_dt = datetime.datetime(2020, 8, 9, tzinfo=pytz.UTC)
     ancill_there, msg = af_ob.ancillary_files(a_dt)
     assert ancill_there

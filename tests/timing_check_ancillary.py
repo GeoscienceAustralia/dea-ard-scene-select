@@ -3,11 +3,13 @@
 import datetime
 import time
 from pathlib import Path
-from random import randrange
+from random import SystemRandom
 
 import pytz
 
 from scene_select.check_ancillary import AncillaryFiles
+
+safe_random = SystemRandom()
 
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("test_data", "BRDF")
 WV_TEST_DIR = Path(__file__).parent.joinpath("test_data", "water_vapour")
@@ -20,7 +22,7 @@ def random_date(start, end):
     """
     delta = end - start
     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
-    random_second = randrange(int_delta)
+    random_second = safe_random.randrange(int_delta)
     return start + datetime.timedelta(seconds=random_second)
 
 
@@ -33,7 +35,7 @@ def random_date(start, end):
 d_start = datetime.datetime(2001, 12, 31, tzinfo=pytz.UTC)
 d_end = datetime.datetime(2020, 8, 1, tzinfo=pytz.UTC)
 
-af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, water_vapour_dir=WV_TEST_DIR)
+af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, wv_dir=WV_TEST_DIR)
 
 t_start = time.time()
 

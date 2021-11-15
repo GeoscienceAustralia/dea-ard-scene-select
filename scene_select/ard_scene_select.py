@@ -301,7 +301,7 @@ def l1_filter(
     LOGGER.debug("location:pre-calc_processed_ard_scene_ids")
     processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, product)
     LOGGER.debug("location:pre-AncillaryFiles")
-    ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, water_vapour_dir=wvdir)
+    ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
     LOGGER.debug("location:post-AncillaryFiles")
     files2process = []
     uuids2archive = []

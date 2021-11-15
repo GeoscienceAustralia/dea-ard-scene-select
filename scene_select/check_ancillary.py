@@ -37,32 +37,32 @@ def read_h5_table(fid, dataset_name):
     dset = fid[dataset_name]
 
     # grab the index names if we have them
-    idx_names = dset.attrs.get("index_names")
+    idx = dset.attrs.get("index_names")
 
     if dset.attrs.get("python_type") == "`Pandas.DataFrame`":
         col_names = dset.dtype.names
         dtypes = [dset.attrs[f"{name}_dtype"] for name in col_names]
         dtype = numpy.dtype(list(zip(col_names, dtypes)))
-        data = pandas.DataFrame.from_records(dset[:].astype(dtype), index=idx_names)
+        data = pandas.DataFrame.from_records(dset[:].astype(dtype), index=idx)
     else:
-        data = pandas.DataFrame.from_records(dset[:], index=idx_names)
+        data = pandas.DataFrame.from_records(dset[:], index=idx)
     return data
 
 
 class AncillaryFiles:
-    def __init__(self, brdf_dir=BRDF_DIR, water_vapour_dir=WV_DIR, wv_days_tolerance=1):
+    def __init__(self, brdf_dir=BRDF_DIR, wv_dir=WV_DIR, wv_days_tolerance=1):
         self.brdf_path = Path(brdf_dir)
-        self.wv_path = Path(water_vapour_dir)
+        self.wv_path = Path(wv_dir)  # water_vapour_dir
         self.max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
 
     @lru_cache(maxsize=32)
-    def wv_file_exists(self, acquisition_year):
-        wv_pathname = self.wv_path.joinpath(WV_FMT.format(year=acquisition_year))
+    def wv_file_exists(self, a_year):
+        wv_pathname = self.wv_path.joinpath(WV_FMT.format(year=a_year))
         return wv_pathname.exists()
 
     @lru_cache(maxsize=32)
-    def get_wv_index(self, acquisition_year):
-        wv_pathname = self.wv_path.joinpath(WV_FMT.format(year=acquisition_year))
+    def get_wv_index(self, a_year):
+        wv_pathname = self.wv_path.joinpath(WV_FMT.format(year=a_year))
         with h5py.File(str(wv_pathname), "r") as fid:
             index = read_h5_table(fid, "INDEX")
         return index
@@ -75,7 +75,7 @@ class AncillaryFiles:
     def ancillary_files(self, acquisition_datetime):
 
         if not self.wv_file_exists(acquisition_datetime.year):
-            return False, "Water vapour data for year {} does not exist.".format(
+            return False, "No ater vapour data for year {}.".format(
                 acquisition_datetime.year
             )
 
@@ -85,10 +85,9 @@ class AncillaryFiles:
         # Removing timezone info since different UTC formats were clashing.
         acquisition_datetime = acquisition_datetime.replace(tzinfo=None)
 
-        time_delta = index.timestamp - acquisition_datetime
-        result = time_delta[
-            (time_delta < datetime.timedelta()) & (time_delta > self.max_tolerance)
-        ]
+        delta = index.timestamp - acquisition_datetime
+        afilter = (delta < datetime.timedelta()) & (delta > self.max_tolerance)
+        result = delta[afilter]
 
         if result.shape[0] == 0:
             return False, "Water vapour data for {} does not exist.".format(
