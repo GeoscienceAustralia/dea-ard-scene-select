@@ -6,8 +6,6 @@ OOAOI - Out of Australian area of interest.
 
 import json
 
-import datacube
-
 log_file = (
     "/g/data1a/u46/users/dsg547/sandpit/dea-ard-scene-select/scripts/"
     "examples/scratch/filter-jobid-e515b2/ard_scene_select.log"
@@ -15,21 +13,18 @@ log_file = (
 
 
 uuids = []
-sum = 0
+a_sum = 0
 with open(log_file) as f:
     for line in f:
-        line_dict = json.loads(line)
+        info = json.loads(line)
         # print (line_dict)
-        if "reason" in line_dict and line_dict["reason"] == "Region not in AOI":
-            sum += 1
-            uuid_long = line_dict["uuid"]
+        if "reason" in info and info["reason"] == "Region not in AOI":
+            a_sum += 1
+            uuid_long = info["uuid"]
             uuid_list = uuid_long.split("'")
             uuids.append(uuid_list[1])
 
-print(sum)
-
-for a_uuid in uuids:
-    pass
+print(a_sum)
 
 f_out = open("myfile.txt", "w")
 for a_uuid in uuids:
