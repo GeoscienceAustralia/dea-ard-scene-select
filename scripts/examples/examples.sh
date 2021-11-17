@@ -6,11 +6,8 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 	module use /g/data/v10/private/modules/modulefiles
 	module use /g/data/u46/users/dsg547/devmodules/modulefiles
 
-	#module load ard-scene-select-py3-dea/20210216
 
-	#module load ard-scene-select-py3-dea/20210722
-
-	#module load ard-scene-select-py3-dea/20210216
+	module load ard-scene-select-py3-dea/20211115
 
 	#module load h5-compression-filters/20200612
 fi
@@ -29,6 +26,8 @@ SSPATH=$PWD/../../
 # echo $PYTHONPATH
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 # echo $PYTHONPATH
+
+time ard-scene-select --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env  --scene-limit 999999 #--find-blocked
 
 # production example
 #python3 ard_scene_select.py --products '["ga_ls5t_level1_3"]' --workdir /g/data/v10/projects/landsat_c3/wagl_workdir  --pkgdir  /g/data/xu18/ga --logdir /g/data/v10/projects/landsat_c3/wagl_logdir --env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project v10 --walltime 05:00:00 #--run-ard
