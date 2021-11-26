@@ -306,11 +306,9 @@ def l1_filter(
     files2process = []
     uuids2archive = []
     for dataset in dc.index.datasets.search(product=product):
-        LOGGER.debug("location:start dataset main loop")
         product_id = dataset.metadata.landsat_product_id
         a_path = dataset.local_path.parent.joinpath(product_id)
         file_path = a_path.with_suffix(".tar").as_posix()
-        LOGGER.debug("location:post file_path")
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[product]
         if not re.match(prod_pattern, product_id):
@@ -402,7 +400,6 @@ def l1_filter(
                 LOGGER.debug(SCENEREMOVED, **kwargs)
                 continue
 
-        LOGGER.debug("location:post find blocked")
         if processed_ard_scene_ids:
             a_scene_id = chopped_scene_id(dataset.metadata.landsat_scene_id)
             if a_scene_id in processed_ard_scene_ids:
