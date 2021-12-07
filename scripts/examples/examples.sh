@@ -67,7 +67,7 @@ time ard-scene-select --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ -
 #python3 ../../scene_select/ard_scene_select.py  --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project u46 --walltime 05:00:00 #--run-ard
 
 # local code local work dir and skipping odc
-python3 ../../scene_select/ard_scene_select.py --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/ --index-datacube-env c3-samples-index-datacube.env --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 05:00:00 #--run-ard  --env prod-wagl.env
+#python3 ../../scene_select/ard_scene_select.py --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/ --index-datacube-env c3-samples-index-datacube.env --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 05:00:00 #--run-ard  --env prod-wagl.env
 
 # prod module local work dir and skipping odc
 #ard-scene-select --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project v10 --walltime 05:00:00 #--run-ard
