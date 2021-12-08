@@ -19,7 +19,11 @@ Branch Structure
 
 *Note*: this repository uses [pre-commit](https://pre-commit.com/).
 
-Please run `pre-commit install` after cloning to make your life easier, automatically!
+Please run
+
+     pre-commit install
+
+after cloning to make your life easier, automatically!
 
 (if "pre-commit not found", then `pip install pre-commit` or `conda install pre_commit` and try again)
 
