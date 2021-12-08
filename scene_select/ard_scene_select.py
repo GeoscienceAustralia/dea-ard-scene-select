@@ -21,7 +21,7 @@ except (ImportError, AttributeError):
 from scene_select.check_ancillary import BRDF_DIR, WV_DIR, AncillaryFiles
 from scene_select.dass_logs import LOGGER, LogMainFunction
 
-LANDSAT_AOI_FILE = "Australian_Wrs_list.txt"
+LANDSAT_AOI_FILE = "Australian_Wrs_list_optimal.txt"
 DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
