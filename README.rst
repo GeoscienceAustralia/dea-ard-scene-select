@@ -15,7 +15,15 @@ Branch Structure
    "develop", "The development branch."
    "module-prod", "The branch used to produce a module."
 
+---
 
+*Note*: this repository uses [pre-commit](https://pre-commit.com/).
+
+Please run `pre-commit install` after cloning to make your life easier, automatically!
+
+(if "pre-commit not found", then `pip install pre-commit` or `conda install pre_commit` and try again)
+
+---
 
 Module creation
 ---------------
