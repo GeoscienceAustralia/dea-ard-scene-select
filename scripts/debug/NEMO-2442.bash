@@ -11,7 +11,9 @@
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 
-module load ard-pipeline/20211125
-#module load ard-pipeline/devv2.1
+#module load ard-pipeline/20211125  # This fails
+#module load ard-pipeline/devv2.1   # OK
+module load ard-pipeline/20211222   # OK
 
 ard_pbs --help
+#python3 -c "print(5)"
