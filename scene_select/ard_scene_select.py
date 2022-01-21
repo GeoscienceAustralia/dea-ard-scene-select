@@ -26,8 +26,8 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
 PRODUCTS = (
-    '["ga_ls5t_level1_3", "ga_ls7e_level1_3", "usgs_ls5t_level1_1", '
-    '"usgs_ls7e_level1_1", "usgs_ls8c_level1_1"]'
+    '["usgs_ls8c_level1_1", "usgs_ls7e_level1_1", '
+    '"usgs_ls7e_level1_2", "usgs_ls8c_level1_2"]'
 )
 FMT2 = "filter-jobid-{jobid}"
 

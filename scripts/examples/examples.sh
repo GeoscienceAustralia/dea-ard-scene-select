@@ -8,7 +8,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
 
 	#module load ard-scene-select-py3-dea/20211115
-	module load ard-scene-select-py3-dea/20211209
+	module load ard-scene-select-py3-dea/20211217
 
 	#module load h5-compression-filters/20200612
 fi
@@ -40,9 +40,12 @@ ard_loc='/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/p
 ard_loc='/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'
 #time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env $ard_loc  --products '["usgs_ls7e_level1_1"]' --scene-limit 9999 #--find-blocked
 
-mkdir -p scratch2
+mkdir -p scratch
 ard_loc='/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'
-time ard-scene-select --workdir scratch2/ --pkgdir scratch2/ --logdir scratch2/ --project u46 --walltime 10:00:00  --env $ard_loc  --products '["usgs_ls8c_level1_1"]' --scene-limit 1 --run-ard #--find-blocked
+
+time python3 ../../scene_select/ard_scene_select.py --workdir scratch/ --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env $ard_loc
+
+#time ard-scene-select --workdir scratch/ --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env $ard_loc  #--products '["usgs_ls8c_level1_2"]' #--scene-limit 1 --run-ard #--find-blocked
 
 #time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/   --index-datacube-env $PWD/c3-samples-index-datacube.env --project u46 --walltime 05:00:00 --find-blocked #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
 
