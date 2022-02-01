@@ -59,6 +59,8 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls7e_level1_2": "ga_ls7e_ard_3",
     "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
     "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
+    "s2a_level1c_granule": "s2a_ard_granule",
+    "s2b_level1c_granule": "s2b_ard_granule",
 }
 
 PBS_JOB = """#!/bin/bash
@@ -149,6 +151,11 @@ L5_PATTERN = (
     r"(?P<extension>)$"
 )
 
+S2_PATTERN = (
+    r"^(?P<satellite>S2)"
+    r"(?P<satelliteid>[A-B])_"
+)
+
 PROCESSING_PATTERN_MAPPING = {
     "ga_ls5t_level1_3": L5_PATTERN,
     "ga_ls7e_level1_3": L7_C1_PATTERN,
@@ -157,6 +164,7 @@ PROCESSING_PATTERN_MAPPING = {
     "usgs_ls7e_level1_2": L7_C2_PATTERN,
     "usgs_ls8c_level1_1": L8_C1_PATTERN,
     "usgs_ls8c_level1_2": L8_C2_PATTERN,
+    "s2a_ard_granule": S2_PATTERN,
 }
 
 
