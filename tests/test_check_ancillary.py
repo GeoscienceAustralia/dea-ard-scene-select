@@ -3,12 +3,12 @@
 import datetime
 from pathlib import Path
 
-import hdf5plugin  # don't delete, needed to load plugins
+from wagl.hdf5 import H5CompressionFilter   # don't delete, needed 4 plugins
 import pytz
 
 from scene_select.check_ancillary import AncillaryFiles
 
-__all__ = ("hdf5plugin",)  # Stop flake8 F401's
+__all__ = ("H5CompressionFilter",)  # Stop flake8 F401's
 
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("test_data", "BRDF")
 WV_TEST_DIR = Path(__file__).parent.joinpath("test_data", "water_vapour")

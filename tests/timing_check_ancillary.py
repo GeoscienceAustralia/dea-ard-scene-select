@@ -5,12 +5,13 @@ import time
 from pathlib import Path
 from random import SystemRandom
 
-import hdf5plugin  # don't delete, needed to load plugins
+from wagl.hdf5 import H5CompressionFilter
 import pytz
 
 from scene_select.check_ancillary import AncillaryFiles
 
-__all__ = ("hdf5plugin",)  # Stop flake8 F401's
+__all__ = ("H5CompressionFilter",)  # Stop flake8 F401's
+
 safe_random = SystemRandom()
 
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("test_data", "BRDF")

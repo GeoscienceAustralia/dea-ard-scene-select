@@ -3,9 +3,9 @@
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 
-module load h5-compression-filters/20200612
 
-module load dea
+module load h5-compression-filters/20200612
+module load ard-pipeline/20211222
 
 SSPATH=$PWD/../
 
@@ -14,6 +14,8 @@ SSPATH=$PWD/../
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 #echo $PYTHONPATH
 
-#pytest -s test_check_ancillary.py #-k 'test_definitive_ancillary_files_local'
-pytest -s test_check_ancillary.py #-k 'test_ancillaryfiles_water'
+
+pytest -s test_ard_scene_select.py
+pytest -s test_check_ancillary.py #-k 'test_definitive_ancillary_files_local'
+pytest -s test_generate_aoi.py
 #./timing_check_ancillary.py
