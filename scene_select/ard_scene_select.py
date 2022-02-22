@@ -151,10 +151,7 @@ L5_PATTERN = (
     r"(?P<extension>)$"
 )
 
-S2_PATTERN = (
-    r"^(?P<satellite>S2)"
-    r"(?P<satelliteid>[A-B])_"
-)
+S2_PATTERN = r"^(?P<satellite>S2)" r"(?P<satelliteid>[A-B])_"
 
 PROCESSING_PATTERN_MAPPING = {
     "ga_ls5t_level1_3": L5_PATTERN,
