@@ -23,7 +23,9 @@ import datacube
     default=None,
 )
 @click.option(
-    "--uuidfile", type=click.Path(dir_okay=False, file_okay=True), help="he uuids of scenes to be moved",
+    "--uuidfile",
+    type=click.Path(dir_okay=False, file_okay=True),
+    help="he uuids of scenes to be moved",
 )
 @click.option(
     "--stagingdir",
@@ -38,7 +40,10 @@ import datacube
     default=Path.cwd(),
 )
 def connect(
-    config: click.Path, uuidfile: click.Path, stagingdir: click.Path, ardbasedir: click.Path,
+    config: click.Path,
+    uuidfile: click.Path,
+    stagingdir: click.Path,
+    ardbasedir: click.Path,
 ):
     dc = datacube.Datacube(app="gen-list", config=config)
 

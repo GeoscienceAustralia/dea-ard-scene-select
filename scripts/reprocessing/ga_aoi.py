@@ -15,7 +15,10 @@ def load_aoi_oz(allowed_codes: Path) -> List:
     """ Convert a file of allowed codes to a list of region codes. """
     with open(allowed_codes, "r") as fid:
         path_row_list = [line.rstrip() for line in fid.readlines()]
-    path_row_list = ["{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1])) for item in path_row_list]
+    path_row_list = [
+        "{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1]))
+        for item in path_row_list
+    ]
     return path_row_list
 
 
@@ -33,12 +36,26 @@ def load_aoi_usgs2(allowed_codes: Path) -> List:
     ytd = 3
     for item in data:
         # Build up a dict of dicts
-        the_date = datetime.datetime(int(item[2]), 1, 1) + datetime.timedelta(int(item[3]) - 1)
-        path_row_dic[((item[0]) + (item[1]))].append(
-            (datetime.datetime(int(item[2]), 1, 1) + datetime.timedelta(int(item[3]) - 1), "day: " + item[3])
+        the_date = datetime.datetime(int(item[2]), 1, 1) + datetime.timedelta(
+            int(item[3]) - 1
         )
-        file_label_dic[((item[0]) + (item[1]))].append(item[path] + item[row] + "_" + the_date.strftime("%Y%m%d"))
-        a_scene = {"path": item[path], "row": item[row], "year": item[year], "ytd": item[ytd], "the_date": the_date}
+        path_row_dic[((item[0]) + (item[1]))].append(
+            (
+                datetime.datetime(int(item[2]), 1, 1)
+                + datetime.timedelta(int(item[3]) - 1),
+                "day: " + item[3],
+            )
+        )
+        file_label_dic[((item[0]) + (item[1]))].append(
+            item[path] + item[row] + "_" + the_date.strftime("%Y%m%d")
+        )
+        a_scene = {
+            "path": item[path],
+            "row": item[row],
+            "year": item[year],
+            "ytd": item[ytd],
+            "the_date": the_date,
+        }
         general_dic[((item[0]) + (item[1]))].append(a_scene)
     return path_row_dic, file_label_dic, general_dic
 
@@ -66,6 +83,8 @@ if __name__ == "__main__":
     for key, value in general_dic.items():
         assert len(value) == 1
         value = value[0]
-        chopped_scene_id = "LC8" + value["path"] + value["row"] + value["year"] + value["ytd"] + "\n"
+        chopped_scene_id = (
+            "LC8" + value["path"] + value["row"] + value["year"] + value["ytd"] + "\n"
+        )
         f_scene_id.write(chopped_scene_id)
     f_scene_id.close()

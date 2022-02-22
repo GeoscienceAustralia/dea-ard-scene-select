@@ -69,7 +69,9 @@ def calc_processed_ard_scene_ids(dc, product):
 """
 
     processed_ard_scene_ids = {}
-    for result in dc.index.datasets.search_returning(("landsat_scene_id", "id", "uri"), product=product):
+    for result in dc.index.datasets.search_returning(
+        ("landsat_scene_id", "id", "uri"), product=product
+    ):
         choppped_id = chopped_scene_id(result.landsat_scene_id)
         if choppped_id in processed_ard_scene_ids:
             # The same chopped scene id has multiple scenes
@@ -155,7 +157,9 @@ def build_l1_info(dc, new_l1, processed_ard_scene_ids, product):
     for chopped_scene, l1_ard_path in new_l1.items():
         if chopped_scene in processed_ard_scene_ids:
             ard_old_uuid = processed_ard_scene_ids[chopped_scene]["id"]
-            a_dataset_list = list(dc.index.datasets.search(id=ard_old_uuid, product=product))
+            a_dataset_list = list(
+                dc.index.datasets.search(id=ard_old_uuid, product=product)
+            )
             assert len(a_dataset_list) == 1
             a_dataset = a_dataset_list[0]
             grouped_data[chopped_scene] = {

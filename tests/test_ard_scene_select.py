@@ -41,18 +41,24 @@ def test_exclude_days():
     assert not exclude_days(range1, a_dt)
     a_dt = datetime.datetime(2020, 9, 6, tzinfo=pytz.UTC)
     assert not exclude_days(range1, a_dt)
-    a_dt = datetime.datetime(2020, 8, 8, hour=23, minute=59, second=59, microsecond=999999, tzinfo=pytz.UTC)
+    a_dt = datetime.datetime(
+        2020, 8, 8, hour=23, minute=59, second=59, microsecond=999999, tzinfo=pytz.UTC,
+    )
     assert not exclude_days(range1, a_dt)
 
     # excluded
-    a_dt = datetime.datetime(2020, 8, 30, hour=23, minute=59, second=59, microsecond=999999, tzinfo=pytz.UTC)
+    a_dt = datetime.datetime(
+        2020, 8, 30, hour=23, minute=59, second=59, microsecond=999999, tzinfo=pytz.UTC,
+    )
     assert exclude_days(range1, a_dt)
     a_dt = datetime.datetime(2020, 8, 9, tzinfo=pytz.UTC)
     assert exclude_days(range1, a_dt)
 
     range2 = ["2020-08-09:2020-08-09"]
     # excluded
-    a_dt = datetime.datetime(2020, 8, 9, hour=23, minute=59, second=59, microsecond=999999, tzinfo=pytz.UTC)
+    a_dt = datetime.datetime(
+        2020, 8, 9, hour=23, minute=59, second=59, microsecond=999999, tzinfo=pytz.UTC,
+    )
     assert exclude_days(range1, a_dt)
     a_dt = datetime.datetime(2020, 8, 9, tzinfo=pytz.UTC)
     assert exclude_days(range1, a_dt)
@@ -107,7 +113,7 @@ def test_calc_nodes_req():
     except ValueError as err:
         assert len(err.args) >= 1
 
-        
+
 L8_C2_PATTERN = (
     r"^(?P<sensor>LC)"
     r"(?P<satellite>08)_"
@@ -121,12 +127,13 @@ L8_C2_PATTERN = (
     r"(?P<extension>)$"
 )
 
+
 def test_L8_PATTERN():
-    landsat_product_id = 'LC08_L1TP_089078_20211026_20211104_02_T1'
+    landsat_product_id = "LC08_L1TP_089078_20211026_20211104_02_T1"
     if not re.match(L8_C2_PATTERN, landsat_product_id):
         print(re.match(L8_C2_PATTERN, landsat_product_id))
         assert False
-    landsat_product_id = 'LC08_L1TP_094073_20211014_20211019_02_T1'
+    landsat_product_id = "LC08_L1TP_094073_20211014_20211019_02_T1"
     if not re.match(L8_C2_PATTERN, landsat_product_id):
         print(re.match(L8_C2_PATTERN, landsat_product_id))
         assert False

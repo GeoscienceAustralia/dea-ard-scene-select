@@ -73,9 +73,7 @@ def nbar_scene_filter(
 
 
 def subset_global_tiles_to_ga_extent(
-    _global_tiles_data: Path,
-    aux_extents: List[Path],
-    _satellite_data_provider: str,
+    _global_tiles_data: Path, aux_extents: List[Path], _satellite_data_provider: str,
 ) -> List[str]:
     """Processing block for nbar scene filter."""
 
