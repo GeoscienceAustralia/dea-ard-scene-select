@@ -186,6 +186,12 @@ def allowed_codes_to_region_codes(allowed_codes: Path) -> List:
     return path_row_list
 
 
+def load_file(file_name: Path) -> List:
+    """load a file of region codes."""
+    with open(file_name) as f:
+        lines = f.read().splitlines()
+    return lines
+
 def dataset_with_child(dc, dataset):
     """
     If any child exists that isn't archived, with a dataset_maturity of 'final'
@@ -752,7 +758,7 @@ def scene_select(
             products=products,
             brdfdir=Path(brdfdir).resolve(),
             wvdir=Path(wvdir).resolve(),
-            region_codes=allowed_codes_to_region_codes(allowed_codes),
+            region_codes=load_file(allowed_codes),
             config=config,
             scene_limit=scene_limit,
             interim_days_wait=interim_days_wait,
