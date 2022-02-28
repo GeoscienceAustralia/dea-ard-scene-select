@@ -34,13 +34,22 @@ SSPATH=$PWD/../../
 mkdir -p scratch
 ard_loc='/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'
 
-time python3 ../../scene_select/ard_scene_select.py --workdir scratch/ --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 00:10:00  --env $ard_loc --allowed-codes ../../scene_select/data/Australian_wrs_list_optimal_v3.txt --products '["usgs_ls5t_level1_1"]'
+time python3 ../../scene_select/ard_scene_select.py --workdir scratch/ --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 00:10:00  --env $ard_loc --products '["usgs_ls5t_level1_1"]'   --allowed-codes ../../scene_select/data/Australian_AOI.json
 
+# ../../scene_select/data/Australian_wrs_list_optimal_v3.txt
 #  grep AOI ard_scene_select.log | wc -l
 # 2759
 
 # Using the new code...
 # grep AOI /g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/examples/scratch/filter-jobid-7c0bf6/ard_scene_select.log | wc -l
+# 2759
+
+# The json interface
+# *)$ grep 'Region not in AOI' scratch/filter-jobid-20e1bf/ard_scene_select.log | wc -l
+# 2759
+
+# Old code
+# dsg547@gadi-login-06:/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/examples (develop *)$ grep 'Region not in AOI' scratch/filter-jobid-7c0bf6/ard_scene_select.log | wc -l
 # 2759
 
 # python3 ../../scene_select/ard_scene_select.py --help
