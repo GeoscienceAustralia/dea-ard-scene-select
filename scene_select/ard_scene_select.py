@@ -324,7 +324,7 @@ def l1_filter(
     # pylint: disable=R0914
     # R0914: Too many local variables
 
-    aoi_sat_key = get_aoi_sat_key(region_codes, product)
+    aoi_sat_key = get_aoi_sat_key(region_codes, l1_product)
     LOGGER.debug("location:pre-calc_processed_ard_scene_ids")
     processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
     LOGGER.debug("location:pre-AncillaryFiles")
