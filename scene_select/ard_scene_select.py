@@ -180,7 +180,7 @@ class PythonLiteralOption(click.Option):
 def load_aoi(file_name: Path) -> Dict:
     """load a file of region codes."""
 
-    with open(file_name, 'r') as f:
+    with open(file_name, "r") as f:
         data = json.load(f)
 
     # json does not save sets
@@ -289,7 +289,7 @@ def get_aoi_sat_key(region_codes: Dict, product: str):
     aoi_sat_key = None
     for key in region_codes.keys():
         if key in product:
-            aoi_sat_key =  key
+            aoi_sat_key = key
             continue
     return aoi_sat_key
 
@@ -333,7 +333,10 @@ def l1_filter(
             continue
 
         # Filter out if outside area of interest
-        if not aoi_sat_key is None and dataset.metadata.region_code not in region_codes[aoi_sat_key]:
+        if (
+            not aoi_sat_key is None
+            and dataset.metadata.region_code not in region_codes[aoi_sat_key]
+        ):
             kwargs = {
                 SCENEID: dataset.metadata.landsat_scene_id,
                 REASON: "Region not in AOI",
