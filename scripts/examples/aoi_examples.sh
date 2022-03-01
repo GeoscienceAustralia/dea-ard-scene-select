@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# A scrappy integration testing script
+
 if [[ $HOSTNAME == *"gadi"* ]]; then
 	echo If module load breaks check on a clean environment
 	module use /g/data/v10/public/modules/modulefiles
