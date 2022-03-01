@@ -9,9 +9,10 @@ import subprocess
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 import click
+import json
 
 try:
     import datacube
@@ -21,7 +22,8 @@ except (ImportError, AttributeError):
 from scene_select.check_ancillary import BRDF_DIR, WV_DIR, AncillaryFiles
 from scene_select.dass_logs import LOGGER, LogMainFunction
 
-LANDSAT_AOI_FILE = "Australian_wrs_list_optimal_v2.txt"
+AOI_FILE = "Australian_AOI.json"
+
 DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
@@ -175,15 +177,17 @@ class PythonLiteralOption(click.Option):
             raise click.BadParameter(value)
 
 
-def allowed_codes_to_region_codes(allowed_codes: Path) -> List:
-    """Convert a file of allowed codes to a list of region codes."""
-    with open(allowed_codes) as fid:
-        path_row_list = [line.rstrip() for line in fid.readlines()]
-    path_row_list = [
-        "{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1]))
-        for item in path_row_list
-    ]
-    return path_row_list
+def load_aoi(file_name: Path) -> Dict:
+    """load a file of region codes."""
+
+    with open(file_name, "r") as f:
+        data = json.load(f)
+
+    # json does not save sets
+    # So after loading the list is converted to a set
+    for key, value in data.items():
+        data[key] = set(value)
+    return data
 
 
 def dataset_with_child(dc, dataset):
@@ -281,12 +285,21 @@ def exclude_days(days_to_exclude: List, checkdatetime):
     return False
 
 
+def get_aoi_sat_key(region_codes: Dict, product: str):
+    aoi_sat_key = None
+    for key in region_codes.keys():
+        if key in product:
+            aoi_sat_key = key
+            continue
+    return aoi_sat_key
+
+
 def l1_filter(
     dc,
     product,
     brdfdir: Path,
     wvdir: Path,
-    region_codes: List,
+    region_codes: Dict,
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
@@ -295,6 +308,7 @@ def l1_filter(
     # pylint: disable=R0914
     # R0914: Too many local variables
 
+    aoi_sat_key = get_aoi_sat_key(region_codes, product)
     LOGGER.debug("location:pre-calc_processed_ard_scene_ids")
     processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, product)
     LOGGER.debug("location:pre-AncillaryFiles")
@@ -319,7 +333,10 @@ def l1_filter(
             continue
 
         # Filter out if outside area of interest
-        if dataset.metadata.region_code not in region_codes:
+        if (
+            not aoi_sat_key is None
+            and dataset.metadata.region_code not in region_codes[aoi_sat_key]
+        ):
             kwargs = {
                 SCENEID: dataset.metadata.landsat_scene_id,
                 REASON: "Region not in AOI",
@@ -450,7 +467,7 @@ def l1_scenes_to_process(
     products: List[str],
     brdfdir: Path,
     wvdir: Path,
-    region_codes: List,
+    region_codes: Dict,
     scene_limit: int,
     interim_days_wait: int,
     days_to_exclude: List,
@@ -568,9 +585,9 @@ def make_ard_pbs(level1_list, **ard_click_params):
 @click.option(
     "--allowed-codes",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    default=DATA_DIR.joinpath(LANDSAT_AOI_FILE),
-    help="full path to a text files containing path/row or "
-    "MGRS tile name to act as a filter",
+    default=DATA_DIR.joinpath(AOI_FILE),
+    help="full path to a json file containing path/row and "
+    "MGRS tiles to act as a area of interest filter",
 )
 @click.option(
     "--config",
@@ -752,7 +769,7 @@ def scene_select(
             products=products,
             brdfdir=Path(brdfdir).resolve(),
             wvdir=Path(wvdir).resolve(),
-            region_codes=allowed_codes_to_region_codes(allowed_codes),
+            region_codes=load_aoi(allowed_codes),
             config=config,
             scene_limit=scene_limit,
             interim_days_wait=interim_days_wait,
