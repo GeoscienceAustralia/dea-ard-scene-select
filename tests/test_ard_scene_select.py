@@ -5,6 +5,7 @@ from pathlib import Path
 import datetime
 import pytz
 import re
+import urllib
 
 from scene_select.ard_scene_select import (
     dict2ard_arg_string,
