@@ -10,6 +10,8 @@ import uuid
 from logging.config import fileConfig
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 import click
 import json
@@ -161,7 +163,8 @@ PROCESSING_PATTERN_MAPPING = {
     "usgs_ls7e_level1_2": L7_C2_PATTERN,
     "usgs_ls8c_level1_1": L8_C1_PATTERN,
     "usgs_ls8c_level1_2": L8_C2_PATTERN,
-    "s2a_ard_granule": S2_PATTERN,
+    "esa_s2am_level1_1": S2_PATTERN,
+    "esa_s2bm_level1_1": S2_PATTERN,
 }
 
 
@@ -290,6 +293,15 @@ def exclude_days(days_to_exclude: List, checkdatetime):
     return False
 
 
+def calc_local_path(l1_dataset):
+    assert len(l1_dataset.uris) == 1
+    components = urlparse(l1_dataset.uris[0])
+    if not (components.scheme == 'file' or components.scheme == 'zip'): 
+        raise ValueError('Only file/Zip URIs currently supported. Tried %r.' % components.scheme)
+    path = url2pathname(components.path)
+    
+    return Path(path)
+
 def get_aoi_sat_key(region_codes: Dict, product: str):
     aoi_sat_key = None
     for key in region_codes.keys():
@@ -369,8 +381,27 @@ def l1_filter_s2(
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         product_id = l1_dataset.metadata.sentinel_tile_id
-        a_path = l1_dataset.local_path.parent.joinpath(product_id)
-        file_path = a_path.with_suffix(".tar").as_posix()
+        if l1_dataset.local_path is None:
+            file_path = calc_local_path(l1_dataset)
+        else:
+            local_path = l1_dataset.local_path
+
+            if not local_path:
+                # This is to avoid crashing out over metadata issues
+                kwargs = {
+                    DATASETID: str(l1_dataset.id),
+                    REASON: "Skipping dataset without local paths",
+                    MSG: "Bad scene format",
+                }
+                LOGGER.warning(SCENEREMOVED, **kwargs)
+                continue
+
+            # Metadata assumptions
+            a_path = local_path.parent.joinpath(product_id)
+            file_path = a_path.with_suffix(".tar").as_posix()
+
+        LOGGER.debug('remove soon', file_path=file_path)
+        
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
         if not re.match(prod_pattern, product_id):
@@ -398,16 +429,8 @@ def l1_filter_s2(
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
-        if not l1_dataset.local_path:
-            kwargs = {
-                DATASETID: str(l1_dataset.id),
-                REASON: "Skipping dataset without local paths",
-                MSG: "Bad scene format",
-            }
-            LOGGER.warning(SCENEREMOVED, **kwargs)
-            continue
-
-        assert l1_dataset.local_path.name.endswith("metadata.yaml")
+        # how ls works
+        #assert l1_dataset.local_path.name.endswith("metadata.yaml")
 
         # Continue here if a maturity level of final cannot be produced
         # since the ancillary files are not there
