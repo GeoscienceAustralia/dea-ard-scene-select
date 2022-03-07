@@ -318,7 +318,8 @@ def l1_filter(
             region_codes,
             interim_days_wait,
             days_to_exclude,
-            find_blocked)
+            find_blocked,
+        )
     else:
         files2process, uuids2archive = l1_filter_ls(
             dc,
@@ -328,7 +329,8 @@ def l1_filter(
             region_codes,
             interim_days_wait,
             days_to_exclude,
-            find_blocked)
+            find_blocked,
+        )
 
     return files2process, uuids2archive
 
@@ -382,7 +384,10 @@ def l1_filter_s2(
             continue
 
         # Filter out if outside area of interest
-        if not aoi_sat_key is None and  l1_dataset.metadata.region_code not in region_codes[aoi_sat_key]:
+        if (
+            not aoi_sat_key is None
+            and l1_dataset.metadata.region_code not in region_codes[aoi_sat_key]
+        ):
 
             kwargs = {
                 SCENEID: l1_dataset.metadata.landsat_scene_id,
@@ -565,7 +570,10 @@ def l1_filter_ls(
             continue
 
         # Filter out if outside area of interest
-        if aoi_sat_key is not None and  l1_dataset.metadata.region_code not in region_codes[aoi_sat_key]:
+        if (
+            not aoi_sat_key is None
+            and l1_dataset.metadata.region_code not in region_codes[aoi_sat_key]
+        ):
             kwargs = {
                 REASON: "Region not in AOI",
                 "region_code": region_code,
