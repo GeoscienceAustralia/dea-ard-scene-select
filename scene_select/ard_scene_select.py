@@ -296,10 +296,10 @@ def exclude_days(days_to_exclude: List, checkdatetime):
 def calc_local_path(l1_dataset):
     assert len(l1_dataset.uris) == 1
     components = urlparse(l1_dataset.uris[0])
-    if not (components.scheme == 'file' or components.scheme == 'zip'): 
+    if not (components.scheme == 'file' or components.scheme == 'zip'):
         raise ValueError('Only file/Zip URIs currently supported. Tried %r.' % components.scheme)
     path = url2pathname(components.path)
-    
+
     return Path(path)
 
 def get_aoi_sat_key(region_codes: Dict, product: str):
@@ -401,7 +401,7 @@ def l1_filter_s2(
             file_path = a_path.with_suffix(".tar").as_posix()
 
         LOGGER.debug('remove soon', file_path=file_path)
-        
+
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
         if not re.match(prod_pattern, product_id):
