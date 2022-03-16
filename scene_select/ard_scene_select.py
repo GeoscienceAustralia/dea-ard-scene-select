@@ -299,7 +299,8 @@ def calc_local_path(l1_dataset):
     if not (components.scheme == 'file' or components.scheme == 'zip'):
         raise ValueError('Only file/Zip URIs currently supported. Tried %r.' % components.scheme)
     path = url2pathname(components.path)
-
+    if path[-2:] == '!/':
+        path = path[:-2]
     return Path(path)
 
 def get_aoi_sat_key(region_codes: Dict, product: str):
@@ -381,6 +382,10 @@ def l1_filter_s2(
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         product_id = l1_dataset.metadata.sentinel_tile_id
+        region_code = l1_dataset.metadata.region_code
+        # Set up the logging
+        temp_logger = LOGGER.bind(SCENEID=product_id)
+
         if l1_dataset.local_path is None:
             file_path = calc_local_path(l1_dataset)
         else:
@@ -393,14 +398,14 @@ def l1_filter_s2(
                     REASON: "Skipping dataset without local paths",
                     MSG: "Bad scene format",
                 }
-                LOGGER.warning(SCENEREMOVED, **kwargs)
+                temp_logger.warning(SCENEREMOVED, **kwargs)
                 continue
 
             # Metadata assumptions
             a_path = local_path.parent.joinpath(product_id)
             file_path = a_path.with_suffix(".tar").as_posix()
 
-        LOGGER.debug('remove soon', file_path=file_path)
+        LOGGER.debug('logging during s2 dev, remove in time', file_path=file_path)
 
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
@@ -408,10 +413,9 @@ def l1_filter_s2(
 
             kwargs = {
                 REASON: "Processing level too low, new ",
-                SCENEID: l1_dataset.metadata.landsat_scene_id,
                 PRODUCTID: product_id,
             }
-            LOGGER.debug(SCENEREMOVED, **kwargs)
+            temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
         # Filter out if outside area of interest
@@ -421,12 +425,11 @@ def l1_filter_s2(
         ):
 
             kwargs = {
-                SCENEID: l1_dataset.metadata.landsat_scene_id,
                 REASON: "Region not in AOI",
-                "region_code": l1_dataset.metadata.region_code,
+                "region_code": region_code,
                 "uuid": l1_dataset.id,
             }
-            LOGGER.debug(SCENEREMOVED, **kwargs)
+            temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
         # how ls works
@@ -444,82 +447,35 @@ def l1_filter_s2(
                 # process anyway
                 kwargs = {
                     DATASETPATH: file_path,
-                    SCENEID: l1_dataset.metadata.landsat_scene_id,
                     DATASETID: str(l1_dataset.id),
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(l1_dataset.time.end),
                 }
-                LOGGER.debug("No ancillary. Processing to interim", **kwargs)
+                temp_logger.debug("No ancillary. Processing to interim", **kwargs)
             else:
                 kwargs = {
                     DATASETPATH: file_path,
-                    SCENEID: l1_dataset.metadata.landsat_scene_id,
                     DATASETID: str(l1_dataset.id),
                     REASON: "ancillary files not ready",
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(l1_dataset.time.end),
                     MSG: (f"Not ready: {msg}"),
                 }
-                LOGGER.info(SCENEREMOVED, **kwargs)
+                temp_logger.info(SCENEREMOVED, **kwargs)
                 continue
 
         # FIXME remove the hard-coded list
         if exclude_days(days_to_exclude, l1_dataset.time.end):
             kwargs = {
                 DATASETTIMEEND: l1_dataset.time.end,
-                SCENEID: l1_dataset.metadata.landsat_scene_id,
                 REASON: "This day is excluded.",
             }
-            LOGGER.info(SCENEREMOVED, **kwargs)
+            temp_logger.info(SCENEREMOVED, **kwargs)
             continue
-        # Do the data with child filter here
-        # It will slow things down
-        # But any chopped_scene_id in processed_ard_scene_ids
-        # will now be a blocked reprocessed scene
-        # if find_blocked is True:
-        removed_processed_scenes = False
-        if find_blocked:
-            removed_processed_scenes = True
-            if dataset_with_child(dc, l1_dataset):
-                kwargs = {
-                    DATASETPATH: file_path,
-                    REASON: "Skipping dataset with children",
-                    SCENEID: l1_dataset.metadata.landsat_scene_id,
-                }
-                LOGGER.debug(SCENEREMOVED, **kwargs)
-                continue
 
-        if processed_ard_scene_ids:
-            a_scene_id = chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
-            if a_scene_id in processed_ard_scene_ids:
-                kwargs = {
-                    DATASETPATH: file_path,
-                    SCENEID: l1_dataset.metadata.landsat_scene_id,
-                }
-                if removed_processed_scenes:
-                    kwargs[REASON] = "Potential blocked reprocessed scene."
-                    # Could do this, but the info is in the file path
-                    # kwargs['landsat_product_id']
-                else:
-                    kwargs[REASON] = "The scene has been processed"
-
-                LOGGER.debug(SCENEREMOVED, **kwargs)
-                produced_ard = processed_ard_scene_ids[a_scene_id]
-                if (
-                    produced_ard["dataset_maturity"] == "interim"
-                    and ancill_there is True
-                ):
-                    # lets build a list of ARD uuid's to delete
-                    uuids2archive.append(str(produced_ard["id"]))
-
-                    # Let's reprocess this file to final
-                    # skipping the 'any child exists that isn't archived'
-                    # filter
-                    files2process.append(file_path)
-                continue
-
-        # WARNING any filter under here will not be executed
-        # when processing interim scenes
+        # Removing the data with child filter here for landsat
+        # Removing the processed_ard_scene_ids filter here for landsat
+        # Removing handling of interim scenes - lets just reply on the NRT scenes
 
         LOGGER.debug("location:pre dataset_with_child")
         # If any child exists that isn't archived
@@ -527,7 +483,7 @@ def l1_filter_s2(
             kwargs = {
                 DATASETPATH: file_path,
                 REASON: "Skipping dataset with children",
-                SCENEID: l1_dataset.metadata.landsat_scene_id,
+                SCENEID: l1_dataset.metadata._id,
             }
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
@@ -586,7 +542,6 @@ def l1_filter_ls(
 
             kwargs = {
                 REASON: "Processing level too low, new ",
-                SCENEID: l1_dataset.metadata.landsat_scene_id,
                 PRODUCTID: product_id,
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
@@ -754,7 +709,7 @@ def l1_scenes_to_process(
             )
             uuids2archive_combined += uuids2archive
             for fp in files2process:
-                fid.write(fp + "\n")
+                fid.write(str(fp) + "\n")
                 l1_count += 1
                 if l1_count >= scene_limit:
                     break
