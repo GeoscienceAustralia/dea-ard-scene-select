@@ -428,7 +428,6 @@ def l1_filter(
                 else:
                     kwargs[REASON] = "The scene has been processed"
 
-                LOGGER.debug(SCENEREMOVED, **kwargs)
                 produced_ard = processed_ard_scene_ids[a_scene_id]
                 if (
                     produced_ard["dataset_maturity"] == "interim"
@@ -441,6 +440,14 @@ def l1_filter(
                     # skipping the 'any child exists that isn't archived'
                     # filter
                     files2process.append(file_path)
+                    kwargs[REASON] = "Interim scene is being processed to final"
+                    LOGGER.debug(SCENEADDED, **kwargs)
+                else:
+                    LOGGER.debug(SCENEREMOVED, **kwargs)
+                # Contine for the interim scene so it doesn't get
+                # filtered out
+                # Contine for everything else so it doesn't get
+                # processed
                 continue
 
         # WARNING any filter under here will not be executed
@@ -457,6 +464,8 @@ def l1_filter(
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
 
+        # Warning, what is done here has to be done for
+        # if the scene is interim and ready to be processed.
         files2process.append(file_path)
 
     return files2process, uuids2archive
@@ -478,6 +487,7 @@ def l1_scenes_to_process(
     dc = datacube.Datacube(app="gen-list", config=config)
     l1_count = 0
     with open(outfile, "w") as fid:
+        uuids2archive_combined = []
         for product in products:
             files2process, uuids2archive = l1_filter(
                 dc,
@@ -489,6 +499,7 @@ def l1_scenes_to_process(
                 days_to_exclude=days_to_exclude,
                 find_blocked=find_blocked,
             )
+            uuids2archive_combined += uuids2archive
             for fp in files2process:
                 fid.write(fp + "\n")
                 l1_count += 1
@@ -496,7 +507,7 @@ def l1_scenes_to_process(
                     break
             if l1_count >= scene_limit:
                 break
-    return l1_count, uuids2archive
+    return l1_count, uuids2archive_combined
 
 
 def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
