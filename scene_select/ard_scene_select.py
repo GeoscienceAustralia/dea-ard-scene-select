@@ -293,6 +293,20 @@ def exclude_days(days_to_exclude: List, checkdatetime):
     return False
 
 
+def calc_file_path(l1_dataset, product_id):
+    if l1_dataset.local_path is None:
+        # The s2 way
+        file_path = calc_local_path(l1_dataset)
+    else:
+        # The ls way
+        local_path = l1_dataset.local_path
+
+        # Metadata assumptions
+        a_path = local_path.parent.joinpath(product_id)
+        file_path = a_path.with_suffix(".tar").as_posix()
+    return file_path
+
+
 def calc_local_path(l1_dataset):
     assert len(l1_dataset.uris) == 1
     components = urlparse(l1_dataset.uris[0])
@@ -301,7 +315,8 @@ def calc_local_path(l1_dataset):
     path = url2pathname(components.path)
     if path[-2:] == '!/':
         path = path[:-2]
-    return Path(path)
+    return path
+
 
 def get_aoi_sat_key(region_codes: Dict, product: str):
     aoi_sat_key = None
@@ -385,28 +400,12 @@ def l1_filter_s2(
         region_code = l1_dataset.metadata.region_code
         # Set up the logging
         temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id))
-
-        if l1_dataset.local_path is None:
-            # The s2 way
-            file_path = calc_local_path(l1_dataset)
-        else:
-            # The ls way
-            local_path = l1_dataset.local_path
-
-            if not local_path:
-                # This is to avoid crashing out over metadata issues
-                kwargs = {
-                    REASON: "Skipping dataset without local paths",
-                    MSG: "Bad scene format",
-                }
-                temp_logger.warning(SCENEREMOVED, **kwargs)
-                continue
-
-            # Metadata assumptions
-            a_path = local_path.parent.joinpath(product_id)
-            file_path = a_path.with_suffix(".tar").as_posix()
-
-        # file_path has been defined
+        LOGGER.debug("local_pathsus",
+                     local_path=l1_dataset.local_path,
+                     uris=l1_dataset.uris,
+                     product_id=product_id
+        )
+        file_path = calc_file_path(l1_dataset, product_id)
 
         LOGGER.debug('logging during s2 dev, remove in time', file_path=file_path)
 
@@ -520,8 +519,8 @@ def l1_filter_ls(
 
 
     # This is used to block reprocessing of reprocessed l1's
-    if aoi_sat_key is "ls":
-        LOGGER.debug("location:pre-calc_processed_ard_scene_ids")
+    if aoi_sat_key == "ls":
+        LOGGER.debug("location:pre-calc_processed_ard_scene_ids", aoi_sat_key=aoi_sat_key)
         processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
     LOGGER.debug("location:pre-AncillaryFiles")
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
@@ -532,6 +531,14 @@ def l1_filter_ls(
         product_id = l1_dataset.metadata.landsat_product_id
         sceneid = l1_dataset.metadata.landsat_scene_id
         region_code = l1_dataset.metadata.region_code
+
+        LOGGER.debug("local_pathsus",
+                     local_path=l1_dataset.local_path,
+                     uris=l1_dataset.uris,
+                     product_id=product_id
+        )
+        a_path = l1_dataset.local_path.parent.joinpath(product_id)
+        file_path = a_path.with_suffix(".tar").as_posix()
         # Set up the logging
         temp_logger = LOGGER.bind(SCENEID=sceneid)
         # Filter out if the processing level is too low
