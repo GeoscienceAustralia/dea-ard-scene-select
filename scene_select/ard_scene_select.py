@@ -384,17 +384,18 @@ def l1_filter_s2(
         product_id = l1_dataset.metadata.sentinel_tile_id
         region_code = l1_dataset.metadata.region_code
         # Set up the logging
-        temp_logger = LOGGER.bind(SCENEID=product_id)
+        temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id))
 
         if l1_dataset.local_path is None:
+            # The s2 way
             file_path = calc_local_path(l1_dataset)
         else:
+            # The ls way
             local_path = l1_dataset.local_path
 
             if not local_path:
                 # This is to avoid crashing out over metadata issues
                 kwargs = {
-                    DATASETID: str(l1_dataset.id),
                     REASON: "Skipping dataset without local paths",
                     MSG: "Bad scene format",
                 }
@@ -405,6 +406,8 @@ def l1_filter_s2(
             a_path = local_path.parent.joinpath(product_id)
             file_path = a_path.with_suffix(".tar").as_posix()
 
+        # file_path has been defined
+
         LOGGER.debug('logging during s2 dev, remove in time', file_path=file_path)
 
         # Filter out if the processing level is too low
@@ -413,7 +416,6 @@ def l1_filter_s2(
 
             kwargs = {
                 REASON: "Processing level too low, new ",
-                PRODUCTID: product_id,
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
@@ -421,13 +423,12 @@ def l1_filter_s2(
         # Filter out if outside area of interest
         if (
             not aoi_sat_key is None
-            and l1_dataset.metadata.region_code not in region_codes[aoi_sat_key]
+            and region_code not in region_codes[aoi_sat_key]
         ):
 
             kwargs = {
                 REASON: "Region not in AOI",
                 "region_code": region_code,
-                "uuid": l1_dataset.id,
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
@@ -447,7 +448,6 @@ def l1_filter_s2(
                 # process anyway
                 kwargs = {
                     DATASETPATH: file_path,
-                    DATASETID: str(l1_dataset.id),
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(l1_dataset.time.end),
                 }
@@ -455,7 +455,6 @@ def l1_filter_s2(
             else:
                 kwargs = {
                     DATASETPATH: file_path,
-                    DATASETID: str(l1_dataset.id),
                     REASON: "ancillary files not ready",
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(l1_dataset.time.end),
@@ -483,7 +482,6 @@ def l1_filter_s2(
             kwargs = {
                 DATASETPATH: file_path,
                 REASON: "Skipping dataset with children",
-                SCENEID: l1_dataset.metadata._id,
             }
             LOGGER.debug(SCENEREMOVED, **kwargs)
             continue
@@ -520,9 +518,11 @@ def l1_filter_ls(
 
     aoi_sat_key = get_aoi_sat_key(region_codes, l1_product)
 
-    LOGGER.debug("location:pre-calc_processed_ard_scene_ids")
+
     # This is used to block reprocessing of reprocessed l1's
-    processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
+    if aoi_sat_key is "ls":
+        LOGGER.debug("location:pre-calc_processed_ard_scene_ids")
+        processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
     LOGGER.debug("location:pre-AncillaryFiles")
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
     LOGGER.debug("location:post-AncillaryFiles")
@@ -530,8 +530,6 @@ def l1_filter_ls(
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         product_id = l1_dataset.metadata.landsat_product_id
-        a_path = l1_dataset.local_path.parent.joinpath(product_id)
-        file_path = a_path.with_suffix(".tar").as_posix()
         sceneid = l1_dataset.metadata.landsat_scene_id
         region_code = l1_dataset.metadata.region_code
         # Set up the logging
