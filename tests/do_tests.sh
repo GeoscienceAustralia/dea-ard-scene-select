@@ -17,5 +17,4 @@ SSPATH=$PWD/../
 
 pytest -s test_ard_scene_select.py
 pytest -s test_check_ancillary.py #-k 'test_definitive_ancillary_files_local'
-pytest -s test_generate_aoi.py
 #./timing_check_ancillary.py
