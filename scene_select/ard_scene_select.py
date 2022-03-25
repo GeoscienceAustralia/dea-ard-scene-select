@@ -769,6 +769,10 @@ def dict2ard_arg_string(ard_click_params):
             if value is True:
                 ard_params.append("--" + key)
             continue
+        if key == "yamls_dir":
+            if value is "":
+                # remove the yamls-dir if it is empty
+                continue
         # convert underscores to dashes
         key = key.replace("_", "-")
         ard_params.append("--" + key)
