@@ -310,10 +310,12 @@ def calc_file_path(l1_dataset, product_id):
 def calc_local_path(l1_dataset):
     assert len(l1_dataset.uris) == 1
     components = urlparse(l1_dataset.uris[0])
-    if not (components.scheme == 'file' or components.scheme == 'zip'):
-        raise ValueError('Only file/Zip URIs currently supported. Tried %r.' % components.scheme)
+    if not (components.scheme == "file" or components.scheme == "zip"):
+        raise ValueError(
+            "Only file/Zip URIs currently supported. Tried %r." % components.scheme
+        )
     path = url2pathname(components.path)
-    if path[-2:] == '!/':
+    if path[-2:] == "!/":
         path = path[:-2]
     return path
 
@@ -400,14 +402,9 @@ def l1_filter_s2(
         region_code = l1_dataset.metadata.region_code
         # Set up the logging
         temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id))
-        LOGGER.debug("local_pathsus",
-                     local_path=l1_dataset.local_path,
-                     uris=l1_dataset.uris,
-                     product_id=product_id
-        )
         file_path = calc_file_path(l1_dataset, product_id)
 
-        LOGGER.debug('logging during s2 dev, remove in time', file_path=file_path)
+        LOGGER.debug("logging during s2 dev, remove in time", file_path=file_path)
 
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
@@ -420,10 +417,7 @@ def l1_filter_s2(
             continue
 
         # Filter out if outside area of interest
-        if (
-            not aoi_sat_key is None
-            and region_code not in region_codes[aoi_sat_key]
-        ):
+        if not aoi_sat_key is None and region_code not in region_codes[aoi_sat_key]:
 
             kwargs = {
                 REASON: "Region not in AOI",
@@ -433,7 +427,7 @@ def l1_filter_s2(
             continue
 
         # how ls works
-        #assert l1_dataset.local_path.name.endswith("metadata.yaml")
+        # assert l1_dataset.local_path.name.endswith("metadata.yaml")
 
         # Continue here if a maturity level of final cannot be produced
         # since the ancillary files are not there
@@ -517,10 +511,11 @@ def l1_filter_ls(
 
     aoi_sat_key = get_aoi_sat_key(region_codes, l1_product)
 
-
     # This is used to block reprocessing of reprocessed l1's
     if aoi_sat_key == "ls":
-        LOGGER.debug("location:pre-calc_processed_ard_scene_ids", aoi_sat_key=aoi_sat_key)
+        LOGGER.debug(
+            "location:pre-calc_processed_ard_scene_ids", aoi_sat_key=aoi_sat_key
+        )
         processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
     LOGGER.debug("location:pre-AncillaryFiles")
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
@@ -531,12 +526,6 @@ def l1_filter_ls(
         product_id = l1_dataset.metadata.landsat_product_id
         sceneid = l1_dataset.metadata.landsat_scene_id
         region_code = l1_dataset.metadata.region_code
-
-        LOGGER.debug("local_pathsus",
-                     local_path=l1_dataset.local_path,
-                     uris=l1_dataset.uris,
-                     product_id=product_id
-        )
         a_path = l1_dataset.local_path.parent.joinpath(product_id)
         file_path = a_path.with_suffix(".tar").as_posix()
         # Set up the logging
@@ -891,8 +880,12 @@ def make_ard_pbs(level1_list, **ard_click_params):
     default=DATA_DIR.joinpath(LOG_CONFIG_FILE),
     help="full path to the logging configuration file",
 )
-@click.option("--yamls-dir", type=click.Path(file_okay=False), default="",
-              help="The base directory for level-1 dataset documents.")
+@click.option(
+    "--yamls-dir",
+    type=click.Path(file_okay=False),
+    default="",
+    help="The base directory for level-1 dataset documents.",
+)
 @click.option("--stop-logging", default=False, is_flag=True, help="No logs.")
 @click.option("--walltime", help="Job walltime in `hh:mm:ss` format.")
 @click.option("--email", help="Notification email address.")
