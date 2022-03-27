@@ -390,21 +390,32 @@ def l1_filter_s2(
     # pylint: disable=R0914
     # R0914: Too many local variables
 
-    aoi_sat_key = get_aoi_sat_key(region_codes, l1_product)
+    sat_key = get_aoi_sat_key(region_codes, l1_product)
 
-    # This can be taken done for all products
+    # This is used to block reprocessing of reprocessed l1's
+    if sat_key == "ls":
+        LOGGER.debug(
+            "location:pre-calc_processed_ard_scene_ids", sat_key=sat_key
+        )
+        processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
+    LOGGER.debug("location:pre-AncillaryFiles")
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
     LOGGER.debug("location:post-AncillaryFiles")
     files2process = []
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
-        product_id = l1_dataset.metadata.sentinel_tile_id
+        if sat_key == "ls":
+            product_id = l1_dataset.metadata.landsat_product_id
+            sceneid = l1_dataset.metadata.landsat_scene_id
+        elif sat_key == "s2":
+            product_id = l1_dataset.metadata.sentinel_tile_id
+            sceneid = None
         region_code = l1_dataset.metadata.region_code
         # Set up the logging
         temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id))
         file_path = calc_file_path(l1_dataset, product_id)
 
-        LOGGER.debug("logging during s2 dev, remove in time", file_path=file_path)
+        LOGGER.debug("logging during dev, remove in time", file_path=file_path)
 
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
@@ -417,7 +428,7 @@ def l1_filter_s2(
             continue
 
         # Filter out if outside area of interest
-        if not aoi_sat_key is None and region_code not in region_codes[aoi_sat_key]:
+        if not sat_key is None and region_code not in region_codes[sat_key]:
 
             kwargs = {
                 REASON: "Region not in AOI",
@@ -426,8 +437,6 @@ def l1_filter_s2(
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
-        # how ls works
-        # assert l1_dataset.local_path.name.endswith("metadata.yaml")
 
         # Continue here if a maturity level of final cannot be produced
         # since the ancillary files are not there
@@ -476,7 +485,7 @@ def l1_filter_s2(
                 DATASETPATH: file_path,
                 REASON: "Skipping dataset with children",
             }
-            LOGGER.debug(SCENEREMOVED, **kwargs)
+            temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
         files2process.append(file_path)
@@ -509,12 +518,12 @@ def l1_filter_ls(
     # pylint: disable=R0914
     # R0914: Too many local variables
 
-    aoi_sat_key = get_aoi_sat_key(region_codes, l1_product)
+    sat_key = get_aoi_sat_key(region_codes, l1_product)
 
     # This is used to block reprocessing of reprocessed l1's
-    if aoi_sat_key == "ls":
+    if sat_key == "ls":
         LOGGER.debug(
-            "location:pre-calc_processed_ard_scene_ids", aoi_sat_key=aoi_sat_key
+            "location:pre-calc_processed_ard_scene_ids", sat_key=sat_key
         )
         processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
     LOGGER.debug("location:pre-AncillaryFiles")
@@ -523,47 +532,40 @@ def l1_filter_ls(
     files2process = []
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
-        product_id = l1_dataset.metadata.landsat_product_id
-        sceneid = l1_dataset.metadata.landsat_scene_id
+        if sat_key == "ls":
+            product_id = l1_dataset.metadata.landsat_product_id
+            sceneid = l1_dataset.metadata.landsat_scene_id
+        elif sat_key == "s2":
+            product_id = l1_dataset.metadata.sentinel_tile_id
+            sceneid = None            
         region_code = l1_dataset.metadata.region_code
-        a_path = l1_dataset.local_path.parent.joinpath(product_id)
-        file_path = a_path.with_suffix(".tar").as_posix()
         # Set up the logging
-        temp_logger = LOGGER.bind(SCENEID=sceneid)
+        temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id))
+        file_path = calc_file_path(l1_dataset, product_id)
+        
+        LOGGER.debug("logging during dev, remove in time", file_path=file_path)
+        
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
         if not re.match(prod_pattern, product_id):
 
             kwargs = {
                 REASON: "Processing level too low, new ",
-                PRODUCTID: product_id,
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
         # Filter out if outside area of interest
         if (
-            not aoi_sat_key is None
-            and l1_dataset.metadata.region_code not in region_codes[aoi_sat_key]
+            not sat_key is None
+            and l1_dataset.metadata.region_code not in region_codes[sat_key]
         ):
             kwargs = {
                 REASON: "Region not in AOI",
                 "region_code": region_code,
-                "uuid": l1_dataset.id,
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
-
-        if not l1_dataset.local_path:
-            kwargs = {
-                DATASETID: str(l1_dataset.id),
-                REASON: "Skipping dataset without local paths",
-                MSG: "Bad scene format",
-            }
-            temp_logger.warning(SCENEREMOVED, **kwargs)
-            continue
-
-        assert l1_dataset.local_path.name.endswith("metadata.yaml")
 
         # Continue here if a maturity level of final cannot be produced
         # since the ancillary files are not there
@@ -585,7 +587,6 @@ def l1_filter_ls(
             else:
                 kwargs = {
                     DATASETPATH: file_path,
-                    DATASETID: str(l1_dataset.id),
                     REASON: "ancillary files not ready",
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(l1_dataset.time.end),
