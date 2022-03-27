@@ -228,13 +228,12 @@ def chopped_scene_id(scene_id: str) -> str:
     return capture_id
 
 
-def calc_processed_ard_scene_ids(dc, product):
+def calc_processed_ard_scene_ids(dc, product, sat_key):
     """
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-
-    if product in ARD_PARENT_PRODUCT_MAPPING:
+    if product in ARD_PARENT_PRODUCT_MAPPING and sat_key == "ls":
         processed_ard_scene_ids = {}
         for result in dc.index.datasets.search_returning(
             ("landsat_scene_id", "dataset_maturity", "id"),
@@ -339,42 +338,6 @@ def l1_filter(
     days_to_exclude: List,
     find_blocked: bool,
 ):
-    if l1_product == "esa_s2am_level1_1":
-        files2process, uuids2archive = l1_filter_s2(
-            dc,
-            l1_product,
-            brdfdir,
-            wvdir,
-            region_codes,
-            interim_days_wait,
-            days_to_exclude,
-            find_blocked,
-        )
-    else:
-        files2process, uuids2archive = l1_filter_ls(
-            dc,
-            l1_product,
-            brdfdir,
-            wvdir,
-            region_codes,
-            interim_days_wait,
-            days_to_exclude,
-            find_blocked,
-        )
-
-    return files2process, uuids2archive
-
-
-def l1_filter_s2(
-    dc,
-    l1_product,
-    brdfdir: Path,
-    wvdir: Path,
-    region_codes: Dict,
-    interim_days_wait: int,
-    days_to_exclude: List,
-    find_blocked: bool,
-):
 
     """return
     @param dc:
@@ -393,11 +356,8 @@ def l1_filter_s2(
     sat_key = get_aoi_sat_key(region_codes, l1_product)
 
     # This is used to block reprocessing of reprocessed l1's
-    if sat_key == "ls":
-        LOGGER.debug(
-            "location:pre-calc_processed_ard_scene_ids", sat_key=sat_key
-        )
-        processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
+    processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product, sat_key)
+
     LOGGER.debug("location:pre-AncillaryFiles")
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
     LOGGER.debug("location:post-AncillaryFiles")
@@ -437,7 +397,6 @@ def l1_filter_s2(
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
-
         # Continue here if a maturity level of final cannot be produced
         # since the ancillary files are not there
         ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
@@ -474,135 +433,6 @@ def l1_filter_s2(
             temp_logger.info(SCENEREMOVED, **kwargs)
             continue
 
-        # Removing the data with child filter here for landsat
-        # Removing the processed_ard_scene_ids filter here for landsat
-        # Removing handling of interim scenes - lets just reply on the NRT scenes
-
-        LOGGER.debug("location:pre dataset_with_child")
-        # If any child exists that isn't archived
-        if dataset_with_child(dc, l1_dataset):
-            kwargs = {
-                DATASETPATH: file_path,
-                REASON: "Skipping dataset with children",
-            }
-            temp_logger.debug(SCENEREMOVED, **kwargs)
-            continue
-
-        files2process.append(file_path)
-
-    return files2process, uuids2archive
-
-
-def l1_filter_ls(
-    dc,
-    l1_product,
-    brdfdir: Path,
-    wvdir: Path,
-    region_codes: Dict,
-    interim_days_wait: int,
-    days_to_exclude: List,
-    find_blocked: bool,
-):
-
-    """return
-    @param dc:
-    @param l1_product: l1 product
-    @param brdfdir:
-    @param wvdir:
-    @param region_codes:
-    @param interim_days_wait:
-    @param days_to_exclude:
-    @param find_blocked:
-    @return: a list of file paths to ARD process
-    """
-    # pylint: disable=R0914
-    # R0914: Too many local variables
-
-    sat_key = get_aoi_sat_key(region_codes, l1_product)
-
-    # This is used to block reprocessing of reprocessed l1's
-    if sat_key == "ls":
-        LOGGER.debug(
-            "location:pre-calc_processed_ard_scene_ids", sat_key=sat_key
-        )
-        processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product)
-    LOGGER.debug("location:pre-AncillaryFiles")
-    ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
-    LOGGER.debug("location:post-AncillaryFiles")
-    files2process = []
-    uuids2archive = []
-    for l1_dataset in dc.index.datasets.search(product=l1_product):
-        if sat_key == "ls":
-            product_id = l1_dataset.metadata.landsat_product_id
-            sceneid = l1_dataset.metadata.landsat_scene_id
-        elif sat_key == "s2":
-            product_id = l1_dataset.metadata.sentinel_tile_id
-            sceneid = None            
-        region_code = l1_dataset.metadata.region_code
-        # Set up the logging
-        temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id))
-        file_path = calc_file_path(l1_dataset, product_id)
-        
-        LOGGER.debug("logging during dev, remove in time", file_path=file_path)
-        
-        # Filter out if the processing level is too low
-        prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
-        if not re.match(prod_pattern, product_id):
-
-            kwargs = {
-                REASON: "Processing level too low, new ",
-            }
-            temp_logger.debug(SCENEREMOVED, **kwargs)
-            continue
-
-        # Filter out if outside area of interest
-        if (
-            not sat_key is None
-            and l1_dataset.metadata.region_code not in region_codes[sat_key]
-        ):
-            kwargs = {
-                REASON: "Region not in AOI",
-                "region_code": region_code,
-            }
-            temp_logger.debug(SCENEREMOVED, **kwargs)
-            continue
-
-        # Continue here if a maturity level of final cannot be produced
-        # since the ancillary files are not there
-        ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
-        if ancill_there is False:
-            days_ago = datetime.datetime.now(
-                l1_dataset.time.end.tzinfo
-            ) - datetime.timedelta(days=interim_days_wait)
-            if days_ago > l1_dataset.time.end:
-                # If the ancillary files take too long to turn up
-                # process anyway
-                kwargs = {
-                    DATASETPATH: file_path,
-                    DATASETID: str(l1_dataset.id),
-                    "days_ago": str(days_ago),
-                    "dataset.time.end": str(l1_dataset.time.end),
-                }
-                temp_logger.debug("No ancillary. Processing to interim", **kwargs)
-            else:
-                kwargs = {
-                    DATASETPATH: file_path,
-                    REASON: "ancillary files not ready",
-                    "days_ago": str(days_ago),
-                    "dataset.time.end": str(l1_dataset.time.end),
-                    MSG: (f"Not ready: {msg}"),
-                }
-                temp_logger.info(SCENEREMOVED, **kwargs)
-                continue
-
-        # FIXME remove the hard-coded list
-        if exclude_days(days_to_exclude, l1_dataset.time.end):
-            kwargs = {
-                DATASETTIMEEND: l1_dataset.time.end,
-                REASON: "This day is excluded.",
-            }
-            temp_logger.info(SCENEREMOVED, **kwargs)
-            continue
         # Do the data with child filter here
         # It will slow things down
         # But any chopped_scene_id in processed_ard_scene_ids
@@ -926,7 +756,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
     "--find-blocked",
     default=False,
     is_flag=True,
-    help="Find l1 scenes with no children but are not getting processed..",
+    help="Find l1 scenes with no children that are not getting processed.",
 )
 @LogMainFunction()
 def scene_select(
