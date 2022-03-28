@@ -371,9 +371,9 @@ def l1_filter(
             product_id = l1_dataset.metadata.sentinel_tile_id
             sceneid = None
         region_code = l1_dataset.metadata.region_code
-        # Set up the logging
-        temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id))
         file_path = calc_file_path(l1_dataset, product_id)
+        # Set up the logging
+        temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id), DATASETPATH=file_path)
 
         LOGGER.debug("logging during dev, remove in time", file_path=file_path)
 
@@ -408,14 +408,12 @@ def l1_filter(
                 # If the ancillary files take too long to turn up
                 # process anyway
                 kwargs = {
-                    DATASETPATH: file_path,
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(l1_dataset.time.end),
                 }
                 temp_logger.debug("No ancillary. Processing to interim", **kwargs)
             else:
                 kwargs = {
-                    DATASETPATH: file_path,
                     REASON: "ancillary files not ready",
                     "days_ago": str(days_ago),
                     "dataset.time.end": str(l1_dataset.time.end),
@@ -440,7 +438,6 @@ def l1_filter(
         if find_blocked:
             if dataset_with_final_child(dc, l1_dataset):
                 kwargs = {
-                    DATASETPATH: file_path,
                     REASON: "Skipping dataset with children",
                 }
                 temp_logger.debug(SCENEREMOVED, **kwargs)
@@ -449,9 +446,7 @@ def l1_filter(
         if processed_ard_scene_ids:
             a_scene_id = chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
             if a_scene_id in processed_ard_scene_ids:
-                kwargs = {
-                    DATASETPATH: file_path,
-                }
+                kwargs = {}
                 if find_blocked:
                     kwargs[REASON] = "Potential blocked reprocessed scene."
                     # Since all dataset with final childs
@@ -470,35 +465,27 @@ def l1_filter(
                     # lets build a list of ARD uuid's to delete
                     uuids2archive.append(str(produced_ard["id"]))
 
-                    # Let's reprocess this file to final
-                    # skipping the 'any child exists that isn't archived'
-                    # filter
-                    files2process.append(file_path)
                     kwargs[REASON] = "Interim scene is being processed to final"
                     temp_logger.debug(SCENEADDED, **kwargs)
                 else:
                     temp_logger.debug(SCENEREMOVED, **kwargs)
-                # Contine for the interim scene so it doesn't get
-                # filtered out
-                # Contine for everything else so it doesn't get
-                # processed
-                continue
+                    # Contine for everything except interim
+                    # so it doesn't get processed
+                    continue
 
-        # WARNING any filter under here will not be executed
-        # when processing interim scenes
+        # WARNING any filter under here will
+        # be executed on interim scenes that it is assumed will
+        # be processed
 
         LOGGER.debug("location:pre dataset_with_final_child")
         # If any child exists that isn't archived
         if dataset_with_final_child(dc, l1_dataset):
             kwargs = {
-                DATASETPATH: file_path,
                 REASON: "Skipping dataset with children",
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
-        # Warning, what is done here has to be done for
-        # if the scene is interim and ready to be processed.
         files2process.append(file_path)
 
     return files2process, uuids2archive
