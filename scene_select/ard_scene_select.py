@@ -373,7 +373,9 @@ def l1_filter(
         region_code = l1_dataset.metadata.region_code
         file_path = calc_file_path(l1_dataset, product_id)
         # Set up the logging
-        temp_logger = LOGGER.bind(SCENEID=product_id, DATASETID=str(l1_dataset.id), DATASETPATH=file_path)
+        temp_logger = LOGGER.bind(
+            SCENEID=product_id, DATASETID=str(l1_dataset.id), DATASETPATH=file_path
+        )
 
         LOGGER.debug("logging during dev, remove in time", file_path=file_path)
 
