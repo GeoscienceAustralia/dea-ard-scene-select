@@ -437,10 +437,7 @@ def l1_filter(
         # It will slow things down
         # But any chopped_scene_id in processed_ard_scene_ids
         # will now be a blocked reprocessed scene
-        # if find_blocked is True:
-        removed_processed_scenes = False
         if find_blocked:
-            removed_processed_scenes = True
             if dataset_with_final_child(dc, l1_dataset):
                 kwargs = {
                     DATASETPATH: file_path,
@@ -455,12 +452,15 @@ def l1_filter(
                 kwargs = {
                     DATASETPATH: file_path,
                 }
-                if removed_processed_scenes:
+                if find_blocked:
                     kwargs[REASON] = "Potential blocked reprocessed scene."
-                    # Could do this, but the info is in the file path
-                    # kwargs['landsat_product_id']
+                    # Since all dataset with final childs
+                    # have been filtered out
                 else:
                     kwargs[REASON] = "The scene has been processed"
+                    # Since dataset with final childs have not been
+                    # filtered out we don't know why there is
+                    # an ard there.
 
                 produced_ard = processed_ard_scene_ids[a_scene_id]
                 if (
