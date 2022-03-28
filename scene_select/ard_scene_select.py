@@ -198,7 +198,7 @@ def load_aoi(file_name: Path) -> Dict:
     return data
 
 
-def dataset_with_child(dc, dataset):
+def dataset_with_final_child(dc, dataset):
     """
     If any child exists that isn't archived, with a dataset_maturity of 'final'
     :param dc:
@@ -441,7 +441,7 @@ def l1_filter(
         removed_processed_scenes = False
         if find_blocked:
             removed_processed_scenes = True
-            if dataset_with_child(dc, l1_dataset):
+            if dataset_with_final_child(dc, l1_dataset):
                 kwargs = {
                     DATASETPATH: file_path,
                     REASON: "Skipping dataset with children",
@@ -487,9 +487,9 @@ def l1_filter(
         # WARNING any filter under here will not be executed
         # when processing interim scenes
 
-        LOGGER.debug("location:pre dataset_with_child")
+        LOGGER.debug("location:pre dataset_with_final_child")
         # If any child exists that isn't archived
-        if dataset_with_child(dc, l1_dataset):
+        if dataset_with_final_child(dc, l1_dataset):
             kwargs = {
                 DATASETPATH: file_path,
                 REASON: "Skipping dataset with children",
