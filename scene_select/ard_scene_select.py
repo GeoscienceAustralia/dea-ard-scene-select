@@ -439,9 +439,7 @@ def l1_filter(
         # will now be a blocked reprocessed scene
         if find_blocked:
             if dataset_with_final_child(dc, l1_dataset):
-                kwargs = {
-                    REASON: "Skipping dataset with children",
-                }
+                kwargs[REASON] = "Skipping dataset with children"
                 temp_logger.debug(SCENEREMOVED, **kwargs)
                 continue
 
