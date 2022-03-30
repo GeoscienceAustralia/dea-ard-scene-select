@@ -261,7 +261,7 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
         # is logged.
         # This uses the l1 product to ard mapping to filter out
         # updated l1 scenes that have been processed using the old l1 scene.
-        if not product in ARD_PARENT_PRODUCT_MAPPING:
+        if product not in ARD_PARENT_PRODUCT_MAPPING:
             LOGGER.warning(
                 "THE ARD ODC product name after ARD processing is not known.",
                 product=product,
@@ -385,7 +385,7 @@ def l1_filter(
             continue
 
         # Filter out if outside area of interest
-        if not sat_key is None and region_code not in region_codes[sat_key]:
+        if sat_key is not None and region_code not in region_codes[sat_key]:
             kwargs = {
                 REASON: "Region not in AOI",
                 "region_code": region_code,
