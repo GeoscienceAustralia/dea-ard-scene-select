@@ -19,9 +19,7 @@ from scene_select.ard_scene_select import (
 
 def test_local_path():
     # s2
-    uris = [
-        "zip:/yada/yada/yada20124T021536.zip!/"
-    ]
+    uris = ["zip:/yada/yada/yada20124T021536.zip!/"]
 
     # ls
     # "local_path": "PosixPath('/g/data/u46/yada_01_T2.odc-metadata.yaml')
