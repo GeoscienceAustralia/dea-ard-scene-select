@@ -334,7 +334,7 @@ def l1_filter(
 
         # Filter out if outside area of interest
         if (
-            not aoi_sat_key is None
+            aoi_sat_key is not None
             and dataset.metadata.region_code not in region_codes[aoi_sat_key]
         ):
             kwargs = {

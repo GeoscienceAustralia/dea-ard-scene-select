@@ -7,7 +7,8 @@ module use /g/data/v10/private/modules/modulefiles
 
 module load h5-compression-filters/20200612
 
-module load dea
+module load ard-pipeline/20211222
+#module load dea
 
 set -eu
 set -x
