@@ -61,8 +61,8 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls7e_level1_2": "ga_ls7e_ard_3",
     "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
     "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
-    "s2a_level1c_granule": "s2a_ard_granule",
-    "s2b_level1c_granule": "s2b_ard_granule",
+    "esa_s2am_level1_1": "s2a_ard_granule",
+    "esa_s2bm_level1_1": "s2b_ard_granule",
 }
 
 PBS_JOB = """#!/bin/bash
@@ -261,11 +261,12 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
         # is logged.
         # This uses the l1 product to ard mapping to filter out
         # updated l1 scenes that have been processed using the old l1 scene.
+        if not product in ARD_PARENT_PRODUCT_MAPPING:
+            LOGGER.warning(
+                "THE ARD ODC product name after ARD processing is not known.",
+                product=product,
+            )
         processed_ard_scene_ids = None
-        LOGGER.warning(
-            "THE ARD ODC product name after ARD processing is not known.",
-            product=product,
-        )
     return processed_ard_scene_ids
 
 
@@ -377,21 +378,14 @@ def l1_filter(
             SCENEID=product_id, DATASETID=str(l1_dataset.id), DATASETPATH=file_path
         )
 
-        LOGGER.debug("logging during dev, remove in time", file_path=file_path)
-
         # Filter out if the processing level is too low
         prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
         if not re.match(prod_pattern, product_id):
-
-            kwargs = {
-                REASON: "Processing level too low, new ",
-            }
-            temp_logger.debug(SCENEREMOVED, **kwargs)
+            temp_logger.debug(SCENEREMOVED, **{REASON: "Processing level too low"})
             continue
 
         # Filter out if outside area of interest
         if not sat_key is None and region_code not in region_codes[sat_key]:
-
             kwargs = {
                 REASON: "Region not in AOI",
                 "region_code": region_code,
@@ -480,10 +474,9 @@ def l1_filter(
         LOGGER.debug("location:pre dataset_with_final_child")
         # If any child exists that isn't archived
         if dataset_with_final_child(dc, l1_dataset):
-            kwargs = {
-                REASON: "Skipping dataset with children",
-            }
-            temp_logger.debug(SCENEREMOVED, **kwargs)
+            temp_logger.debug(
+                SCENEREMOVED, **{REASON: "Skipping dataset with children"}
+            )
             continue
 
         files2process.append(file_path)
