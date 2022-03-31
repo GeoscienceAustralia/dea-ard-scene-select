@@ -153,7 +153,7 @@ L5_PATTERN = (
     r"(?P<extension>)$"
 )
 
-S2_PATTERN = r"^(?P<satellite>S2)" r"(?P<satelliteid>[A-B])_"
+S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-B])_"
 
 PROCESSING_PATTERN_MAPPING = {
     "ga_ls5t_level1_3": L5_PATTERN,
@@ -329,6 +329,85 @@ def get_aoi_sat_key(region_codes: Dict, product: str):
     return aoi_sat_key
 
 
+def filter_ancillary(l1_dataset, ancill_there, msg, interim_days_wait, temp_logger):
+    # filter out due to ancillary
+    # not being there
+    filter_out = False
+    if ancill_there is False:
+        days_ago = datetime.datetime.now(
+            l1_dataset.time.end.tzinfo
+        ) - datetime.timedelta(days=interim_days_wait)
+        if days_ago > l1_dataset.time.end:
+            # If the ancillary files take too long to turn up
+            # process anyway
+            kwargs = {
+                "days_ago": str(days_ago),
+                "dataset.time.end": str(l1_dataset.time.end),
+            }
+            temp_logger.debug("No ancillary. Processing to interim", **kwargs)
+        else:
+            kwargs = {
+                REASON: "ancillary files not ready",
+                "days_ago": str(days_ago),
+                "dataset.time.end": str(l1_dataset.time.end),
+                MSG: (f"Not ready: {msg}"),
+            }
+            temp_logger.info(SCENEREMOVED, **kwargs)
+            filter_out = True
+    return filter_out
+
+
+def filter_reprocessed_scenes(
+    dc,
+    l1_dataset,
+    processed_ard_scene_ids,
+    find_blocked,
+    ancill_there,
+    uuids2archive,
+    temp_logger,
+):
+
+    filter_out = False
+    # Do the data with child filter here
+    # It will slow things down
+    # But any chopped_scene_id in processed_ard_scene_ids
+    # will now be a blocked reprocessed scene
+    if find_blocked:
+        if dataset_with_final_child(dc, l1_dataset):
+            temp_logger.debug(
+                SCENEREMOVED, **{REASON: "Skipping dataset with children"}
+            )
+            filter_out = True
+
+    if processed_ard_scene_ids and not filter_out:
+        a_scene_id = chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
+        if a_scene_id in processed_ard_scene_ids:
+            kwargs = {}
+            if find_blocked:
+                kwargs[REASON] = "Potential blocked reprocessed scene."
+                # Since all dataset with final childs
+                # have been filtered out
+            else:
+                kwargs[REASON] = "The scene has been processed"
+                # Since dataset with final childs have not been
+                # filtered out we don't know why there is
+                # an ard there.
+
+            produced_ard = processed_ard_scene_ids[a_scene_id]
+            if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
+                # lets build a list of ARD uuid's to delete
+                uuids2archive.append(str(produced_ard["id"]))
+
+                kwargs[REASON] = "Interim scene is being processed to final"
+                temp_logger.debug(SCENEADDED, **kwargs)
+        else:
+            temp_logger.debug(SCENEREMOVED, **kwargs)
+            # Contine for everything except interim
+            # so it doesn't get processed
+            filter_out = True
+    return filter_out
+
+
 def l1_filter(
     dc,
     l1_product,
@@ -393,30 +472,13 @@ def l1_filter(
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
+        ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
         # Continue here if a maturity level of final cannot be produced
         # since the ancillary files are not there
-        ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
-        if ancill_there is False:
-            days_ago = datetime.datetime.now(
-                l1_dataset.time.end.tzinfo
-            ) - datetime.timedelta(days=interim_days_wait)
-            if days_ago > l1_dataset.time.end:
-                # If the ancillary files take too long to turn up
-                # process anyway
-                kwargs = {
-                    "days_ago": str(days_ago),
-                    "dataset.time.end": str(l1_dataset.time.end),
-                }
-                temp_logger.debug("No ancillary. Processing to interim", **kwargs)
-            else:
-                kwargs = {
-                    REASON: "ancillary files not ready",
-                    "days_ago": str(days_ago),
-                    "dataset.time.end": str(l1_dataset.time.end),
-                    MSG: (f"Not ready: {msg}"),
-                }
-                temp_logger.info(SCENEREMOVED, **kwargs)
-                continue
+        if filter_ancillary(
+            l1_dataset, ancill_there, msg, interim_days_wait, temp_logger
+        ):
+            continue
 
         # FIXME remove the hard-coded list
         if exclude_days(days_to_exclude, l1_dataset.time.end):
@@ -427,45 +489,16 @@ def l1_filter(
             temp_logger.info(SCENEREMOVED, **kwargs)
             continue
 
-        # Do the data with child filter here
-        # It will slow things down
-        # But any chopped_scene_id in processed_ard_scene_ids
-        # will now be a blocked reprocessed scene
-        if find_blocked:
-            if dataset_with_final_child(dc, l1_dataset):
-                kwargs[REASON] = "Skipping dataset with children"
-                temp_logger.debug(SCENEREMOVED, **kwargs)
-                continue
-
-        if processed_ard_scene_ids:
-            a_scene_id = chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
-            if a_scene_id in processed_ard_scene_ids:
-                kwargs = {}
-                if find_blocked:
-                    kwargs[REASON] = "Potential blocked reprocessed scene."
-                    # Since all dataset with final childs
-                    # have been filtered out
-                else:
-                    kwargs[REASON] = "The scene has been processed"
-                    # Since dataset with final childs have not been
-                    # filtered out we don't know why there is
-                    # an ard there.
-
-                produced_ard = processed_ard_scene_ids[a_scene_id]
-                if (
-                    produced_ard["dataset_maturity"] == "interim"
-                    and ancill_there is True
-                ):
-                    # lets build a list of ARD uuid's to delete
-                    uuids2archive.append(str(produced_ard["id"]))
-
-                    kwargs[REASON] = "Interim scene is being processed to final"
-                    temp_logger.debug(SCENEADDED, **kwargs)
-                else:
-                    temp_logger.debug(SCENEREMOVED, **kwargs)
-                    # Contine for everything except interim
-                    # so it doesn't get processed
-                    continue
+        if filter_reprocessed_scenes(
+            dc,
+            l1_dataset,
+            processed_ard_scene_ids,
+            find_blocked,
+            ancill_there,
+            uuids2archive,
+            temp_logger,
+        ):
+            continue
 
         # WARNING any filter under here will
         # be executed on interim scenes that it is assumed will
@@ -497,6 +530,9 @@ def l1_scenes_to_process(
     config: Optional[Path] = None,
 ) -> Tuple[int, List[str]]:
     """Writes all the files returned from datacube for level1 to a file."""
+    # pylint: disable=R0914
+    # R0914: Too many local variables
+
     dc = datacube.Datacube(app="gen-list", config=config)
     l1_count = 0
     with open(outfile, "w") as fid:
@@ -575,7 +611,7 @@ def dict2ard_arg_string(ard_click_params):
                 ard_params.append("--" + key)
             continue
         if key == "yamls_dir":
-            if value is "":
+            if value == "":
                 # remove the yamls-dir if it is empty
                 continue
         # convert underscores to dashes

@@ -77,7 +77,7 @@ class AncillaryFiles:
         if not self.wv_file_exists(acquisition_datetime.year):
             return (
                 False,
-                "No ater vapour data for year {}.".format(acquisition_datetime.year),
+                "No water vapour data for year {}.".format(acquisition_datetime.year),
             )
 
         # get year of acquisition to confirm definitive data
