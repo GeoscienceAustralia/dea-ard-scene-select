@@ -398,13 +398,14 @@ def filter_reprocessed_scenes(
                 # lets build a list of ARD uuid's to delete
                 uuids2archive.append(str(produced_ard["id"]))
 
-                kwargs[REASON] = "Interim scene is being processed to final"
-                temp_logger.debug(SCENEADDED, **kwargs)
-        else:
-            temp_logger.debug(SCENEREMOVED, **kwargs)
-            # Contine for everything except interim
-            # so it doesn't get processed
-            filter_out = True
+                temp_logger.debug(
+                    SCENEADDED, **{REASON: "Interim scene is being processed to final"}
+                )
+            else:
+                temp_logger.debug(SCENEREMOVED, **kwargs)
+                # Contine for everything except interim
+                # so it doesn't get processed
+                filter_out = True
     return filter_out
 
 
@@ -438,9 +439,9 @@ def l1_filter(
     # This is used to block reprocessing of reprocessed l1's
     processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product, sat_key)
 
-    LOGGER.debug("location:pre-AncillaryFiles")
+    # LOGGER.debug("location:pre-AncillaryFiles")
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
-    LOGGER.debug("location:post-AncillaryFiles")
+    # LOGGER.debug("location:post-AncillaryFiles")
     files2process = []
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
@@ -504,7 +505,7 @@ def l1_filter(
         # be executed on interim scenes that it is assumed will
         # be processed
 
-        LOGGER.debug("location:pre dataset_with_final_child")
+        # LOGGER.debug("location:pre dataset_with_final_child")
         # If any child exists that isn't archived
         if dataset_with_final_child(dc, l1_dataset):
             temp_logger.debug(
