@@ -119,7 +119,7 @@ def test_calc_nodes_req():
     print(results)
 
 
-def test_calc_nodes_req():
+def test_calc_nodes_req_more():
     ard_click_params = {"walltime": "1:00:00", "nodes": None, "workers": None}
     count_all_scenes_list = 1
 
@@ -143,7 +143,7 @@ L8_C2_PATTERN = (
 )
 
 
-def test_L8_PATTERN():
+def test_l8_pattern():
     landsat_product_id = "LC08_L1TP_089078_20211026_20211104_02_T1"
     if not re.match(L8_C2_PATTERN, landsat_product_id):
         print(re.match(L8_C2_PATTERN, landsat_product_id))
@@ -154,10 +154,10 @@ def test_L8_PATTERN():
         assert False
 
 
-S2_PATTERN = r"^(?P<satellite>S2)" r"(?P<satelliteid>[A-B])_"
+S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-B])_"
 
 
-def test_S2_PATTERN():
+def test_s2_pattern():
     landsat_product_id = "LC08_L1TP_089078_20211026_20211104_02_T1"
     if not re.match(L8_C2_PATTERN, landsat_product_id):
         print(re.match(L8_C2_PATTERN, landsat_product_id))
