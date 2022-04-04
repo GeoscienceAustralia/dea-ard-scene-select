@@ -619,7 +619,7 @@ def dict2ard_arg_string(ard_click_params):
         key = key.replace("_", "-")
         ard_params.append("--" + key)
         # Make path strings absolute
-        if key in ("workdir", "logdir", "pkgdir", "index-datacube-env"):
+        if key in ("workdir", "logdir", "pkgdir", "index-datacube-env", "yamls-dir"):
             value = Path(value).resolve()
         ard_params.append(str(value))
     ard_arg_string = " ".join(ard_params)
