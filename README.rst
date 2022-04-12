@@ -11,7 +11,7 @@ Branch Structure
    :header: "Branch name", "Use"
 
    "master", "Stable code base"
-   "v10-prod", "The branch used in production. It is the .env files that are used in production."
+   "production", "The branch used in production. It is the .env files that are used in production."
    "develop", "The development branch."
    "module-prod", "The branch used to produce a module."
 
