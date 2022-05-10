@@ -61,8 +61,8 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls7e_level1_2": "ga_ls7e_ard_3",
     "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
     "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
-    "esa_s2am_level1_1": "s2a_ard_granule",
-    "esa_s2bm_level1_1": "s2b_ard_granule",
+    "esa_s2am_level1_0": "s2a_ard_granule",
+    "esa_s2bm_level1_0": "s2b_ard_granule",
 }
 
 PBS_JOB = """#!/bin/bash
@@ -163,8 +163,8 @@ PROCESSING_PATTERN_MAPPING = {
     "usgs_ls7e_level1_2": L7_C2_PATTERN,
     "usgs_ls8c_level1_1": L8_C1_PATTERN,
     "usgs_ls8c_level1_2": L8_C2_PATTERN,
-    "esa_s2am_level1_1": S2_PATTERN,
-    "esa_s2bm_level1_1": S2_PATTERN,
+    "esa_s2am_level1_0": S2_PATTERN,
+    "esa_s2bm_level1_0": S2_PATTERN,
 }
 
 
@@ -439,9 +439,12 @@ def l1_filter(
     # This is used to block reprocessing of reprocessed l1's
     processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product, sat_key)
 
-    # LOGGER.debug("location:pre-AncillaryFiles")
+    # Don't crash on unknown l1 products
+    if not l1_product in PROCESSING_PATTERN_MAPPING:
+        msg = " not known to scene select processing filtering. Disabling processing filtering."
+        LOGGER.warn(l1_product + msg)
+
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
-    # LOGGER.debug("location:post-AncillaryFiles")
     files2process = []
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
@@ -459,10 +462,11 @@ def l1_filter(
         )
 
         # Filter out if the processing level is too low
-        prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
-        if not re.match(prod_pattern, product_id):
-            temp_logger.debug(SCENEREMOVED, **{REASON: "Processing level too low"})
-            continue
+        if l1_product in PROCESSING_PATTERN_MAPPING:
+            prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
+            if not re.match(prod_pattern, product_id):
+                temp_logger.debug(SCENEREMOVED, **{REASON: "Processing level too low"})
+                continue
 
         # Filter out if outside area of interest
         if sat_key is not None and region_code not in region_codes[sat_key]:
