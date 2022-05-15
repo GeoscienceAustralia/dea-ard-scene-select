@@ -4,4 +4,5 @@
 module use /g/data/v10/public/modules/modulefiles
 module load dea
 
+black --version
 black -l 88 tests/ scene_select/ scripts/

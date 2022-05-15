@@ -73,3 +73,13 @@ def test_ancillaryfiles_water():
     ancill_there, msg = af_ob.ancillary_files(a_dt)
     assert "Water vapour" in msg
     assert not ancill_there
+
+
+def test_ancillaryfiles_actual():
+
+    # BRDF there. last day out of wv data
+    af_ob = AncillaryFiles()
+    a_dt = datetime.datetime(1944, 8, 10, tzinfo=pytz.UTC)
+    ancill_there, msg = af_ob.ancillary_files(a_dt)
+    assert not ancill_there
+    assert "year" in msg
