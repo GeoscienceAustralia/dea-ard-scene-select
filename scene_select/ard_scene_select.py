@@ -29,7 +29,7 @@ AOI_FILE = "Australian_AOI.json"
 DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
-PRODUCTS = '["usgs_ls7e_level1_2", "usgs_ls8c_level1_2"]'
+PRODUCTS = '["usgs_ls8c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
 
 # Logging
