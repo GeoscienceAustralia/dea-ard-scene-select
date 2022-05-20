@@ -308,7 +308,7 @@ def calc_file_path(l1_dataset, product_id):
 
 
 def calc_local_path(l1_dataset):
-    assert len(l1_dataset.uris) == 1
+    assert len(l1_dataset.uris) == 1, str(l1_dataset.uris)
     components = urlparse(l1_dataset.uris[0])
     if not (components.scheme == "file" or components.scheme == "zip"):
         raise ValueError(
