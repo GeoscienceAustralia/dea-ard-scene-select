@@ -445,7 +445,7 @@ def l1_filter(
         LOGGER.warn(l1_product + msg)
 
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
-    files2process = []
+    files2process = set({})
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         if sat_key == "ls":
@@ -494,6 +494,13 @@ def l1_filter(
             temp_logger.info(SCENEREMOVED, **kwargs)
             continue
 
+        # Filter out duplicate zips
+        if file_path in files2process:
+            temp_logger.debug(
+                SCENEREMOVED, **{REASON: "A duplicate file path removed. Potential multi-granule."}
+            )
+            continue
+
         if filter_reprocessed_scenes(
             dc,
             l1_dataset,
@@ -517,9 +524,9 @@ def l1_filter(
             )
             continue
 
-        files2process.append(file_path)
+        files2process.add(file_path)
 
-    return files2process, uuids2archive
+    return list(files2process), uuids2archive
 
 
 def l1_scenes_to_process(
