@@ -446,6 +446,7 @@ def l1_filter(
 
     ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
     files2process = set({})
+    duplicates = 0
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         if sat_key == "ls":
@@ -496,9 +497,12 @@ def l1_filter(
 
         # Filter out duplicate zips
         if file_path in files2process:
-            temp_logger.debug(
-                SCENEREMOVED, **{REASON: "A duplicate file path removed. Potential multi-granule."}
-            )
+            duplicates += 1
+            kwargs = {
+                REASON: "Potential multi-granule duplicate file path removed.",
+                "duplicate count": duplicates,
+            }
+            temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
 
         if filter_reprocessed_scenes(
@@ -526,7 +530,7 @@ def l1_filter(
 
         files2process.add(file_path)
 
-    return list(files2process), uuids2archive
+    return list(files2process), uuids2archive, duplicates
 
 
 def l1_scenes_to_process(
@@ -550,7 +554,7 @@ def l1_scenes_to_process(
     with open(outfile, "w") as fid:
         uuids2archive_combined = []
         for product in products:
-            files2process, uuids2archive = l1_filter(
+            files2process, uuids2archive, duplicates = l1_filter(
                 dc,
                 product,
                 brdfdir=brdfdir,
@@ -566,6 +570,9 @@ def l1_scenes_to_process(
                 l1_count += 1
                 if l1_count >= scene_limit:
                     break
+            # Note this means a scene limit will not work
+            # for multi-granule scenes
+            l1_count += duplicates
             if l1_count >= scene_limit:
                 break
     return l1_count, uuids2archive_combined
@@ -702,7 +709,8 @@ def make_ard_pbs(level1_list, **ard_click_params):
     "--scene-limit",
     default=300,
     type=int,
-    help="Safety limit: Maximum number of scenes to process in a run.",
+    help="Safety limit: Maximum number of scenes to process in a run. \
+Does not work for multigranule zip files.",
 )
 @click.option(
     "--interim-days-wait",
@@ -866,6 +874,7 @@ def scene_select(
         uuids2archive = []
         l1_count = sum(1 for _ in open(usgs_level1_files))
 
+    LOGGER.info(SUMMARY, **{"l1_count": l1_count})
     try:
         _calc_node_with_defaults(ard_click_params, l1_count)
     except ValueError as err:
