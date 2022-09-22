@@ -61,6 +61,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls7e_level1_2": "ga_ls7e_ard_3",
     "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
     "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
+    "usgs_ls9c_level1_2": "ga_ls9c_ard_3",
     "esa_s2am_level1_0": "s2a_ard_granule",
     "esa_s2bm_level1_0": "s2b_ard_granule",
 }
@@ -73,6 +74,21 @@ source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
 """
+
+
+
+L9_C2_PATTERN = (
+    r"^(?P<sensor>LC)"
+    r"(?P<satellite>09)_"
+    r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+    r"(?P<wrsPath>[0-9]{3})"
+    r"(?P<wrsRow>[0-9]{3})_"
+    r"(?P<acquisitionDate>[0-9]{8})_"
+    r"(?P<processingDate>[0-9]{8})_"
+    r"(?P<collectionNumber>02)_"
+    r"(?P<collectionCategory>T1|T2)"
+    r"(?P<extension>)$"
+)
 
 # landsat 8 filename pattern is configured to match only
 # processing level L1TP and L1GT for acquisition containing
@@ -163,6 +179,7 @@ PROCESSING_PATTERN_MAPPING = {
     "usgs_ls7e_level1_2": L7_C2_PATTERN,
     "usgs_ls8c_level1_1": L8_C1_PATTERN,
     "usgs_ls8c_level1_2": L8_C2_PATTERN,
+    "usgs_ls9c_level1_2": L9_C2_PATTERN,
     "esa_s2am_level1_0": S2_PATTERN,
     "esa_s2bm_level1_0": S2_PATTERN,
 }
