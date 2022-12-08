@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $HOSTNAME == *"gadi"* ]]; then
-	echo If module load breaks check on a clean environment
+	echo If module load breaks check out a clean environment
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
 	module use /g/data/u46/users/dsg547/devmodules/modulefiles
@@ -10,6 +10,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 	#module load ard-scene-select-py3-dea/20211115
 	#module load ard-scene-select-py3-dea/20220121
 	module load ard-scene-select-py3-dea/20220516
+	#module load ard-scene-select-py3-dea/20220922
 
 	#module load h5-compression-filters/20200612
 fi
@@ -46,7 +47,7 @@ ard_loc='/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/prod/ard_
 ard_loc_prod='/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'
 ard_loc_dev='/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/examples/prod-wagl.env'
 
-time python3 ../../scene_select/ard_scene_select.py --workdir scratch/ --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --scene-limit 3 --env $ard_loc_dev --products '["usgs_ls9c_level1_2"]'  --run-ard
+time python3 ../../scene_select/ard_scene_select.py --workdir scratch/ --pkgdir scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env $ard_loc_dev --products '["usgs_ls9c_level1_2"]'  #--run-ard  --scene-limit 3  --find-blocked
 
 # PRODUCTS= '["usgs_ls8c_level1_1", "usgs_ls7e_level1_1", \
     #    "usgs_ls7e_level1_2", "usgs_ls8c_level1_2"]'
