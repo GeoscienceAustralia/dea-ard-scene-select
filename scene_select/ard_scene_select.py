@@ -734,14 +734,14 @@ def make_ard_pbs(level1_list, **ard_click_params):
 )
 @click.option(
     "--scene-limit",
-    default=300,
+    default=1000,
     type=int,
     help="Safety limit: Maximum number of scenes to process in a run. \
 Does not work for multigranule zip files.",
 )
 @click.option(
     "--interim-days-wait",
-    default=35,
+    default=18,
     type=int,
     help="Maxi days to wait for ancillary data before processing ARD to "
     "an interim maturity level.",
