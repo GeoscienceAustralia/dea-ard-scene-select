@@ -62,8 +62,8 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
     "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
     "usgs_ls9c_level1_2": "ga_ls9c_ard_3",
-    "esa_s2am_level1_0": "s2a_ard_granule",
-    "esa_s2bm_level1_0": "s2b_ard_granule",
+    "esa_s2am_level1_0": "ga_s2am_ard_3",
+    "esa_s2bm_level1_0": "ga_s2bm_ard_3",
 }
 
 PBS_JOB = """#!/bin/bash
@@ -250,24 +250,30 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    if product in ARD_PARENT_PRODUCT_MAPPING and sat_key == "ls":
+    if product in ARD_PARENT_PRODUCT_MAPPING: # and sat_key == "ls":
         processed_ard_scene_ids = {}
+        if sat_key == "ls":
+            scene_id = "landsat_scene_id"
+        elif sat_key == "s2":
+            scene_id = "sentinel_tile_id"
         for result in dc.index.datasets.search_returning(
-            ("landsat_scene_id", "dataset_maturity", "id"),
+            (scene_id, "dataset_maturity", "id"),
             product=ARD_PARENT_PRODUCT_MAPPING[product],
         ):
-            choppped_id = chopped_scene_id(result.landsat_scene_id)
-            if choppped_id in processed_ard_scene_ids:
+            if sat_key == "ls":
+                chopped_id = chopped_scene_id(result.landsat_scene_id)
+            elif sat_key == "s2":
+                chopped_id = result.sentinel_tile_id
+            if chopped_id in processed_ard_scene_ids:
                 # The same chopped scene id has multiple scenes
                 old_uuid = processed_ard_scene_ids[choppped_id]["id"]
                 LOGGER.warning(
                     MANYSCENES,
-                    SCENEID=result.landsat_scene_id,
+                    SCENEID=chopped_id,
                     old_uuid=old_uuid,
                     new_uuid=result.id,
                 )
-            chopped_scene = chopped_scene_id(result.landsat_scene_id)
-            processed_ard_scene_ids[chopped_scene] = {
+            processed_ard_scene_ids[chopped_id] = {
                 "dataset_maturity": result.dataset_maturity,
                 "id": result.id,
             }
@@ -381,6 +387,7 @@ def filter_reprocessed_scenes(
     find_blocked,
     ancill_there,
     uuids2archive,
+    choppedsceneid,
     temp_logger,
 ):
 
@@ -397,8 +404,7 @@ def filter_reprocessed_scenes(
             filter_out = True
 
     if processed_ard_scene_ids and not filter_out:
-        a_scene_id = chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
-        if a_scene_id in processed_ard_scene_ids:
+        if choppedsceneid in processed_ard_scene_ids:
             kwargs = {}
             if find_blocked:
                 kwargs[REASON] = "Potential blocked reprocessed scene."
@@ -410,7 +416,7 @@ def filter_reprocessed_scenes(
                 # filtered out we don't know why there is
                 # an ard there.
 
-            produced_ard = processed_ard_scene_ids[a_scene_id]
+            produced_ard = processed_ard_scene_ids[choppedsceneid]
             if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
                 # lets build a list of ARD uuid's to delete
                 uuids2archive.append(str(produced_ard["id"]))
@@ -468,10 +474,13 @@ def l1_filter(
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         if sat_key == "ls":
             product_id = l1_dataset.metadata.landsat_product_id
-            sceneid = l1_dataset.metadata.landsat_scene_id
+            choppedsceneid = chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
         elif sat_key == "s2":
             product_id = l1_dataset.metadata.sentinel_tile_id
-            sceneid = None
+            # S2 has no eqivalent to a scene id
+            # I'm using sentinel_tile_id.  This will work for handling interim to final.
+            # it will not catch duplicates.
+            choppedsceneid = l1_dataset.metadata.sentinel_tile_id
         region_code = l1_dataset.metadata.region_code
         file_path = calc_file_path(l1_dataset, product_id)
         # Set up the logging
@@ -529,6 +538,7 @@ def l1_filter(
             find_blocked,
             ancill_there,
             uuids2archive,
+            choppedsceneid,
             temp_logger,
         ):
             continue
