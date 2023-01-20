@@ -76,7 +76,6 @@ ard_pbs --level1-list {scene_list} {ard_args}
 """
 
 
-
 L9_C2_PATTERN = (
     r"^(?P<sensor>LC)"
     r"(?P<satellite>09)_"
@@ -250,7 +249,7 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    if product in ARD_PARENT_PRODUCT_MAPPING: # and sat_key == "ls":
+    if product in ARD_PARENT_PRODUCT_MAPPING:  # and sat_key == "ls":
         processed_ard_scene_ids = {}
         if sat_key == "ls":
             scene_id = "landsat_scene_id"
