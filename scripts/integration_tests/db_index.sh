@@ -77,6 +77,7 @@ datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/s2/autogen/yam
 
 # ---------------------
 # R1.1 for ls: Unfiltered scenes are ARD processed
+# The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C1/092_085/LC80920852020223
 datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml
 
 # Filter Outcome - ls_go_select

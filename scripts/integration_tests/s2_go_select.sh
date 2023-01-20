@@ -37,5 +37,6 @@ mkdir -p $pkgdir
 
 
 
-# This will fail until the yaml root location is passed in.
-python3 $SSPATH/scene_select/ard_scene_select.py  --config dsg547_dev.conf --products '["esa_s2am_level1_0"]' --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env $yamdir  --interim-days-wait 5 --run-ard
+# This will fail until the yaml root location is passed in. - But it is passed in: $yamdir
+# Turning off the ard processing for now - This is just a scene select test
+python3 $SSPATH/scene_select/ard_scene_select.py  --config dsg547_dev.conf --products '["esa_s2am_level1_0"]' --yamls-dir /g/data/u46/users/dsg547/test_data/c3/s2_autogen/yaml  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env $yamdir  --interim-days-wait 5 #--run-ard
