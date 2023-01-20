@@ -8,7 +8,8 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
     module load ard-scene-select-py3-dea/20221025
     
     TEST_DATA=/g/data/u46/users/dsg547/test_data
-    SSPATH=/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select
+    SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+    SSPATH="$SCRIPT_DIR/../.."
     yamdir=' --yamls-dir '$TEST_DATA'/s2/autogen/yaml'
 else
     echo "not NCI"

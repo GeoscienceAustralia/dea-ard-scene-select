@@ -263,9 +263,11 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
                 chopped_id = chopped_scene_id(result.landsat_scene_id)
             elif sat_key == "s2":
                 chopped_id = result.sentinel_tile_id
+            else:
+                raise RuntimeError(f"Unsupported sat_key: {sat_key!r}")
             if chopped_id in processed_ard_scene_ids:
                 # The same chopped scene id has multiple scenes
-                old_uuid = processed_ard_scene_ids[choppped_id]["id"]
+                old_uuid = processed_ard_scene_ids[chopped_id]["id"]
                 LOGGER.warning(
                     MANYSCENES,
                     SCENEID=chopped_id,
@@ -462,7 +464,7 @@ def l1_filter(
     processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product, sat_key)
 
     # Don't crash on unknown l1 products
-    if not l1_product in PROCESSING_PATTERN_MAPPING:
+    if l1_product not in PROCESSING_PATTERN_MAPPING:
         msg = " not known to scene select processing filtering. Disabling processing filtering."
         LOGGER.warn(l1_product + msg)
 
