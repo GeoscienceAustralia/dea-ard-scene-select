@@ -38,9 +38,10 @@ SSPATH=$PWD/../../
 
 #  local code local work dir, one product
 # slow
-#ard_loc='/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'
+ard_loc='/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'
 #ard_loc='/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'
-#time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env $ard_loc  --products '["usgs_ls7e_level1_1"]' --scene-limit 9999 #--find-blocked
+
+time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env $ard_loc  --products '["usgs_ls9c_level1_2"]'  --find-blocked # --scene-limit 9999
 
 
 ard_loc='/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env'

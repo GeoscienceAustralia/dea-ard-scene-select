@@ -29,7 +29,7 @@ AOI_FILE = "Australian_AOI.json"
 DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
-PRODUCTS = '["usgs_ls8c_level1_2"]'
+PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
 
 # Logging
@@ -43,12 +43,9 @@ SUMMARY = "summary"
 MANYSCENES = "Multiple identical ARD scene ids"
 
 # LOGGER keys
-DATASETPATH = "dataset_path"
 DATASETTIMEEND = "dataset_time_end"
 REASON = "reason"
 MSG = "message"
-DATASETID = "dataset_id"
-SCENEID = "landsat_scene_id"
 PRODUCTID = "landsat_product_id"
 
 
@@ -270,7 +267,7 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
                 old_uuid = processed_ard_scene_ids[chopped_id]["id"]
                 LOGGER.warning(
                     MANYSCENES,
-                    SCENEID=chopped_id,
+                    landsat_scene_id=chopped_id,
                     old_uuid=old_uuid,
                     new_uuid=result.id,
                 )
@@ -407,8 +404,10 @@ def filter_reprocessed_scenes(
     if processed_ard_scene_ids and not filter_out:
         if choppedsceneid in processed_ard_scene_ids:
             kwargs = {}
+            produced_ard = processed_ard_scene_ids[choppedsceneid]
             if find_blocked:
                 kwargs[REASON] = "Potential blocked reprocessed scene."
+                kwargs["Blocking_ard_scene_id"] = str(produced_ard["id"])
                 # Since all dataset with final childs
                 # have been filtered out
             else:
@@ -417,7 +416,6 @@ def filter_reprocessed_scenes(
                 # filtered out we don't know why there is
                 # an ard there.
 
-            produced_ard = processed_ard_scene_ids[choppedsceneid]
             if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
                 # lets build a list of ARD uuid's to delete
                 uuids2archive.append(str(produced_ard["id"]))
@@ -486,7 +484,7 @@ def l1_filter(
         file_path = calc_file_path(l1_dataset, product_id)
         # Set up the logging
         temp_logger = LOGGER.bind(
-            SCENEID=product_id, DATASETID=str(l1_dataset.id), DATASETPATH=file_path
+            landsat_scene_id=product_id, dataset_id=str(l1_dataset.id), dataset_path=file_path
         )
 
         # Filter out if the processing level is too low

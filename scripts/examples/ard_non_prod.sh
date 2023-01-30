@@ -16,7 +16,7 @@ module use /g/data/v10/private/modules/modulefiles
 #module load ard-scene-select-py3-dea/20200813  # Fast.
 module load ard-scene-select-py3-dea/20220516
 
-ard-scene-select --find-blocked \
+ard-scene-select \
 --workdir scratch/  \
 --pkgdir  scratch/ \
 --logdir scratch/ \
