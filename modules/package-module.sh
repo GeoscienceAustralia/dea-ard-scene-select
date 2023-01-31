@@ -7,12 +7,17 @@ umask 002
 
 echo "##########################"
 echo
-echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
+# echo "module_dir = ${module_dir:=/g/data/v10/private/modules}" # PRODUCTION run: this has to be uncommented # GOrdon TODO - uncomment this before committing
 #echo "module_dir = ${module_dir:=/g/data/u46/users/dsg547/devmodules}"
+echo "module_dir = ${module_dir:=/g/data/u46/users/gy5636/modules}" # Development/Testing of DSNS-79 # GOrdon TODO - comment this before committing
+echo "l15 I have just set module dir to ${module_dir}" 
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
-echo "dea_module = ${dea_module:=dea/20200617}"
-echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
+echo "dea_module = ${dea_module:=dea/20221025}"
+
+#  Commenting both instances of compression filters as they cause datacube connection failures
+##echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
+echo "dep_module = ${dep_module:=h5-compression-filters/20200615}"   
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
 echo "instance = ${instance}"
@@ -52,11 +57,11 @@ function installrepo() {
 	else
 		git clone --mirror "${repo}" "${repo_cache}"
 	fi
-
 	build_dest="build/${destination_name}"
 	[ -e "${build_dest}" ] && rm -rf "${build_dest}"
+	echo "Gordon 65 '${head}' '${repo_cache}' '${build_dest}'"
 	git clone -b "${head}" "${repo_cache}" "${build_dest}"
-
+	echo "Gordon 67"
 	pushd "${build_dest}"
 	rm -r dist build >/dev/null 2>&1 || true
 	python setup.py sdist
@@ -82,7 +87,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 	echo
 	echo "Installing ard-scene-select"
-	installrepo ard-scene-select module-prod https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+	#installrepo ard-scene-select module-prod https://github.com/GeoscienceAustralia/dea-ard-scene-select.git ## For production # GOrdon TODO - uncomment this before committing
+	installrepo ard-scene-select update/DSNS-79_from_master https://github.com/GeoscienceAustralia/dea-ard-scene-select.git ## For DEV # GOrdon TODO - DELETE this before committing
 	#installrepo ard-scene-select  s2          https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
 	echo
 	echo "Writing modulefile"
