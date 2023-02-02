@@ -6,9 +6,6 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 	module use /g/data/v10/private/modules/modulefiles
 	module use /g/data/u46/users/dsg547/devmodules/modulefiles
 
-
-	#module load ard-scene-select-py3-dea/20211115
-	#module load ard-scene-select-py3-dea/20220121
 	module load ard-scene-select-py3-dea/20220516
 	#module load ard-scene-select-py3-dea/20220922
 
