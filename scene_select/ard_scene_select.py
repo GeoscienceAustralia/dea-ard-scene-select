@@ -29,7 +29,7 @@ AOI_FILE = "Australian_AOI.json"
 DATA_DIR = Path(__file__).parent.joinpath("data")
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
-PRODUCTS = '["usgs_ls8c_level1_2"]'
+PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
 
 # Logging
@@ -43,12 +43,9 @@ SUMMARY = "summary"
 MANYSCENES = "Multiple identical ARD scene ids"
 
 # LOGGER keys
-DATASETPATH = "dataset_path"
 DATASETTIMEEND = "dataset_time_end"
 REASON = "reason"
 MSG = "message"
-DATASETID = "dataset_id"
-SCENEID = "landsat_scene_id"
 PRODUCTID = "landsat_product_id"
 
 
@@ -74,7 +71,6 @@ source {env}
 
 ard_pbs --level1-list {scene_list} {ard_args}
 """
-
 
 
 L9_C2_PATTERN = (
@@ -250,7 +246,7 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    if product in ARD_PARENT_PRODUCT_MAPPING: # and sat_key == "ls":
+    if product in ARD_PARENT_PRODUCT_MAPPING:  # and sat_key == "ls":
         processed_ard_scene_ids = {}
         if sat_key == "ls":
             scene_id = "landsat_scene_id"
@@ -264,12 +260,14 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
                 chopped_id = chopped_scene_id(result.landsat_scene_id)
             elif sat_key == "s2":
                 chopped_id = result.sentinel_tile_id
+            else:
+                raise RuntimeError(f"Unsupported sat_key: {sat_key!r}")
             if chopped_id in processed_ard_scene_ids:
                 # The same chopped scene id has multiple scenes
-                old_uuid = processed_ard_scene_ids[choppped_id]["id"]
+                old_uuid = processed_ard_scene_ids[chopped_id]["id"]
                 LOGGER.warning(
                     MANYSCENES,
-                    SCENEID=chopped_id,
+                    landsat_scene_id=chopped_id,
                     old_uuid=old_uuid,
                     new_uuid=result.id,
                 )
@@ -406,8 +404,10 @@ def filter_reprocessed_scenes(
     if processed_ard_scene_ids and not filter_out:
         if choppedsceneid in processed_ard_scene_ids:
             kwargs = {}
+            produced_ard = processed_ard_scene_ids[choppedsceneid]
             if find_blocked:
                 kwargs[REASON] = "Potential blocked reprocessed scene."
+                kwargs["Blocking_ard_scene_id"] = str(produced_ard["id"])
                 # Since all dataset with final childs
                 # have been filtered out
             else:
@@ -416,7 +416,6 @@ def filter_reprocessed_scenes(
                 # filtered out we don't know why there is
                 # an ard there.
 
-            produced_ard = processed_ard_scene_ids[choppedsceneid]
             if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
                 # lets build a list of ARD uuid's to delete
                 uuids2archive.append(str(produced_ard["id"]))
@@ -463,7 +462,7 @@ def l1_filter(
     processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product, sat_key)
 
     # Don't crash on unknown l1 products
-    if not l1_product in PROCESSING_PATTERN_MAPPING:
+    if l1_product not in PROCESSING_PATTERN_MAPPING:
         msg = " not known to scene select processing filtering. Disabling processing filtering."
         LOGGER.warn(l1_product + msg)
 
@@ -485,7 +484,9 @@ def l1_filter(
         file_path = calc_file_path(l1_dataset, product_id)
         # Set up the logging
         temp_logger = LOGGER.bind(
-            SCENEID=product_id, DATASETID=str(l1_dataset.id), DATASETPATH=file_path
+            landsat_scene_id=product_id,
+            dataset_id=str(l1_dataset.id),
+            dataset_path=file_path,
         )
 
         # Filter out if the processing level is too low

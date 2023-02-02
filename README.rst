@@ -54,3 +54,16 @@ To update the .env files used in production manually git pull from the productio
    /g/data/v10/projects/c3_ard/dea-ard-scene-select/
 
 Do this from the lpgs user account.
+
+
+Code checker/validator
+----------------------
+
+  There is a utility, 'check_code.sh' which does the following in sequence:
+  * ensures that our tests are passing (ie. runs all tests using pytest)
+  * ensures consistency by applying our python code formatter across scripts, tests and scene_select directories
+  * ensures code quality by running pylint across scrips, tests and scene_select directories
+
+ To run this, one will just execute './check_code.sh'. 
+ It will provide a report when it finishes its execution.
+ 
