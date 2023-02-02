@@ -484,7 +484,9 @@ def l1_filter(
         file_path = calc_file_path(l1_dataset, product_id)
         # Set up the logging
         temp_logger = LOGGER.bind(
-            landsat_scene_id=product_id, dataset_id=str(l1_dataset.id), dataset_path=file_path
+            landsat_scene_id=product_id,
+            dataset_id=str(l1_dataset.id),
+            dataset_path=file_path,
         )
 
         # Filter out if the processing level is too low
