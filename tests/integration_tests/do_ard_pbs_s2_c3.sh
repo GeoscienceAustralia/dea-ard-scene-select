@@ -8,7 +8,7 @@ WORKDIR=workdir_$tag
 L1_LIST=s2_$tag.txt
 
 yamdir=''
-yamdir=' --yamls-dir /g/data/u46/users/dsg547/test_data/s2/autogen/yaml/2022/2022-01/'
+yamdir=" --yamls-dir /g/data/u46/users/${USER}/test_data/s2/autogen/yaml/2022/2022-01/"
 
 
 #WORKDIR=/g/data/up71/tmp/s2_dass

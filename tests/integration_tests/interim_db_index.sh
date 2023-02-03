@@ -13,11 +13,11 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   #module load ard-pipeline/devv2.1
 
   TEST_DATA=/g/data/u46/users/dsg547/test_data
-  ODCCONF="--config dsg547_dev.conf"
+  ODCCONF="--config ${USER}_dev.conf"
   
 else
   echo "not NCI"
-  ODCCONF="--config dsg547_local.conf"
+  ODCCONF="--config ${USER}_local.conf"
   TEST_DATA=$HOME/test_data
   # datacube -v  $ODCCONF system init
 fi
