@@ -32,12 +32,6 @@ mkdir -p $pkgdir
 # test db read
 # ard processing
 # test DB index
-# -products '["usgs_ls8c_level1_2"]'
 
-# '["usgs_ls8c_level1_0", "esa_s2am_level1_0"]'
+python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["esa_s2am_level1_0"]' $yamdir  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env --interim-days-wait 5 --run-ard
 
-
-
-# This will fail until the yaml root location is passed in. - But it is passed in: $yamdir
-# Turning off the ard processing for now - This is just a scene select test
-python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["esa_s2am_level1_0"]' $yamdir  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env --interim-days-wait 5 #--run-ard

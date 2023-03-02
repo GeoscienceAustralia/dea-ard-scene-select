@@ -9,7 +9,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   module use /g/data/v10/public/modules/modulefiles
   module use /g/data/v10/private/modules/modulefiles
 
-  module load dea
+  module load dea/20221025
   #module load ard-pipeline/devv2.1
 
   TEST_DATA=/g/data/u46/users/${USER}/test_data
@@ -37,8 +37,8 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 datacube $ODCCONF metadata add https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/master/product_metadata/eo3_sentinel_ard.odc-type.yaml
 
 # Bad check-in @ head
-datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/0911aaf770658e7aea41757b1b4801c9cdb5bdc0/products/baseline_satellite_data/c3/ga_s2am_ard_3.odc-product.yaml
-datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/0911aaf770658e7aea41757b1b4801c9cdb5bdc0/products/baseline_satellite_data/c3/ga_s2bm_ard_3.odc-product.yaml
+datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/master/products/baseline_satellite_data/c3/ga_s2am_ard_3.odc-product.yaml
+datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/master/products/baseline_satellite_data/c3/ga_s2bm_ard_3.odc-product.yaml
 
 # Defining landsat l1 metadata
 datacube $ODCCONF metadata add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/eo3_landsat_l1.odc-type.yaml
@@ -59,21 +59,6 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 
 # Defining ls7 ard
 datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/ard_ls7.odc-product.yaml
-
-# ---------------------
-# R1.1 for s2: Unfiltered scenes are ARD processed
-# R1.2: S2 scenes can be processed when the zip and yaml are in different directories
-# add an S2 l1
-datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/s2/autogen/yaml/2022/2022-01/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.odc-metadata.yaml
-
-# Filter Outcome - s2_go_select
-# $TEST_DATA/c3/s2_autogen/yaml/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.zip selected for processing
-
-# Batch outcome - s2_go_select with ARD processing
-# S2 ARD produced for 2022-01-24
-# region_code: 54LYH
-
-# ---------------------
 
 # ---------------------
 # R1.1 for ls: Unfiltered scenes are ARD processed
@@ -164,11 +149,11 @@ datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/S2A_MSIL1C_
 
 # ---------------------
 # 3.1 Process a scene if the ancillary is not there, after the wait time (Process to interim)
-datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80920852020223_do_interim/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml
-# the datetime is 1944-08-10
+datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC81020792023029_do_interim/LC08_L1GT_102079_20230129_20230227_02_T2.odc-metadata.yaml
+# the datetime is 1944-01-29
 
 # Filter Outcome - ls_go_select
-# $TEST_DATA/c3/LC80920852020223_do_interim/LC08_L1TP_092085_20200810_20200821_01_T1.tar
+# $TEST_DATA/c3/LC81020792023029_do_interim/LC08_L1GT_102079_20230129_20230227_02_T2.tar
 
 # Batch outcome - s2_go_select with ARD processing
 # ls ARD produced for 2020-08-10
@@ -199,6 +184,10 @@ datacube $ODCCONF dataset add  $TEST_DATA/c3/ARD_interim_LC81070692020200/ga_ls8
 # region_code: 107069
 # ---------------------
 # ---------------------
+# R1.1 for s2: Unfiltered scenes are ARD processed
+# R1.2: S2 scenes can be processed when the zip and yaml are in different directories
+# In this example the zip is in the production dir
+
 # R3.2 Process an S2  scene if the child is interim and ancill data is there (Archive the interim ARD, process to final)
 # Add the L1 scene of interim ARD
 # id: df4a46b0-258c-5d51-b48e-aeda4dd7de4e
@@ -250,7 +239,6 @@ datacube  $ODCCONF product list #
 ./check_db.sh
 
 # overall filter outcome for  s2_go_select.sh - see above, for 1.1 and 1.2 and 3.2.
-# /g/data/u46/users/${USER}/test_data/c3/s2_autogen/zip/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.zip
 #/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.zip
 
 # overall uuid_to_archive.txt for s2
