@@ -7,15 +7,15 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
     module load ard-scene-select-py3-dea/20221025
     
-    TEST_DATA=/g/data/u46/users/${USER}/test_data
     SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     SSPATH="$SCRIPT_DIR/../.."
-    yamdir=' --yamls-dir '$TEST_DATA'/s2/autogen/yaml'
 else
     echo "not NCI"
     SSPATH=$HOME/sandbox/dea-ard-scene-select
 fi
 
+TEST_DATA=/g/data/u46/users/dsg456/test_data
+yamdir=' --yamls-dir '$TEST_DATA'/s2/autogen/yaml'
 
 # so it uses the dev scene select
 #echo $PYTHONPATH
@@ -40,4 +40,4 @@ mkdir -p $pkgdir
 
 # This will fail until the yaml root location is passed in. - But it is passed in: $yamdir
 # Turning off the ard processing for now - This is just a scene select test
-python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["esa_s2am_level1_0"]' --yamls-dir /g/data/u46/users/${USER}/test_data/c3/s2_autogen/yaml  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env $yamdir  --interim-days-wait 5 #--run-ard
+python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["esa_s2am_level1_0"]' --yamls-dir /g/data/u46/users/${USER}/test_data/c3/s2_autogen/yaml  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env --interim-days-wait 5 #--run-ard
