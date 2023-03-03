@@ -12,7 +12,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   module load dea/20221025
   #module load ard-pipeline/devv2.1
 
-  TEST_DATA=/g/data/u46/users/${USER}/test_data
+  TEST_DATA=/g/data/u46/users/dsg456/test_data
   ODCCONF="--config ${USER}_dev.conf"
   
 else
