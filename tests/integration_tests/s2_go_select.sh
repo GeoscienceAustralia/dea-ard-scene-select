@@ -14,7 +14,7 @@ else
     SSPATH=$HOME/sandbox/dea-ard-scene-select
 fi
 
-TEST_DATA=/g/data/u46/users/dsg456/test_data
+TEST_DATA=/g/data/u46/users/dsg547/test_data
 yamdir=' --yamls-dir '$TEST_DATA'/s2/autogen/yaml'
 
 # so it uses the dev scene select
