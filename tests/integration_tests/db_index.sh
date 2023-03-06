@@ -53,6 +53,9 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 # c2
 datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/l1_ls8_c2.odc-product.yaml
 
+# Defining ls9 l1 c1
+datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/l1_ls9.odc-product.yaml
+
 # Defining ls8 ard
 datacube $ODCCONF metadata add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/eo3_landsat_ard.odc-type.yaml
 datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/ard_ls8.odc-product.yaml
@@ -60,13 +63,25 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 # Defining ls7 ard
 datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/ard_ls7.odc-product.yaml
 
+# Defining ls9 ard
+datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/ard_ls9.odc-product.yaml
+
+
 # ---------------------
 # R1.1 for ls: Unfiltered scenes are ARD processed
 # The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C1/092_085/LC80920852020223
 datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml
 
+# ls9 - The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239
+datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
+
+# A ls8 that has been used in BRDF testing
+datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80970752022215/LC08_L1TP_097075_20220803_20220805_02_T1.odc-metadata.yaml
+
 # Filter Outcome - ls_go_select
 # $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.tar
+# $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.tar
+# $TEST_DATA/c3/LC80970752022215/LC08_L1TP_097075_20220803_20220805_02_T1.tar
 
 # Batch outcome - s2_go_select with ARD processing
 # ls ARD produced for 2020-08-10
@@ -248,6 +263,8 @@ datacube  $ODCCONF product list #
 # $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.tar
 # $TEST_DATA/c3/LC81070692020200/LC08_L1GT_107069_20200718_20200722_01_T2.tar
 # $TEST_DATA/c3/LC80920852020223_do_interim/LC08_L1TP_092085_20200810_20200821_01_T1.tar
+# $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.tar
+# $TEST_DATA/c3/LC80970752022215/LC08_L1TP_097075_20220803_20220805_02_T1.tar
 
 # overall uuid_to_archive.txt for landsat
 # e987923c-090f-4ac3-9688-5cadcccaacad
