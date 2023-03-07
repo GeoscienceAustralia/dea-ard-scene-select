@@ -6,19 +6,24 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 	module use /g/data/v10/private/modules/modulefiles
 	######module use /g/data/u46/users/$USER/devmodules/modulefiles # TODO  GORDON CHANGE THIS TO YOUR LOCAL PATH
 	echo "Line 8"
-    module use "/g/data/u46/users/$USER/modules/modulefiles"
-	echo "Line 10 loading up the actual dev module to test..."
-	module load ard-scene-select-py3-dea/20221025 # load this and datacube will not be happy
-	
+        #module use "/g/data/u46/users/$USER/modules/modulefiles"
+        module use "/g/data/u46/users/gy5636/modules/modulefiles"
+	echo "Line 10 loading up the actual dev module to test... 'load ard-scene-select-py3-dea/20221025' (this is the new package to be brought in)"
+
+	echo " Going to load up the h5 compression...."
+	module use /g/data/u46/users/gy5636/test-ard-scene-select-py3-dea
+	module load ard-scene-select-py3-dea/20230307 # load this and datacube will not be happy
+        ####	module load 20230307 # load this and datacube will not be happy
+	echo "Line 12 - loading ard-scene-select-py3-dea/dev_20230203..."
 	module load ard-scene-select-py3-dea/dev_20230203 # Gordon - Dev - this is the package created on 20230202
-	echo "Line 13"
+	echo "Line 13 Just loaded the new module we are testing - 'load ard-scene-select-py3-dea/dev_20230203'"
 
 	echo "system check now.."
 	datacube $ODCCONF system check
 	echo "system check done"
 fi
 
-mkdir -p scratch
+mkdir -p scratch_DSNS_79
 
 SSPATH=$PWD/../../
 
