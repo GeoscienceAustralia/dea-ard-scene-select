@@ -6,6 +6,7 @@ module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 
 module load h5-compression-filters/20200612
+echo "check-code.sh--> CALLING THIS..."
 
 module load ard-pipeline/20211222
 #module load dea

@@ -13,12 +13,16 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 	echo " Going to load up the h5 compression...."
 	module use /g/data/u46/users/gy5636/test-ard-scene-select-py3-dea
 	module load ard-scene-select-py3-dea/20230307 # load this and datacube will not be happy
+
+	echo " Loaded up the h5 compression...."
         ####	module load 20230307 # load this and datacube will not be happy
 	echo "Line 12 - loading ard-scene-select-py3-dea/dev_20230203..."
 	module load ard-scene-select-py3-dea/dev_20230203 # Gordon - Dev - this is the package created on 20230202
 	echo "Line 13 Just loaded the new module we are testing - 'load ard-scene-select-py3-dea/dev_20230203'"
 
-	echo "system check now.."
+	echo "system check now.. "
+	echo $ODCCONF
+	echo "....... Done .... "
 	datacube $ODCCONF system check
 	echo "system check done"
 fi
@@ -42,7 +46,7 @@ SSPATH=$PWD/../../
 #time ard-scene-select --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env  --products '["usgs_ls7e_level1_1"]' --scene-limit 999999 #--find-blocked
 
 # production example
-#python3 ard_scene_select.py --products '["ga_ls5t_level1_3"]' --workdir /g/data/v10/projects/landsat_c3/wagl_workdir  --pkgdir  /g/data/xu18/ga --logdir /g/data/v10/projects/landsat_c3/wagl_logdir --env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project v10 --walltime 05:00:00 #--run-ard
+python3 ard_scene_select.py --products '["ga_ls5t_level1_3"]' --workdir /g/data/v10/projects/landsat_c3/wagl_workdir  --pkgdir  /g/data/xu18/ga --logdir /g/data/v10/projects/landsat_c3/wagl_logdir --env /g/data/v10/Landsat-Collection-3-ops/OFFICIAL/Collection-3_5.4.1.env --project v10 --walltime 05:00:00 #--run-ard
 
 #  local code local work dir, one product
 # slow
