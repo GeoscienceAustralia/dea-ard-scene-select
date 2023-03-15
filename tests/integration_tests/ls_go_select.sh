@@ -33,10 +33,6 @@ mkdir -p $pkgdir
 
 # '["usgs_ls8c_level1_2", "esa_s2am_level1_0"]'
 
-<<<<<<< HEAD
 python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["usgs_ls7e_level1_1", "usgs_ls8c_level1_1", "usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]' --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/ls_interim_prod_wagl.env --project u46 --walltime 02:30:00 --interim-days-wait 5 --allowed-codes Australian_AOI_107069_added.json --days-to-exclude '["2009-01-03:2009-01-05"]' --index-datacube-env index-test-odc.env --run-ard
-=======
-python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["usgs_ls7e_level1_1", "usgs_ls8c_level1_1", "usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]' --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/ls_interim_prod_wagl.env --project u46 --walltime 02:30:00 --interim-days-wait 5 --allowed-codes Australian_AOI_107069_added.json --days-to-exclude '["2009-01-03:2009-01-05"]' #--run-ard  #--index-datacube-env index-test-odc.env
->>>>>>> fb32809 (turn off ard processing in integration tests. Start to pull out ard_pbs code into a function)
 
 #ard-scene-select  --config dsg547_dev.conf --products '["usgs_ls8c_level1_2", "usgs_ls7e_level1_2"]' --workdir $scratch/  --pkgdir  $scratch/ --logdir $scratch/ --env $PWD/interim-prod-wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env  --interim-days-wait 5 --run-ard
