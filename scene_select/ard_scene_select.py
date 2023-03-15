@@ -240,6 +240,30 @@ def chopped_scene_id(scene_id: str) -> str:
     capture_id = scene_id[:-5]
     return capture_id
 
+def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, path_scenes_to_archive, jobdir):
+    try:
+        _calc_node_with_defaults(ard_click_params, l1_count)
+    except ValueError as err:
+        print(err.args)
+        LOGGER.warning("ValueError", message=err.args)
+
+    # write pbs script
+    if len(uuids2archive) > 0:
+        ard_click_params["archive-list"] = path_scenes_to_archive
+    script_path = jobdir.joinpath("run_ard_pbs.sh")
+    with open(script_path, "w") as src:
+        src.write(make_ard_pbs(usgs_level1_files, **ard_click_params))
+
+    # Make the script executable
+    os.chmod(script_path, os.stat(script_path).st_mode | stat.S_IEXEC)
+
+    # run the script
+    if run_ard is True:
+        subprocess.run([script_path], check=True)
+
+    LOGGER.info("info", jobdir=str(jobdir))
+    print("Job directory: " + str(jobdir))
+
 
 def calc_processed_ard_scene_ids(dc, product, sat_key):
     """
