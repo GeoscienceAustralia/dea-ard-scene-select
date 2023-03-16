@@ -240,14 +240,21 @@ def chopped_scene_id(scene_id: str) -> str:
     capture_id = scene_id[:-5]
     return capture_id
 
-def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, path_scenes_to_archive, jobdir, run_ard):
+def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard, l1_zips=None):
     """Run ard.
-    This function assumes a file called X has been written to the jobdir."""
+    This function assumes a l1 zip file has been written to the jobdir.
+    Though if you specify l1_zips in a list, it will write the file."""
     try:
         _calc_node_with_defaults(ard_click_params, l1_count)
     except ValueError as err:
         print(err.args)
         LOGGER.warning("ValueError", message=err.args)
+
+    if l1_zips is not None and len(l1_zips) > 0:
+        # ODC_FILTERED_FILE
+        path_zip = jobdir.joinpath(ODC_FILTERED_FILE)
+        with open(path_zip, "w") as fid:
+            fid.write("\n".join(l1_zips))
 
     if len(uuids2archive) > 0:
         # ARCHIVE_FILE
@@ -929,7 +936,7 @@ def scene_select(
         uuids2archive = []
         l1_count = sum(1 for _ in open(usgs_level1_files))
 
-    do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, path_scenes_to_archive, jobdir, run_ard)
+    do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard)
 
     # LOGGER.info(SUMMARY, **{"l1_count": l1_count})
     # try:
