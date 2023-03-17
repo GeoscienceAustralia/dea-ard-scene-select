@@ -99,7 +99,8 @@ def make_ard_pbs(level1_list, **ard_click_params):
 def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard, l1_zips=None):
     """Run ard.
     This function assumes a l1 zip file has been written to the jobdir.
-    Though if you specify l1_zips in a list, it will write the file."""
+    Though if you specify l1_zips in a list, and usgs_level1_files is None,
+      it will write the file."""
     try:
         _calc_node_with_defaults(ard_click_params, l1_count)
     except ValueError as err:
@@ -107,9 +108,10 @@ def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir,
         LOGGER.warning("ValueError", message=err.args)
 
     if l1_zips is not None and len(l1_zips) > 0:
+        assert usgs_level1_files is None
         # ODC_FILTERED_FILE
-        path_zip = jobdir.joinpath(ODC_FILTERED_FILE)
-        with open(path_zip, "w") as fid:
+        usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
+        with open(usgs_level1_files, "w") as fid:
             fid.write("\n".join(l1_zips))
 
     if len(uuids2archive) > 0:

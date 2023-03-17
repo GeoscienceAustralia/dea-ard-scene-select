@@ -1,1 +1,38 @@
-# print "hello world"
+#!/usr/bin/env python3
+
+import tempfile
+from scene_select.do_ard import (
+    do_ard
+)
+
+def test_do_ard(tmp_path):
+
+    ard_click_params = {
+        "email": None,
+        "env": "/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/tests/integration_tests/ls_interim_prod_wagl.env",
+        "index_datacube_env": None,
+        "jobfs": None,
+        "memory": None,
+        "nodes": None,
+        "pkgdir": "scratch_ls/pkgdir23061",
+        "project": "u46",
+        #"test": false,
+        "walltime": "02:30:00",
+        "workdir": "scratch_ls/",
+        "workers": None,
+        "yamls_dir": ""
+    }
+    usgs_level1_files = None
+    l1_zips = ['scene1.zip', 'scene2.zip',  'scene3.zip']
+    l1_count = len(l1_zips)
+    uuids2archive = ['uuid1', 'uuid2', 'uuid3']
+    jobdir = tmp_path / "jobdir"
+    jobdir.mkdir()
+    run_ard = False
+    do_ard(ard_click_params,
+        l1_count,
+        usgs_level1_files,
+        uuids2archive,
+        jobdir,
+        run_ard,
+        l1_zips)
