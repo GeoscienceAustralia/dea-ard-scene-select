@@ -6,13 +6,17 @@ umask 002
 #unset PYTHONPATH
 
 echo "##########################"
-echo
-echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
-#echo "module_dir = ${module_dir:=/g/data/u46/users/dsg547/devmodules}"
+if [[ $1 == "--prod" ]]; then
+	echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
+else
+    # dev version
+	echo "module_dir = ${module_dir:=/g/data/u46/users/gy5636/devmodules}"
+fi
+
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
 echo
-echo "dea_module = ${dea_module:=dea/20200617}"
-echo "dep_module = ${dep_module:=h5-compression-filters/20200612}"
+echo "dea_module = ${dea_module:=dea/20221025}"
+echo "dep_module = ${dep_module:=h5-compression-filters/20230215}"
 dea_module_name=${dea_module%/*}
 instance=${dea_module_name##*-}
 echo "instance = ${instance}"
