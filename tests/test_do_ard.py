@@ -6,7 +6,8 @@ import os
 from scene_select.do_ard import (
     do_ard,
     ARCHIVE_FILE,
-    ODC_FILTERED_FILE
+    ODC_FILTERED_FILE,
+    PBS_ARD_FILE
 )
 
 
@@ -41,4 +42,8 @@ def test_do_ard(tmp_path):
            jobdir,
            run_ard,
            l1_zips)
+
+    # Not checking the values, just that the files exist
     assert os.path.exists(tmp_path / "jobdir" / ARCHIVE_FILE), ARCHIVE_FILE + ' does not exist.'
+    assert os.path.exists(tmp_path / "jobdir" / ODC_FILTERED_FILE), ODC_FILTERED_FILE + ' does not exist.'
+    assert os.path.exists(tmp_path / "jobdir" / PBS_ARD_FILE), PBS_ARD_FILE + ' does not exist.'

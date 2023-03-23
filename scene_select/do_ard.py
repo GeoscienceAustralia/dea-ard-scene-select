@@ -9,6 +9,7 @@ import stat
 
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
+PBS_ARD_FILE = "run_ard_pbs.sh"
 PBS_JOB = """#!/bin/bash
 module purge
 module load pbs
@@ -125,7 +126,7 @@ def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir,
         ard_click_params["archive-list"] = path_scenes_to_archive
 
     # write pbs script
-    script_path = jobdir.joinpath("run_ard_pbs.sh")
+    script_path = jobdir.joinpath(PBS_ARD_FILE)
     with open(script_path, "w") as src:
         src.write(make_ard_pbs(usgs_level1_files, **ard_click_params))
 
