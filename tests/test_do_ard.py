@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
+
 import tempfile
+import os
 from scene_select.do_ard import (
-    do_ard
+    do_ard,
+    ARCHIVE_FILE,
+    ODC_FILTERED_FILE
 )
+
 
 def test_do_ard(tmp_path):
 
@@ -16,7 +21,7 @@ def test_do_ard(tmp_path):
         "nodes": None,
         "pkgdir": "scratch_ls/pkgdir23061",
         "project": "u46",
-        #"test": false,
+        # "test": false,
         "walltime": "02:30:00",
         "workdir": "scratch_ls/",
         "workers": None,
@@ -30,9 +35,10 @@ def test_do_ard(tmp_path):
     jobdir.mkdir()
     run_ard = False
     do_ard(ard_click_params,
-        l1_count,
-        usgs_level1_files,
-        uuids2archive,
-        jobdir,
-        run_ard,
-        l1_zips)
+           l1_count,
+           usgs_level1_files,
+           uuids2archive,
+           jobdir,
+           run_ard,
+           l1_zips)
+    assert os.path.exists(tmp_path / "jobdir" / ARCHIVE_FILE), ARCHIVE_FILE + ' does not exist.'

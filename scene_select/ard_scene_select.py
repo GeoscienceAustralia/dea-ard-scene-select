@@ -240,6 +240,7 @@ def chopped_scene_id(scene_id: str) -> str:
     capture_id = scene_id[:-5]
     return capture_id
 
+
 def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard, l1_zips=None):
     """Run ard.
     This function assumes a l1 zip file has been written to the jobdir.

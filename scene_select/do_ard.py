@@ -18,6 +18,7 @@ source {env}
 ard_pbs --level1-list {scene_list} {ard_args}
 """
 
+
 def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
     # Estimate the number of nodes needed
 
@@ -59,6 +60,7 @@ def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=7.5):
         nodes = 1
     return nodes
 
+
 def dict2ard_arg_string(ard_click_params):
     ard_params = []
     for key, value in ard_click_params.items():
@@ -95,6 +97,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
     ard_args = dict2ard_arg_string(ard_click_params)
     pbs = PBS_JOB.format(env=env, scene_list=level1_list, ard_args=ard_args)
     return pbs
+
 
 def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard, l1_zips=None):
     """Run ard.
@@ -135,4 +138,3 @@ def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir,
 
     LOGGER.info("info", jobdir=str(jobdir))
     print("Job directory: " + str(jobdir))
-
