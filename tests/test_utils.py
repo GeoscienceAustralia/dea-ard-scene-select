@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock
 from scene_select.utils import calc_file_path
 
+
 def test_local_path():
     # s2
     # uris = ["zip:/yada/yada/yada20124T021536.zip!/"]

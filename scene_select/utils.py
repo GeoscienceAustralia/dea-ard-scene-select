@@ -30,6 +30,7 @@ def calc_local_path(l1_dataset):
         path = path[:-2]
     return path
 
+
 def chopped_scene_id(scene_id: str) -> str:
     """
     Remove the groundstation/version information from a scene id.

@@ -232,7 +232,7 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
             product=ARD_PARENT_PRODUCT_MAPPING[product],
         ):
             if sat_key == "ls":
-                chopped_id = util.chopped_scene_id(result.landsat_scene_id)
+                chopped_id = utils.chopped_scene_id(result.landsat_scene_id)
             elif sat_key == "s2":
                 chopped_id = result.sentinel_tile_id
             else:
@@ -421,7 +421,7 @@ def l1_filter(
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         if sat_key == "ls":
             product_id = l1_dataset.metadata.landsat_product_id
-            choppedsceneid = util.chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
+            choppedsceneid = utils.chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
         elif sat_key == "s2":
             product_id = l1_dataset.metadata.sentinel_tile_id
             # S2 has no eqivalent to a scene id
@@ -766,7 +766,9 @@ def scene_select(
         uuids2archive = []
         l1_count = sum(1 for _ in open(usgs_level1_files))
 
-    do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard)
+    do_ard(
+        ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard
+    )
 
     LOGGER.info("info", jobdir=str(jobdir))
     print("Job directory: " + str(jobdir))
