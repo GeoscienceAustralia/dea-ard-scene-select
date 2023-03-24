@@ -1,49 +1,11 @@
 #! /usr/bin/env python3
 
 import tempfile
-from pathlib import Path
 import datetime
 import pytz
 import re
-import urllib
-from unittest.mock import Mock
 
-from scene_select.ard_scene_select import (
-    dict2ard_arg_string,
-    exclude_days,
-    _calc_nodes_req,
-    _calc_node_with_defaults,
-    calc_file_path,
-)
-
-
-def test_local_path():
-    # s2
-    # uris = ["zip:/yada/yada/yada20124T021536.zip!/"]
-
-    # ls
-    # "local_path": "PosixPath('/g/data/u46/yada_01_T2.odc-metadata.yaml')
-    s2_l1_dataset = Mock()
-    s2_l1_dataset.local_path = None
-    path = "/g/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.zip"
-    s2_l1_dataset.uris = ["zip:" + path + "!/"]
-    product_id = "S2A_OPER_MSI_L1C_TL_VGS2_20220124T021536_A034419_T54LYH_N03.01"
-    result = calc_file_path(s2_l1_dataset, product_id)
-    assert result == path
-
-    ls_l1_dataset = Mock()
-    the_path = "/this/path/"
-    ls_l1_dataset.local_path = Path(the_path + "LC08_T2.odc-metadata.yaml")
-    product_id = "LC08_T2"
-    actual = the_path + product_id + ".tar"
-    result = calc_file_path(ls_l1_dataset, product_id)
-    assert result == actual
-
-
-def test_dict2ard_arg_string():
-    ard_click_params = {"index_datacube_env": "/g/data", "walltime": None}
-    ard_arg_string = dict2ard_arg_string(ard_click_params)
-    assert ard_arg_string == "--index-datacube-env /g/data"
+from scene_select.ard_scene_select import exclude_days
 
 
 def test_exclude_days():
@@ -93,40 +55,6 @@ def test_exclude_days_empty():
     # not excluded
     a_dt = datetime.datetime(1944, 6, 4, tzinfo=datetime.timezone.utc)
     assert not exclude_days(range1, a_dt)
-
-
-def test_calc_nodes_req():
-    granule_count = 400
-
-    walltime = "20:59:00"
-    workers = 28
-    hours_per_granule = 1.5
-    results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
-    assert results == 2
-
-    granule_count = 800
-    walltime = "20:00:00"
-    workers = 28
-    hours_per_granule = 1.5
-    results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
-    assert results == 3
-
-    granule_count = 1
-    walltime = "01:00:00"
-    workers = 1
-    hours_per_granule = 7
-    results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
-    print(results)
-
-
-def test_calc_nodes_req_more():
-    ard_click_params = {"walltime": "1:00:00", "nodes": None, "workers": None}
-    count_all_scenes_list = 1
-
-    try:
-        _calc_node_with_defaults(ard_click_params, count_all_scenes_list)
-    except ValueError as err:
-        assert len(err.args) >= 1
 
 
 L8_C2_PATTERN = (

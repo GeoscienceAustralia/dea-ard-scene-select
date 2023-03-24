@@ -10,8 +10,6 @@ import uuid
 from logging.config import fileConfig
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict
-from urllib.parse import urlparse
-from urllib.request import url2pathname
 
 import click
 import json
@@ -24,6 +22,7 @@ except (ImportError, AttributeError):
 from scene_select.check_ancillary import BRDF_DIR, WV_DIR, AncillaryFiles
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
+from scene_select import utils
 
 AOI_FILE = "Australian_AOI.json"
 
@@ -217,19 +216,6 @@ def dataset_with_final_child(dc, dataset):
     return any(ds_w_child)
 
 
-def chopped_scene_id(scene_id: str) -> str:
-    """
-    Remove the groundstation/version information from a scene id.
-
-    >>> chopped_scene_id('LE71800682013283ASA00')
-    'LE71800682013283'
-    """
-    if len(scene_id) != 21:
-        raise RuntimeError(f"Unsupported scene_id format: {scene_id!r}")
-    capture_id = scene_id[:-5]
-    return capture_id
-
-
 def calc_processed_ard_scene_ids(dc, product, sat_key):
     """
     Return None or
@@ -246,7 +232,7 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
             product=ARD_PARENT_PRODUCT_MAPPING[product],
         ):
             if sat_key == "ls":
-                chopped_id = chopped_scene_id(result.landsat_scene_id)
+                chopped_id = util.chopped_scene_id(result.landsat_scene_id)
             elif sat_key == "s2":
                 chopped_id = result.sentinel_tile_id
             else:
@@ -301,33 +287,6 @@ def exclude_days(days_to_exclude: List, checkdatetime):
         if start <= checkdatetime <= end:
             return True
     return False
-
-
-def calc_file_path(l1_dataset, product_id):
-    if l1_dataset.local_path is None:
-        # The s2 way
-        file_path = calc_local_path(l1_dataset)
-    else:
-        # The ls way
-        local_path = l1_dataset.local_path
-
-        # Metadata assumptions
-        a_path = local_path.parent.joinpath(product_id)
-        file_path = a_path.with_suffix(".tar").as_posix()
-    return file_path
-
-
-def calc_local_path(l1_dataset):
-    assert len(l1_dataset.uris) == 1, str(l1_dataset.uris)
-    components = urlparse(l1_dataset.uris[0])
-    if not (components.scheme == "file" or components.scheme == "zip"):
-        raise ValueError(
-            "Only file/Zip URIs currently supported. Tried %r." % components.scheme
-        )
-    path = url2pathname(components.path)
-    if path[-2:] == "!/":
-        path = path[:-2]
-    return path
 
 
 def get_aoi_sat_key(region_codes: Dict, product: str):
@@ -462,7 +421,7 @@ def l1_filter(
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         if sat_key == "ls":
             product_id = l1_dataset.metadata.landsat_product_id
-            choppedsceneid = chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
+            choppedsceneid = util.chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
         elif sat_key == "s2":
             product_id = l1_dataset.metadata.sentinel_tile_id
             # S2 has no eqivalent to a scene id
@@ -470,7 +429,7 @@ def l1_filter(
             # it will not catch duplicates.
             choppedsceneid = l1_dataset.metadata.sentinel_tile_id
         region_code = l1_dataset.metadata.region_code
-        file_path = calc_file_path(l1_dataset, product_id)
+        file_path = utils.calc_file_path(l1_dataset, product_id)
         # Set up the logging
         temp_logger = LOGGER.bind(
             landsat_scene_id=product_id,

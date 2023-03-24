@@ -1,12 +1,56 @@
 #!/usr/bin/env python3
 
 import os
+
 from scene_select.do_ard import (
     do_ard,
     ARCHIVE_FILE,
     ODC_FILTERED_FILE,
-    PBS_ARD_FILE
+    PBS_ARD_FILE,
+    dict2ard_arg_string,
+    _calc_nodes_req,
+    _calc_node_with_defaults,
 )
+
+
+def test_dict2ard_arg_string():
+    ard_click_params = {"index_datacube_env": "/g/data", "walltime": None}
+    ard_arg_string = dict2ard_arg_string(ard_click_params)
+    assert ard_arg_string == "--index-datacube-env /g/data"
+
+
+def test_calc_nodes_req():
+    granule_count = 400
+
+    walltime = "20:59:00"
+    workers = 28
+    hours_per_granule = 1.5
+    results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
+    assert results == 2
+
+    granule_count = 800
+    walltime = "20:00:00"
+    workers = 28
+    hours_per_granule = 1.5
+    results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
+    assert results == 3
+
+    granule_count = 1
+    walltime = "01:00:00"
+    workers = 1
+    hours_per_granule = 7
+    results = _calc_nodes_req(granule_count, walltime, workers, hours_per_granule)
+    print(results)
+
+
+def test_calc_nodes_req_more():
+    ard_click_params = {"walltime": "1:00:00", "nodes": None, "workers": None}
+    count_all_scenes_list = 1
+
+    try:
+        _calc_node_with_defaults(ard_click_params, count_all_scenes_list)
+    except ValueError as err:
+        assert len(err.args) >= 1
 
 
 def test_do_ard(tmp_path):
