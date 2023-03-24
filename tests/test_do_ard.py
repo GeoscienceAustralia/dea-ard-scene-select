@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-
-import tempfile
 import os
 from scene_select.do_ard import (
     do_ard,
