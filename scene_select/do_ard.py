@@ -138,4 +138,4 @@ def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir,
         subprocess.run([script_path], check=True)
 
     LOGGER.info("info", jobdir=str(jobdir))
-    print("Job directory: " + str(jobdir))
+    print(f"Job directory: {jobdir}")
