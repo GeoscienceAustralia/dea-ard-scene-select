@@ -33,5 +33,5 @@ mkdir -p $pkgdir
 # ard processing
 # test DB index
 
-python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["esa_s2am_level1_0"]' $yamdir  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --index-datacube-env index-test-odc.env --interim-days-wait 5 --run-ard
+python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["esa_s2am_level1_0"]' $yamdir  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --interim-days-wait 5  --index-datacube-env index-test-odc.env # --run-ard
 

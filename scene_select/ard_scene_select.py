@@ -23,12 +23,11 @@ except (ImportError, AttributeError):
 
 from scene_select.check_ancillary import BRDF_DIR, WV_DIR, AncillaryFiles
 from scene_select.dass_logs import LOGGER, LogMainFunction
+from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
 
 AOI_FILE = "Australian_AOI.json"
 
 DATA_DIR = Path(__file__).parent.joinpath("data")
-ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
-ARCHIVE_FILE = "uuid_to_archive.txt"
 PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
 
@@ -62,16 +61,6 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "esa_s2am_level1_0": "ga_s2am_ard_3",
     "esa_s2bm_level1_0": "ga_s2bm_ard_3",
 }
-
-PBS_JOB = """#!/bin/bash
-module purge
-module load pbs
-
-source {env}
-
-ard_pbs --level1-list {scene_list} {ard_args}
-"""
-
 
 L9_C2_PATTERN = (
     r"^(?P<sensor>LC)"
@@ -606,86 +595,6 @@ def l1_scenes_to_process(
     return l1_count, uuids2archive_combined
 
 
-def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
-    # Estimate the number of nodes needed
-
-    hours_per_granule = 7.5
-    if ard_click_params["nodes"] is None:
-        if ard_click_params["walltime"] is None:
-            walltime = "10:00:00"
-        else:
-            walltime = ard_click_params["walltime"]
-        if ard_click_params["workers"] is None:
-            workers = 30
-        else:
-            workers = ard_click_params["workers"]
-        ard_click_params["nodes"] = _calc_nodes_req(
-            count_all_scenes_list, walltime, workers, hours_per_granule
-        )
-    hours, _, _ = (int(x) for x in walltime.split(":"))
-
-    if hours <= hours_per_granule:
-        raise ValueError("wall time <= hours per granule")
-
-
-def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=7.5):
-    """Provides estimation of the number of nodes required to process granule count
-
-    >>> _calc_nodes_req(400, '20:59', 28)
-    2
-    >>> _calc_nodes_req(800, '20:00', 28)
-    3
-    """
-    hours, _, _ = (int(x) for x in walltime.split(":"))
-    # to avoid divide by zero errors
-    if hours == 0:
-        hours = 1
-    total_hours = float(hours_per_granule * granule_count)
-    nodes = int(math.ceil(total_hours / (hours * workers)))
-    if nodes == 0:
-        # A zero node request to ard causes errors.
-        nodes = 1
-    return nodes
-
-
-def dict2ard_arg_string(ard_click_params):
-    ard_params = []
-    for key, value in ard_click_params.items():
-        if value is None:
-            continue
-        if key == "test":
-            if value is True:
-                ard_params.append("--" + key)
-            continue
-        if key == "yamls_dir":
-            if value == "":
-                # remove the yamls-dir if it is empty
-                continue
-        # convert underscores to dashes
-        key = key.replace("_", "-")
-        ard_params.append("--" + key)
-        # Make path strings absolute
-        if key in ("workdir", "logdir", "pkgdir", "index-datacube-env", "yamls-dir"):
-            value = Path(value).resolve()
-        ard_params.append(str(value))
-    ard_arg_string = " ".join(ard_params)
-    return ard_arg_string
-
-
-def make_ard_pbs(level1_list, **ard_click_params):
-
-    if ard_click_params["env"] is None:
-        # Don't error out, just
-        # fill env with a bad value
-        env = "None"
-    else:
-        env = Path(ard_click_params["env"]).resolve()
-
-    ard_args = dict2ard_arg_string(ard_click_params)
-    pbs = PBS_JOB.format(env=env, scene_list=level1_list, ard_args=ard_args)
-    return pbs
-
-
 @click.command()
 @click.option(
     "--usgs-level1-files",
@@ -894,34 +803,11 @@ def scene_select(
             days_to_exclude=days_to_exclude,
             find_blocked=find_blocked,
         )
-        # ARCHIVE_FILE
-        path_scenes_to_archive = jobdir.joinpath(ARCHIVE_FILE)
-        with open(path_scenes_to_archive, "w") as fid:
-            fid.write("\n".join(uuids2archive))
     else:
         uuids2archive = []
         l1_count = sum(1 for _ in open(usgs_level1_files))
 
-    LOGGER.info(SUMMARY, **{"l1_count": l1_count})
-    try:
-        _calc_node_with_defaults(ard_click_params, l1_count)
-    except ValueError as err:
-        print(err.args)
-        LOGGER.warning("ValueError", message=err.args)
-
-    # write pbs script
-    if len(uuids2archive) > 0:
-        ard_click_params["archive-list"] = path_scenes_to_archive
-    script_path = jobdir.joinpath("run_ard_pbs.sh")
-    with open(script_path, "w") as src:
-        src.write(make_ard_pbs(usgs_level1_files, **ard_click_params))
-
-    # Make the script executable
-    os.chmod(script_path, os.stat(script_path).st_mode | stat.S_IEXEC)
-
-    # run the script
-    if run_ard is True:
-        subprocess.run([script_path], check=True)
+    do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard)
 
     LOGGER.info("info", jobdir=str(jobdir))
     print("Job directory: " + str(jobdir))
