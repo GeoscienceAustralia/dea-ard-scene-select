@@ -100,7 +100,15 @@ def make_ard_pbs(level1_list, **ard_click_params):
     return pbs
 
 
-def do_ard(ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard, l1_zips=None):
+def do_ard(
+    ard_click_params,
+    l1_count,
+    usgs_level1_files,
+    uuids2archive,
+    jobdir,
+    run_ard,
+    l1_zips=None,
+):
     """Run ard.
     This function assumes a l1 zip file has been written to the jobdir.
     Though if you specify l1_zips in a list, and usgs_level1_files is None,
