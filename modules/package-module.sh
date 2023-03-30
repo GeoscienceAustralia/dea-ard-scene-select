@@ -4,13 +4,12 @@ set -eu
 
 umask 002
 #unset PYTHONPATH
-
 echo "##########################"
-if [[ $1 == "--prod" ]]; then
-	echo "module_dir = ${module_dir:=/g/data/v10/private/modules}"
+if [[ $2 == "--prod" ]]; then
+    echo "prod mode: module_dir = ${module_dir:=/g/data/v10/private/modules}"
 else
     # dev version
-	echo "module_dir = ${module_dir:=/g/data/u46/users/gy5636/devmodules}"
+    echo "module_dir = ${module_dir:=/g/data/u46/users/${USER}/devmodules}"
 fi
 
 echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"
@@ -27,7 +26,7 @@ export module_dir dea_module dep_module
 
 echoerr() { echo "$@" 1>&2; }
 
-if [[ $# != 1 ]] || [[ "$1" == "--help" ]]; then
+if [[ "$1" == "--help" ]]; then
 	echoerr
 	echoerr "Usage: $0 <version>"
 	exit 1
