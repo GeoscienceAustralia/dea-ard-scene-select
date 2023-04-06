@@ -12,13 +12,15 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
 	echo " Going to load up the h5 compression...."
 	module use /g/data/u46/users/gy5636/test-ard-scene-select-py3-dea
-	module load ard-scene-select-py3-dea/20230307 # load this and datacube will not be happy
+	echo "Loaded up the py3-dea and the status is $?"
+	module load ard-scene-select-py3-dea/20200617 # load this and datacube will not be happy
+	echo "loaded up the specific module. The status is $?"
 
 	echo " Loaded up the h5 compression...."
         ####	module load 20230307 # load this and datacube will not be happy
-	echo "Line 12 - loading ard-scene-select-py3-dea/dev_20230203..."
-	module load ard-scene-select-py3-dea/dev_20230203 # Gordon - Dev - this is the package created on 20230202
-	echo "Line 13 Just loaded the new module we are testing - 'load ard-scene-select-py3-dea/dev_20230203'"
+	echo "Line 12 - loading ard-scene-select-py3-dea/20221025..."
+	module load ard-scene-select-py3-dea/20221025 # Gordon - Dev - this is the package created on 20230202
+	echo "Line 13 Just loaded the new module we are testing - 'load ard-scene-select-py3-dea/20221025'"
 
 	echo "system check now.. "
 	echo $ODCCONF
