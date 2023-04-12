@@ -2,6 +2,14 @@
 
 from urllib.parse import urlparse
 from urllib.request import url2pathname
+from pathlib import Path
+
+import click
+
+DATA_DIR = Path(__file__).parent.joinpath("data")
+
+# Logging
+LOG_CONFIG_FILE = "log_config.ini"
 
 
 def calc_file_path(l1_dataset, product_id):
@@ -42,3 +50,20 @@ def chopped_scene_id(scene_id: str) -> str:
         raise RuntimeError(f"Unsupported scene_id format: {scene_id!r}")
     capture_id = scene_id[:-5]
     return capture_id
+
+
+class PythonLiteralOption(click.Option):
+    """Load click value representing a Python list."""
+
+    def type_cast_value(self, ctx, value):
+        try:
+            value = str(value)
+            assert value.count("[") == 1
+            assert value.count("]") == 1
+            list_str = value.replace('"', "'").split("[")[1].split("]")[0]
+            l_items = [item.strip().strip("'") for item in list_str.split(",")]
+            if l_items == [""]:
+                l_items = []
+            return l_items
+        except Exception:
+            raise click.BadParameter(value)

@@ -1,23 +1,104 @@
 #!/usr/bin/env python3
 """
-Stub file
-This module is where the reprocessing code will go
+
 """
 
 from pathlib import Path
 import uuid
-
-from scene_select.ard_scene_select import do_ard
-from scene_select.dass_logs import LOGGER, LogMainFunction
-
+from logging.config import fileConfig
 import click
+from datetime import timedelta
+import pprint
 
+from scene_select.dass_logs import LOGGER, LogMainFunction
+from scene_select import utils
+from scene_select.do_ard import do_ard
 
+import datacube
+from datacube.index.hl import Doc2Dataset
+from datacube.model import Range
 
+PRODUCTS = '["ga_ls9c_ard_3"]'
 DIR_TEMPLATE = "reprocess-jobid-{jobid}"
+LOG_FILE = "reprocessing.log"
+THIS_TASK = "archive_and_move_for_reprocessing"
+
+
+def find_blocked_l1_for_a_dataset(dc, dataset):
+    """
+    Find the blocked l1 for a given dataset.
+
+    return None or a list with one dataset.
+    """
+    blocked_l1s = []
+    blocking_scene_id = dataset.metadata.landsat_scene_id
+    previous_dataset_versions = dc.index.datasets.search_eager(
+        product_family="level1",
+        platform=dataset.metadata.platform,
+        region_code=dataset.metadata.region_code,
+        time=Range(
+            dataset.time.begin - timedelta(days=1),
+            dataset.time.end + timedelta(days=1),
+        ),
+    )
+    for previous_dataset in previous_dataset_versions:
+        previous_scene_id = previous_dataset.metadata.landsat_scene_id
+        if previous_dataset.id == dataset.id:
+            # Skip the current dataset
+            continue
+        LOGGER.info("l1 pairs", blocking_scene_id=blocking_scene_id, previous_dataset_id=previous_dataset.id, blocking_l1_ds=dataset)
+        # assert the chopped scenes are the same
+        assert utils.chopped_scene_id(previous_scene_id) == utils.chopped_scene_id(blocking_scene_id)
+        blocked_l1s.append(previous_dataset)
+    # Two or more blocked l1s is a problem
+    if len(blocked_l1s) > 1:
+        LOGGER.error(
+            "multiple blocked l1s. Ignore this group of l1s",
+            dataset_id=dataset.id,
+        )
+        blocked_l1s = []
+    return blocked_l1s
+
+
+def find_blocked(dc, products, scene_limit):
+    blocked_scenes = []
+    for product in products:
+        for tmp_dataset in dc.index.datasets.search_returning(
+                ("id",),product=product):
+            ard_id = tmp_dataset.id
+            ard_dataset = dc.index.datasets.get(ard_id, include_sources=True)
+
+            # pprint.pprint (ard_dataset.metadata_doc)
+            l1_id = ard_dataset.metadata_doc['lineage']['source_datasets']['level1']['id']
+            l1_ds = dc.index.datasets.get(l1_id)
+
+            # LOGGER.info("data", blocking_l1_ds=blocking_l1_id,
+            #     archive=ard_id,
+            #     l1_is_archived=blocking_l1_ds.is_archived)
+            if l1_ds.is_archived:
+                # All blocking l1s are archived.
+                # l1s are archived for other reasons too though.
+                # Check if there is a blocked l1
+                # LOGGER.info("ARD with archived l1", blocking_l1=blocking_l1_id, archive=ard_id)
+                blocked_l1 = find_blocked_l1_for_a_dataset(dc, l1_ds)
+                # blocked_l1 is None or a list with one dataset.
+                if blocked_l1 is None:
+                    # Could not find an l1 that is being blocked.
+                    continue
+                # this is the yaml file
+                blocked_l1_local_path = blocked_l1[0].local_path
+                blocked_l1_zip_path = utils.calc_file_path(blocked_l1[0], blocked_l1[0].metadata.landsat_product_id)
+                # pprint.pprint (blocked_l1[0].metadata_doc)
+                LOGGER.info("reprocess", blocked_l1_zip_path=blocked_l1_zip_path, archive=str(ard_id))
+                blocked_scenes.append({"blocking_ard_id":ard_id, "blocked_l1_zip_path":blocked_l1_zip_path} )
+            if len(blocked_scenes) > scene_limit:
+                break
+        if len(blocked_scenes) > scene_limit:
+            break
+    return blocked_scenes
+
 
 @click.command()
-
 @click.option(
     "--config",
     type=click.Path(dir_okay=False, file_okay=True),
@@ -27,7 +108,7 @@ DIR_TEMPLATE = "reprocess-jobid-{jobid}"
 )
 @click.option(
     "--products",
-    cls=PythonLiteralOption,
+    cls=utils.PythonLiteralOption,
     type=list,
     help="List the ODC products to be processed. e.g."
     ' \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
@@ -38,18 +119,6 @@ DIR_TEMPLATE = "reprocess-jobid-{jobid}"
     type=click.Path(file_okay=False, writable=True),
     help="The base output working directory.",
     default=Path.cwd(),
-)
-@click.option(
-    "--brdfdir",
-    type=click.Path(file_okay=False),
-    help="The home directory of BRDF data used by scene select.",
-    default=BRDF_DIR,
-)
-@click.option(
-    "--wvdir",
-    type=click.Path(file_okay=False),
-    help="The home directory of water vapour data used by scene select.",
-    default=WV_DIR,
 )
 @click.option(
     "--scene-limit",
@@ -66,15 +135,15 @@ Does not work for multigranule zip files.",
 )
 # These are passed on to ard processing
 @click.option(
-    "--test",
+    "--dry-run",
     default=False,
     is_flag=True,
-    help="Test job execution (Don't submit the job to the PBS queue).",
+    help="Do not actually archive or move scenes.",
 )
 @click.option(
     "--log-config",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    default=DATA_DIR.joinpath(LOG_CONFIG_FILE),
+    default=utils.DATA_DIR.joinpath(utils.LOG_CONFIG_FILE),
     help="full path to the logging configuration file",
 )
 @click.option(
@@ -100,7 +169,7 @@ Does not work for multigranule zip files.",
 @click.option(
     "--env",
     type=click.Path(exists=True, readable=True),
-    help="Environment script to source.",
+    help="Environment script to source for ard_pipelines.",
 )
 @click.option(
     "--index-datacube-env",
@@ -120,25 +189,18 @@ Does not work for multigranule zip files.",
 @click.option("--jobfs", help="The jobfs memory in GB to request per node.")
 @LogMainFunction()
 def ard_reprocessed_l1s(
-    usgs_level1_files: click.Path,
-    allowed_codes: click.Path,
     config: click.Path,
     products: list,
     logdir: click.Path,
-    brdfdir: click.Path,
-    wvdir: click.Path,
     stop_logging: bool,
     log_config: click.Path,
     scene_limit: int,
-    interim_days_wait: int,
-    days_to_exclude: list,
     run_ard: bool,
-    find_blocked: bool,
+    dry_run: bool,
     **ard_click_params: dict,
 ):
     """
     The keys for ard_click_params;
-        test: bool,
         workdir: click.Path,
         pkgdir: click.Path,
         env: click.Path,
@@ -162,15 +224,19 @@ def ard_reprocessed_l1s(
     jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
 
-    # FIXME test this
     if not stop_logging:
-        gen_log_file = jobdir.joinpath(GEN_LOG_FILE).resolve()
+        gen_log_file = jobdir.joinpath(LOG_FILE).resolve()
         fileConfig(
             log_config,
             disable_existing_loggers=False,
             defaults={"genlogfilename": str(gen_log_file)},
         )
-    LOGGER.info("scene_select", **locals())
+    LOGGER.info("reprocessed_l1s", **locals())
+    dc = datacube.Datacube(app=THIS_TASK)
+
+    # identify the blocking ARD uuids and locations
+    find_blocked(dc, products, scene_limit)
+
 
 if __name__ == "__main__":
     ard_reprocessed_l1s()
