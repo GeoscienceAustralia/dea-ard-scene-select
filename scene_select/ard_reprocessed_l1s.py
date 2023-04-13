@@ -285,7 +285,6 @@ def ard_reprocessed_l1s(
                     scene["blocking_ard_zip_path"],
                     current_base_path,
                     new_base_path,
-                    dry_run,
                 )
             if worked:
                 l1_zips.append(scene["blocked_l1_zip_path"])
