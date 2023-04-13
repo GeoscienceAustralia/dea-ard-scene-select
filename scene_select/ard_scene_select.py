@@ -404,7 +404,9 @@ def l1_filter(
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         if sat_key == "ls":
             product_id = l1_dataset.metadata.landsat_product_id
-            choppedsceneid = utils.chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
+            choppedsceneid = utils.chopped_scene_id(
+                l1_dataset.metadata.landsat_scene_id
+            )
         elif sat_key == "s2":
             product_id = l1_dataset.metadata.sentinel_tile_id
             # S2 has no eqivalent to a scene id

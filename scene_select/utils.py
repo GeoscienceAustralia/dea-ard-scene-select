@@ -75,7 +75,9 @@ class PythonLiteralOption(click.Option):
             raise click.BadParameter(value)
 
 
-def scene_move(current_path: Path, current_base_path: str, new_base_path: str, dry_run: bool):
+def scene_move(
+    current_path: Path, current_base_path: str, new_base_path: str, dry_run: bool
+):
     """
     Move a scene from one location to another and update the odc database.
     Assume the dea module has been loaded.
@@ -100,14 +102,15 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str, d
     use_api = False
     if use_api:
         from datacube.index.hl import Doc2Dataset
+
         # This produced many Warnings. Lets stick with calling the cmd.
         with dst.open("r") as f:
-                    doc = yaml.safe_load(f)
+            doc = yaml.safe_load(f)
         with Datacube(app="usgs-l1-dl") as dc:
             (dataset, error_message) = Doc2Dataset(dc.index)(doc, dst.as_uri())
             dc.index.datasets.update(dataset)
     else:
-        cmd = ["datacube",  "dataset", "update", str(dst), "--location-policy", "forget"]
+        cmd = ["datacube", "dataset", "update", str(dst), "--location-policy", "forget"]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         outs, errs = proc.communicate()
         status = int(proc.returncode)

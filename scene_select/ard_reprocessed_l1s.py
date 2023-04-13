@@ -46,15 +46,21 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
         if previous_dataset.id == dataset.id:
             # Skip the current dataset
             continue
-        LOGGER.info("l1 pairs", blocking_scene_id=blocking_scene_id, previous_dataset_id=previous_dataset.id, blocking_l1_ds=dataset)
+        LOGGER.info(
+            "l1 pairs",
+            blocking_scene_id=blocking_scene_id,
+            previous_dataset_id=previous_dataset.id,
+            blocking_l1_ds=dataset,
+        )
         # assert the chopped scenes are the same
-        assert utils.chopped_scene_id(previous_scene_id) == utils.chopped_scene_id(blocking_scene_id)
+        assert utils.chopped_scene_id(previous_scene_id) == utils.chopped_scene_id(
+            blocking_scene_id
+        )
         blocked_l1s.append(previous_dataset)
     # Two or more blocked l1s is a problem
     if len(blocked_l1s) > 1:
         LOGGER.error(
-            "multiple blocked l1s. Ignore this group of l1s",
-            dataset_id=dataset.id,
+            "multiple blocked l1s. Ignore this group of l1s", dataset_id=dataset.id,
         )
         blocked_l1s = []
     return blocked_l1s
@@ -63,13 +69,14 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
 def find_blocked(dc, products, scene_limit):
     blocked_scenes = []
     for product in products:
-        for tmp_dataset in dc.index.datasets.search_returning(
-                ("id",),product=product):
+        for tmp_dataset in dc.index.datasets.search_returning(("id",), product=product):
             ard_id = tmp_dataset.id
             ard_dataset = dc.index.datasets.get(ard_id, include_sources=True)
 
             # pprint.pprint (ard_dataset.metadata_doc)
-            l1_id = ard_dataset.metadata_doc['lineage']['source_datasets']['level1']['id']
+            l1_id = ard_dataset.metadata_doc["lineage"]["source_datasets"]["level1"][
+                "id"
+            ]
             l1_ds = dc.index.datasets.get(l1_id)
 
             # LOGGER.info("data", blocking_l1_ds=blocking_l1_id,
@@ -87,10 +94,21 @@ def find_blocked(dc, products, scene_limit):
                     continue
                 # this is the yaml file
                 blocked_l1_local_path = blocked_l1[0].local_path
-                blocked_l1_zip_path = utils.calc_file_path(blocked_l1[0], blocked_l1[0].metadata.landsat_product_id)
+                blocked_l1_zip_path = utils.calc_file_path(
+                    blocked_l1[0], blocked_l1[0].metadata.landsat_product_id
+                )
                 # pprint.pprint (blocked_l1[0].metadata_doc)
-                LOGGER.info("reprocess", blocked_l1_zip_path=blocked_l1_zip_path, archive=str(ard_id))
-                blocked_scenes.append({"blocking_ard_id":ard_id, "blocked_l1_zip_path":blocked_l1_zip_path} )
+                LOGGER.info(
+                    "reprocess",
+                    blocked_l1_zip_path=blocked_l1_zip_path,
+                    archive=str(ard_id),
+                )
+                blocked_scenes.append(
+                    {
+                        "blocking_ard_id": ard_id,
+                        "blocked_l1_zip_path": blocked_l1_zip_path,
+                    }
+                )
             if len(blocked_scenes) > scene_limit:
                 break
         if len(blocked_scenes) > scene_limit:
@@ -239,6 +257,7 @@ def ard_reprocessed_l1s(
     if len(blocked_scenes) > 0:
         # move the blocked scenes
         pass
+
 
 if __name__ == "__main__":
     ard_reprocessed_l1s()
