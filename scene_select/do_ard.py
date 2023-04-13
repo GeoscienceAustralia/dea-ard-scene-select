@@ -101,12 +101,12 @@ def make_ard_pbs(level1_list, **ard_click_params):
 
 
 def do_ard(
-    ard_click_params,
-    l1_count,
-    usgs_level1_files,
-    uuids2archive,
-    jobdir,
-    run_ard,
+    ard_click_params: dict,
+    l1_count: int,
+    usgs_level1_files: Path,
+    uuids2archive: list,
+    jobdir: Path,
+    run_ard: bool,
     l1_zips=None,
 ):
     """Run ard.

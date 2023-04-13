@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-
+THIS IS LANDSAT ONLY
 """
 
 from pathlib import Path
@@ -18,7 +18,7 @@ import datacube
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range
 
-PRODUCTS = '["ga_ls9c_ard_3"]'
+PRODUCT = "ga_ls9c_ard_3"
 DIR_TEMPLATE = "reprocess-jobid-{jobid}"
 LOG_FILE = "reprocessing.log"
 THIS_TASK = "archive_and_move_for_reprocessing"
@@ -66,51 +66,50 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
     return blocked_l1s
 
 
-def find_blocked(dc, products, scene_limit):
+def find_blocked(dc, product, scene_limit):
     blocked_scenes = []
-    for product in products:
-        for tmp_dataset in dc.index.datasets.search_returning(("id",), product=product):
-            ard_id = tmp_dataset.id
-            ard_dataset = dc.index.datasets.get(ard_id, include_sources=True)
+    for tmp_dataset in dc.index.datasets.search_returning(("id",), product=product):
+        ard_id = tmp_dataset.id
+        ard_dataset = dc.index.datasets.get(ard_id, include_sources=True)
 
-            # pprint.pprint (ard_dataset.metadata_doc)
-            l1_id = ard_dataset.metadata_doc["lineage"]["source_datasets"]["level1"][
-                "id"
-            ]
-            l1_ds = dc.index.datasets.get(l1_id)
+        # pprint.pprint (ard_dataset.metadata_doc)
+        l1_id = ard_dataset.metadata_doc["lineage"]["source_datasets"]["level1"]["id"]
+        l1_ds = dc.index.datasets.get(l1_id)
 
-            # LOGGER.info("data", blocking_l1_ds=blocking_l1_id,
-            #     archive=ard_id,
-            #     l1_is_archived=blocking_l1_ds.is_archived)
-            if l1_ds.is_archived:
-                # All blocking l1s are archived.
-                # l1s are archived for other reasons too though.
-                # Check if there is a blocked l1
-                # LOGGER.info("ARD with archived l1", blocking_l1=blocking_l1_id, archive=ard_id)
-                blocked_l1 = find_blocked_l1_for_a_dataset(dc, l1_ds)
-                # blocked_l1 is None or a list with one dataset.
-                if blocked_l1 is None:
-                    # Could not find an l1 that is being blocked.
-                    continue
-                # this is the yaml file
-                blocked_l1_local_path = blocked_l1[0].local_path
-                blocked_l1_zip_path = utils.calc_file_path(
-                    blocked_l1[0], blocked_l1[0].metadata.landsat_product_id
-                )
-                # pprint.pprint (blocked_l1[0].metadata_doc)
-                LOGGER.info(
-                    "reprocess",
-                    blocked_l1_zip_path=blocked_l1_zip_path,
-                    archive=str(ard_id),
-                )
-                blocked_scenes.append(
-                    {
-                        "blocking_ard_id": ard_id,
-                        "blocked_l1_zip_path": blocked_l1_zip_path,
-                    }
-                )
-            if len(blocked_scenes) > scene_limit:
-                break
+        # LOGGER.info("data", blocking_l1_ds=blocking_l1_id,
+        #     archive=ard_id,
+        #     l1_is_archived=blocking_l1_ds.is_archived)
+        if l1_ds.is_archived:
+            # All blocking l1s are archived.
+            # l1s are archived for other reasons too though.
+            # Check if there is a blocked l1
+            # LOGGER.info("ARD with archived l1", blocking_l1=blocking_l1_id, archive=ard_id)
+            blocked_l1 = find_blocked_l1_for_a_dataset(dc, l1_ds)
+            # blocked_l1 is None or a list with one dataset.
+            if blocked_l1 is None:
+                # Could not find an l1 that is being blocked.
+                continue
+            # this is the yaml file
+            blocked_l1_local_path = blocked_l1[0].local_path
+            blocked_l1_zip_path = utils.calc_file_path(
+                blocked_l1[0], blocked_l1[0].metadata.landsat_product_id
+            )
+            blocking_ard_zip_path = utils.calc_file_path(
+                ard_dataset, ard_dataset.metadata.landsat_product_id
+            )
+            # pprint.pprint (blocked_l1[0].metadata_doc)
+            LOGGER.info(
+                "reprocess",
+                blocked_l1_zip_path=blocked_l1_zip_path,
+                archive=str(ard_id),
+            )
+            blocked_scenes.append(
+                {
+                    "blocking_ard_id": str(ard_id),
+                    "blocked_l1_zip_path": blocked_l1_zip_path,
+                    "blocking_ard_zip_path": blocking_ard_zip_path,
+                }
+            )
         if len(blocked_scenes) > scene_limit:
             break
     return blocked_scenes
@@ -125,12 +124,21 @@ def find_blocked(dc, products, scene_limit):
     default=None,
 )
 @click.option(
-    "--products",
-    cls=utils.PythonLiteralOption,
-    type=list,
-    help="List the ODC products to be processed. e.g."
-    ' \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
-    default=PRODUCTS,
+    "--current-base-path",
+    help="base path of the current ARD product. e.g. /g/data/xu18/ga",
+    default="/g/data/xu18/ga",
+    type=click.Path(exists=True),
+)
+@click.option(
+    "--new-base-path",
+    help="Move datasets here before deleting them. e.g. /g/data/xu18/ga/reprocessing_staged_for_removal",
+    default="/g/data/xu18/ga/reprocessing_staged_for_removal",
+    type=click.Path(exists=True),
+)
+@click.option(
+    "--product",
+    help="The ODC product to be reprocessed. e.g. ga_ls9c_ard_3",
+    default=PRODUCT,
 )
 @click.option(
     "--workdir",
@@ -208,7 +216,9 @@ Does not work for multigranule zip files.",
 @LogMainFunction()
 def ard_reprocessed_l1s(
     config: click.Path,
-    products: list,
+    current_base_path: click.Path,
+    new_base_path: click.Path,
+    product: list,
     logdir: click.Path,
     stop_logging: bool,
     log_config: click.Path,
@@ -253,10 +263,40 @@ def ard_reprocessed_l1s(
     dc = datacube.Datacube(app=THIS_TASK)
 
     # identify the blocking ARD uuids and locations
-    blocked_scenes = find_blocked(dc, products, scene_limit)
+    blocked_scenes = find_blocked(dc, product, scene_limit)
+
+    l1_zips = []
+    uuids2archive = []
     if len(blocked_scenes) > 0:
         # move the blocked scenes
-        pass
+        for scene in blocked_scenes:
+            # move the blocking ARD
+            if dry_run:
+                LOGGER.info(
+                    "dry run: reprocess",
+                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
+                )
+                worked = True
+                status = None
+                outs = None
+                errs = None
+            else:
+                worked, status, outs, errs = utils.scene_move(
+                    scene["blocking_ard_zip_path"],
+                    current_base_path,
+                    new_base_path,
+                    dry_run,
+                )
+            if worked:
+                l1_zips.append(scene["blocked_l1_zip_path"])
+                uuids2archive.append(scene["blocking_ard_id"])
+
+                LOGGER.info(
+                    "reprocess",
+                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
+                    blocked_l1_zip_path=scene["blocked_l1_zip_path"],
+                    blocking_ard_id=scene["blocking_ard_id"],
+                )
 
 
 if __name__ == "__main__":

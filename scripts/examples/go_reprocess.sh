@@ -25,4 +25,4 @@ ARD_ENV="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/p
 
 # Scene select in this repo
 time python3 ../../scene_select/ard_reprocessed_l1s.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46  \
---env $ARD_ENV  --scene-limit 1
+--env $ARD_ENV  --scene-limit 1 --dry-run
