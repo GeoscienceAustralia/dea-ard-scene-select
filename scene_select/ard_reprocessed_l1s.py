@@ -235,8 +235,10 @@ def ard_reprocessed_l1s(
     dc = datacube.Datacube(app=THIS_TASK)
 
     # identify the blocking ARD uuids and locations
-    find_blocked(dc, products, scene_limit)
-
+    blocked_scenes = find_blocked(dc, products, scene_limit)
+    if len(blocked_scenes) > 0:
+        # move the blocked scenes
+        pass
 
 if __name__ == "__main__":
     ard_reprocessed_l1s()
