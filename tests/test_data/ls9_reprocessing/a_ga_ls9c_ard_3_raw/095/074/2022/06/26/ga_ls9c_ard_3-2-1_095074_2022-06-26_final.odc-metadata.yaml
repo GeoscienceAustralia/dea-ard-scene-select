@@ -1,0 +1,158 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 43b726eb-77bd-42ac-bd11-ad1eea11863e
+
+label: ga_ls9c_ard_3-2-1_095074_2022-06-26_final
+product:
+  name: ga_ls9c_ard_3
+  href: https://collections.dea.ga.gov.au/product/ga_ls9c_ard_3
+
+crs: epsg:32655
+geometry:
+  type: Polygon
+  coordinates: [[[290530.22808553616, -2122206.3657801473], [290535.0, -2122185.0],
+      [477658.416407865, -2161548.16718427], [477660.8449070427, -2161562.3378929207],
+      [477764.2082039325, -2161584.083592135], [477757.17679291416, -2161690.5970550133],
+      [437317.5, -2353267.5], [437209.02125846234, -2353257.612515019], [437205.0,
+        -2353275.0], [252008.8196855685, -2314394.3564935494], [249885.0, -2313915.0],
+      [249886.0404209833, -2313910.0509918653], [249802.5, -2313892.5], [255952.82586182543,
+        -2284699.3903908874], [282052.8284374203, -2161534.378261467], [290437.5,
+        -2122192.5], [290530.22808553616, -2122206.3657801473]]]
+grids:
+  default:
+    shape: [7721, 7611]
+    transform: [30.0, 0.0, 249585.0, 0.0, -30.0, -2121885.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15441, 15221]
+    transform: [15.0, 0.0, 249592.5, 0.0, -15.0, -2121892.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2022-06-26 00:17:05.661265Z
+  dea:dataset_maturity: final
+  dea:product_maturity: stable
+  dtr:end_datetime: 2022-06-26 00:17:20.730325Z
+  dtr:start_datetime: 2022-06-26 00:16:50.535829Z
+  eo:cloud_cover: 5.963086456969531
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-9
+  eo:sun_azimuth: 36.02625994
+  eo:sun_elevation: 37.10544953
+  fmask:clear: 91.67303738095578
+  fmask:cloud: 5.963086456969531
+  fmask:cloud_shadow: 2.2867619905464727
+  fmask:snow: 0.0
+  fmask:water: 0.07711417152821846
+  gqa:abs_iterative_mean_x: 0.2
+  gqa:abs_iterative_mean_xy: 0.29
+  gqa:abs_iterative_mean_y: 0.21
+  gqa:abs_x: 0.35
+  gqa:abs_xy: 0.55
+  gqa:abs_y: 0.43
+  gqa:cep90: 0.59
+  gqa:iterative_mean_x: -0.14
+  gqa:iterative_mean_xy: 0.21
+  gqa:iterative_mean_y: 0.16
+  gqa:iterative_stddev_x: 0.23
+  gqa:iterative_stddev_xy: 0.34
+  gqa:iterative_stddev_y: 0.25
+  gqa:mean_x: -0.25
+  gqa:mean_xy: 0.25
+  gqa:mean_y: -0.02
+  gqa:stddev_x: 1.41
+  gqa:stddev_xy: 2.6
+  gqa:stddev_y: 2.19
+  landsat:collection_category: T1
+  landsat:collection_number: 2
+  landsat:landsat_product_id: LC09_L1TP_095074_20220626_20220802_02_T1
+  landsat:landsat_scene_id: LC90950742022177LGN00
+  landsat:wrs_path: 95
+  landsat:wrs_row: 74
+  odc:dataset_version: 3.2.1
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2022-10-08 00:45:42.255983Z
+  odc:producer: ga.gov.au
+  odc:product_family: ard
+  odc:region_code: '095074'
+
+measurements:
+  nbar_blue:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band02.tif
+  nbar_coastal_aerosol:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band01.tif
+  nbar_green:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band03.tif
+  nbar_nir:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band05.tif
+  nbar_panchromatic:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band08.tif
+    grid: panchromatic
+  nbar_red:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band04.tif
+  nbar_swir_1:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band06.tif
+  nbar_swir_2:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_band07.tif
+  nbart_blue:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band02.tif
+  nbart_coastal_aerosol:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band01.tif
+  nbart_green:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band03.tif
+  nbart_nir:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band05.tif
+  nbart_panchromatic:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band08.tif
+    grid: panchromatic
+  nbart_red:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band04.tif
+  nbart_swir_1:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band06.tif
+  nbart_swir_2:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_band07.tif
+  oa_azimuthal_exiting:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_azimuthal-exiting.tif
+  oa_azimuthal_incident:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_azimuthal-incident.tif
+  oa_combined_terrain_shadow:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_combined-terrain-shadow.tif
+  oa_exiting_angle:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_exiting-angle.tif
+  oa_fmask:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_fmask.tif
+  oa_incident_angle:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_incident-angle.tif
+  oa_nbar_contiguity:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_nbar-contiguity.tif
+  oa_nbart_contiguity:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_nbart-contiguity.tif
+  oa_relative_azimuth:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_relative-azimuth.tif
+  oa_relative_slope:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_relative-slope.tif
+  oa_satellite_azimuth:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_satellite-azimuth.tif
+  oa_satellite_view:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_satellite-view.tif
+  oa_solar_azimuth:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_solar-azimuth.tif
+  oa_solar_zenith:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_solar-zenith.tif
+  oa_time_delta:
+    path: ga_ls9c_oa_3-2-1_095074_2022-06-26_final_time-delta.tif
+
+accessories:
+  thumbnail:nbart:
+    path: ga_ls9c_nbart_3-2-1_095074_2022-06-26_final_thumbnail.jpg
+  thumbnail:nbar:
+    path: ga_ls9c_nbar_3-2-1_095074_2022-06-26_final_thumbnail.jpg
+  metadata:processor:
+    path: ga_ls9c_ard_3-2-1_095074_2022-06-26_final.proc-info.yaml
+  checksum:sha1:
+    path: ga_ls9c_ard_3-2-1_095074_2022-06-26_final.sha1
+
+lineage:
+  level1:
+  - a230aceb-528b-5895-a4d7-94226e172dcf
+...
