@@ -3,7 +3,10 @@
 # start a local postgres
 # sudo service postgresql start
 
-BD="${USER}_dev"
+
+
+
+ODCDB="${USER}_dev"
 TEST_DATA="../test_data/ls9_reprocessing"
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
@@ -14,24 +17,38 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   ODCCONF="--config ${USER}_dev.conf"
   host=deadev.nci.org.au
-  
 else
   echo "not NCI"
   ODCCONF=""
   host=localhost
+
   # datacube -v  $ODCCONF system init
 fi
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
-    echo "duncans laptop"
-    echo "conda activate odc2020"
-  BD="dsg547_dev"
+  echo "duncans laptop"
+  echo "conda activate odc2020"
+  ODCCONF="--config dsg547_dev_local.conf"
+  ODCDB="dsg547_dev"
+  #export DATACUBE_ENVIRONMENT="$ODCDB"_local
 fi
 
 
+SSPATH=$DIR/../..
+
+# so it uses the dev scene select
+echo $PYTHONPATH
+[[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+echo $PYTHONPATH
+
+
+# delete and recreate the file structure
+rm -rf $TEST_DATA/moved/ga_ls9c_ard_3/
+rm -rf $TEST_DATA/ga_ls9c_ard_3/
+cp -r $TEST_DATA/a_ga_ls9c_ard_3_raw/ $TEST_DATA/ga_ls9c_ard_3/
 
 # clean up the database
-psql -h $host $USER -d ${BD} -a -f db_delete_odc.sql
+psql -h $host $USER -d ${ODCDB} -a -f db_delete_odc.sql
 
 
 # Fill the database with scenes
@@ -82,3 +99,22 @@ datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/l1_Landsat_C2/095_0
 # Add the non-blocking ARD
 # 43b726eb-77bd-42ac-bd11-ad1eea11863e
 datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml
+
+
+SSPATH=$PWD/../
+
+# so it uses the dev scene select
+echo $PYTHONPATH
+[[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+echo $PYTHONPATH
+
+# Doing this at the start messes with  $ODCCONF
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export DATACUBE_CONFIG_PATH=$DIR/datacube.conf
+export DATACUBE_ENVIRONMENT=$ODCDB
+
+if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
+  export DATACUBE_ENVIRONMENT="$ODCDB"_local
+fi
+
+datacube system check
