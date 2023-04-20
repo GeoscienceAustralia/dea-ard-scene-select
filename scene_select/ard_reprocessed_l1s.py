@@ -115,6 +115,40 @@ def find_blocked(dc, product, scene_limit):
     return blocked_scenes
 
 
+def process_blocked(blocked_scenes: dict):
+    l1_zips = []
+    uuids2archive = []
+    if len(blocked_scenes) > 0:
+        # move the blocked scenes
+        for scene in blocked_scenes:
+            # move the blocking ARD
+            if dry_run:
+                LOGGER.info(
+                    "dry run: reprocess",
+                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
+                )
+                worked = True
+                status = None
+                outs = None
+                errs = None
+            else:
+                worked, status, outs, errs = utils.scene_move(
+                    scene["blocking_ard_zip_path"],
+                    current_base_path,
+                    new_base_path,
+                )
+            if worked:
+                l1_zips.append(scene["blocked_l1_zip_path"])
+                uuids2archive.append(scene["blocking_ard_id"])
+
+                LOGGER.info(
+                    "reprocess",
+                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
+                    blocked_l1_zip_path=scene["blocked_l1_zip_path"],
+                    blocking_ard_id=scene["blocking_ard_id"],
+                )
+
+
 @click.command()
 @click.option(
     "--config",
@@ -169,7 +203,7 @@ Does not work for multigranule zip files.",
 @click.option(
     "--log-config",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    default=utils.DATA_DIR.joinpath(utils.LOG_CONFIG_FILE),
+    default=utils.LOG_CONFIG,
     help="full path to the logging configuration file",
 )
 @click.option(
@@ -252,6 +286,9 @@ def ard_reprocessed_l1s(
     jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
 
+    # Used in testing
+    if log_config is None:
+        log_config = utils.LOG_CONFIG
     if not stop_logging:
         gen_log_file = jobdir.joinpath(LOG_FILE).resolve()
         fileConfig(
@@ -265,37 +302,7 @@ def ard_reprocessed_l1s(
     # identify the blocking ARD uuids and locations
     blocked_scenes = find_blocked(dc, product, scene_limit)
 
-    l1_zips = []
-    uuids2archive = []
-    if len(blocked_scenes) > 0:
-        # move the blocked scenes
-        for scene in blocked_scenes:
-            # move the blocking ARD
-            if dry_run:
-                LOGGER.info(
-                    "dry run: reprocess",
-                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
-                )
-                worked = True
-                status = None
-                outs = None
-                errs = None
-            else:
-                worked, status, outs, errs = utils.scene_move(
-                    scene["blocking_ard_zip_path"],
-                    current_base_path,
-                    new_base_path,
-                )
-            if worked:
-                l1_zips.append(scene["blocked_l1_zip_path"])
-                uuids2archive.append(scene["blocking_ard_id"])
-
-                LOGGER.info(
-                    "reprocess",
-                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
-                    blocked_l1_zip_path=scene["blocked_l1_zip_path"],
-                    blocking_ard_id=scene["blocking_ard_id"],
-                )
+    process_blocked(blocked_scenes)
 
 
 if __name__ == "__main__":

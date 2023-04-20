@@ -16,6 +16,7 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 
 # Logging
 LOG_CONFIG_FILE = "log_config.ini"
+LOG_CONFIG = DATA_DIR.joinpath(LOG_CONFIG_FILE)
 
 
 def calc_file_path(l1_dataset, product_id):
