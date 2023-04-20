@@ -3,7 +3,8 @@
 # start a local postgres
 # sudo service postgresql start
 
-
+BD="${USER}_dev"
+TEST_DATA="../test_data/ls9_reprocessing"
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
@@ -12,19 +13,19 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   module load dea/20221025
 
   ODCCONF="--config ${USER}_dev.conf"
-  BD="${USER}_dev"
   host=deadev.nci.org.au
-  TEST_DATA="../test_data/ls9_reprocessing"
   
 else
   echo "not NCI"
-  ODCCONF="--config ${USER}_local.conf"
+  ODCCONF=""
+  host=localhost
   # datacube -v  $ODCCONF system init
 fi
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
     echo "duncans laptop"
     echo "conda activate odc2020"
+  BD="dsg547_dev"
 fi
 
 
