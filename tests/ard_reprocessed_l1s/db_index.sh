@@ -3,9 +3,6 @@
 # start a local postgres
 # sudo service postgresql start
 
-# pytest -s test_ard_reprocessed_l1s.py
-# exit 0
-
 ODCDB="${USER}_dev"
 TEST_DATA_REL="../test_data/ls9_reprocessing"
 TEST_DATA=$(realpath "$TEST_DATA_REL")
