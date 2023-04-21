@@ -3,11 +3,12 @@
 # start a local postgres
 # sudo service postgresql start
 
-
-
+# pytest -s test_ard_reprocessed_l1s.py
+# exit 0
 
 ODCDB="${USER}_dev"
-TEST_DATA="../test_data/ls9_reprocessing"
+TEST_DATA_REL="../test_data/ls9_reprocessing"
+TEST_DATA=$(realpath "$TEST_DATA_REL")
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
@@ -46,6 +47,8 @@ echo $PYTHONPATH
 rm -rf $TEST_DATA/moved/ga_ls9c_ard_3/
 rm -rf $TEST_DATA/ga_ls9c_ard_3/
 cp -r $TEST_DATA/a_ga_ls9c_ard_3_raw/ $TEST_DATA/ga_ls9c_ard_3/
+mkdir -p $TEST_DATA/moved/
+mkdir -p $TEST_DATA/scratch/   # for test logs
 
 # clean up the database
 psql -h $host $USER -d ${ODCDB} -a -f db_delete_odc.sql
@@ -118,3 +121,5 @@ if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
 fi
 
 datacube system check
+
+pytest -s test_ard_reprocessed_l1s.py

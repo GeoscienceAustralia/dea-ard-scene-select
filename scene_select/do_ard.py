@@ -146,4 +146,3 @@ def do_ard(
         subprocess.run([script_path], check=True)
 
     LOGGER.info("info", jobdir=str(jobdir))
-    print(f"Job directory: {jobdir}")

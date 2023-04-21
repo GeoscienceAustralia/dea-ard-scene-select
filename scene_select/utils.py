@@ -76,9 +76,7 @@ class PythonLiteralOption(click.Option):
             raise click.BadParameter(value)
 
 
-def scene_move(
-    current_path: Path, current_base_path: str, new_base_path: str
-):
+def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
     """
     Move a scene from one location to another and update the odc database.
     Assume the dea module has been loaded.

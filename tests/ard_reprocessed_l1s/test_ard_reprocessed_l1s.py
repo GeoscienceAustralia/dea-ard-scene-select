@@ -1,33 +1,103 @@
 #!/usr/bin/env python3
 
-from scene_select.ard_reprocessed_l1s import ard_reprocessed_l1s
-
 from pathlib import Path
+from click.testing import CliRunner
+import os.path
+import uuid
+
+from scene_select.ard_reprocessed_l1s import ard_reprocessed_l1s, DIR_TEMPLATE
+from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
+
+REPROCESS_TEST_DIR = (
+    Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
+)
+SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
+
+# orig_arl1s = ard_reprocessed_l1s.__wrapped__
+
 
 def test_scene_move():
-    # the current definition of current_path
-    # Update this to just be the directory
-    config = None
-    current_path = Path("/g/data/u46/users/dsg547/test_data/c3/ls9_reprocessing/ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml")
-    current_base_path = Path("/g/data/u46/users/dsg547/test_data/c3/ls9_reprocessing/")
-    new_base_path = Path("/g/data/u46/users/dsg547/test_data/c3/ls9_reprocessing/moved")
-    dry_run = True
+    current_base_path = REPROCESS_TEST_DIR
+    new_base_path = REPROCESS_TEST_DIR.joinpath("moved")
+    dry_run = False
     product = "ga_ls9c_ard_3"
-    logdir = Path(".")
-    stop_logging = False
-    log_config = None
+    logdir = SCRATCH_DIR
     scene_limit = 1
     run_ard = False
 
-    nothing_yet = ard_reprocessed_l1s.__wrapped__(
-    config,
-    current_base_path,
-    new_base_path,
-    product,
-    logdir,
-    stop_logging,
-    log_config,
-    scene_limit,
-    run_ard,
-    )
+    # in bash
+    # hex=$(openssl rand -hex 3)
+    jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
+    jobdir.mkdir(exist_ok=True)
 
+    cmd_params = [
+        "--current-base-path",
+        str(current_base_path.resolve()),
+        "--new-base-path",
+        str(new_base_path.resolve()),
+        "--product",
+        product,
+        "--scene-limit",
+        scene_limit,
+        "--logdir",
+        SCRATCH_DIR,
+        "--jobdir",
+        str(jobdir),
+        "--workdir",
+        SCRATCH_DIR,
+    ]
+    if run_ard:
+        cmd_params.append("--run-ard")
+    if dry_run:
+        cmd_params.append("--dry-run")
+    runner = CliRunner()
+    result = runner.invoke(ard_reprocessed_l1s, cmd_params)
+    print("***** results output ******")
+    print(result.output)
+    print("***** results exception ******")
+    print(result.exception)
+    print("***** results end ******")
+
+    # Assert a few things
+    # Two dirs have been moved
+    new_dir = REPROCESS_TEST_DIR.joinpath(
+        "moved", "ga_ls9c_ard_3", "092", "081", "2022", "06", "21"
+    )
+    fname = new_dir.joinpath(
+        "ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml"
+    )
+    assert os.path.isfile(fname) == True
+
+    new_dir = REPROCESS_TEST_DIR.joinpath(
+        "moved", "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
+    )
+    fname = new_dir.joinpath(
+        "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
+    )
+    assert os.path.isfile(fname) == True
+
+    # uuids have been written to an archive file
+    filename = jobdir.joinpath(ARCHIVE_FILE)
+    temp = open(filename, "r").read().splitlines()
+    assert sorted(
+        ["3de6cb49-60da-4160-802b-65903dcbbac8", "d9a499d1-1abd-4ed1-8411-d584ca45de25"]
+    ) == sorted(temp)
+    # The l1's have been written to a zip file
+    filename = jobdir.joinpath(ODC_FILTERED_FILE)
+    temp = open(filename, "r").read().splitlines()
+    a_dir = REPROCESS_TEST_DIR.joinpath(
+        "l1_Landsat_C2",
+        "092_081",
+        "LC90920812022172",
+        "LC09_L1TP_092081_20220621_20220802_02_T1.tar",
+    )
+    b_dir = REPROCESS_TEST_DIR.joinpath(
+        "l1_Landsat_C2",
+        "102_076",
+        "LC91020762022178",
+        "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
+    )
+    assert sorted([str(a_dir), str(b_dir)]) == sorted(temp)
+    # There is a run ard pbs file
+    filename = jobdir.joinpath(PBS_ARD_FILE)
+    assert os.path.isfile(fname) == True
