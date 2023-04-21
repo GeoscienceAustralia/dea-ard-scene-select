@@ -47,7 +47,6 @@ rm -rf $TEST_DATA/moved/ga_ls9c_ard_3/
 rm -rf $TEST_DATA/ga_ls9c_ard_3/
 cp -r $TEST_DATA/a_ga_ls9c_ard_3_raw/ $TEST_DATA/ga_ls9c_ard_3/
 mkdir -p $TEST_DATA/moved/
-mkdir -p $TEST_DATA/scratch/   # for test logs
 
 # clean up the database
 psql -h $host $USER -d ${ODCDB} -a -f ${SCRIPT_DIR}/db_delete_odc.sql
@@ -109,6 +108,11 @@ datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/ga_ls9c_ard_3/095/0
 # [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 # echo $PYTHONPATH
 
+# Doing this at the start messes with  $ODCCONF
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+export DATACUBE_CONFIG_PATH=$DIR/datacube.conf
+export DATACUBE_ENVIRONMENT=$ODCDB
+mkdir -p $DIR/scratch/   # for test logs
 # # Doing this at the start messes with  $ODCCONF
 # export DATACUBE_CONFIG_PATH=${SCRIPT_DIR}/datacube.conf
 # export DATACUBE_ENVIRONMENT=$ODCDB
