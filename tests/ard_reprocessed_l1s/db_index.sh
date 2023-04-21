@@ -101,7 +101,7 @@ datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/l1_Landsat_C2/095_0
 datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml
 
 
-SSPATH=$PWD/../
+SSPATH=$PWD/../..
 
 # so it uses the dev scene select
 echo $PYTHONPATH
