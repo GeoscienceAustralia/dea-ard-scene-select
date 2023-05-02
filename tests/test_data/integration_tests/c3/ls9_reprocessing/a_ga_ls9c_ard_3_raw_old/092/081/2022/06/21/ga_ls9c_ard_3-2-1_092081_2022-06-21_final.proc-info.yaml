@@ -1,0 +1,155 @@
+---
+wagl:
+  algorithm_information:
+    algorithm_version: 2.0
+    nbar_doi: http://dx.doi.org/10.1109/JSTARS.2010.2042281
+    nbar_terrain_corrected_doi: http://dx.doi.org/10.1016/j.rse.2012.06.018
+  ancillary:
+    aerosol:
+      id:
+      - 99d73c48-9985-51d2-9639-d37bcdfe119e
+      tier: AATSR_CMP_MONTH
+      value: 0.03360434249043465
+    brdf:
+      alpha_1:
+        band_1: 0.21252394971379895
+        band_2: 0.2125214016107796
+        band_3: 0.2613023278475144
+        band_4: 0.2602115226400807
+        band_5: 0.6481744616733349
+        band_6: 0.4083215532588284
+        band_7: 0.2921817088934925
+        band_8: 0.26079815702195286
+      alpha_2:
+        band_1: 0.20106469116336564
+        band_2: 0.20106553336382268
+        band_3: 0.22206840642179887
+        band_4: 0.20627306427677938
+        band_5: 0.0817976845394555
+        band_6: 0.11984717929342446
+        band_7: 0.13274215664104527
+        band_8: 0.21416856472921192
+      id:
+      - b4ff5aaa-cf6b-5f13-9e25-b11e9b87f2a3
+      - 54fe4775-08e5-51bc-903d-e52b123271d5
+      tier: DEFINITIVE
+    elevation:
+      id:
+      - 27ca9489-8222-5117-96f6-2af42655c604
+      - 8ad73086-72cf-561a-aa0f-1e3c64d53384
+    ozone:
+      id:
+      - 83914de1-c12e-5035-af8d-e2dc1baa54d4
+      tier: DEFINITIVE
+      value: 0.285
+    water_vapour:
+      id:
+      - b97709d5-f21a-5f42-aa4a-d6e30a35b8a4
+      tier: DEFINITIVE
+      value: 1.6200000762939455
+  id: 3de6cb49-60da-4160-802b-65903dcbbac8
+  parameters:
+    buffer_distance: 8000
+    esun:
+      BAND-1: 1894.1219292241478
+      BAND-2: 1969.0010339582439
+      BAND-3: 1807.1101230401719
+      BAND-4: 1509.6539555443646
+      BAND-5: 918.5330789796459
+      BAND-6: 232.22637446953698
+      BAND-7: 78.97399975188205
+      BAND-8: 1691.917361743073
+    method: 2
+    normalized_solar_zenith: 45.0
+    rori: 0.52
+    vertices:
+    - 3
+    - 3
+  source_datasets:
+    acquisition_datetime: 2022-06-21 00:01:13.502097Z
+    atime: 2022-10-12 07:17:59Z
+    ctime: 2022-10-12 05:17:02Z
+    mtime: 2022-06-22 02:00:25Z
+    owner_id: '6927'
+    platform_id: LANDSAT_9
+    sensor_id: OLI
+    source_level1: /g/data/da82/AODH/USGS/L1/Landsat/C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220621_02_T1.tar
+  system_information:
+    hostname: gadi-cpu-clx-2895.gadi.nci.org.au
+    runtime_id: eeebe566-49ff-11ed-b640-00000188fe80
+    time_processed: 2022-10-12 07:31:49.216471Z
+    uname: 'Linux gadi-cpu-clx-2895.gadi.nci.org.au 4.18.0-372.26.1.el8.nci.x86_64
+      #1 SMP Mon Sep 19 12:09:59 AEST 2022 x86_64'
+gqa:
+  colors:
+    blue: 1.0
+    green: 148.0
+    red: 0.0
+    teal: 16.0
+    yellow: 0.0
+  error_message: no errors
+  final_qa_count: 108
+  granule: LC90920812022172LGN00
+  ref_date: '2013-08-23T00:00:00+00:00'
+  ref_source: GQA_v3
+  ref_source_path: /g/data/v10/eoancillarydata/GCP/GQA_v3/wrs2/092/081/LC80920812013235LGN00_B6.TIF
+  residual:
+    abs:
+      x: 0.16
+      xy: 0.22
+      y: 0.15
+    abs_iterative_mean:
+      x: 0.1
+      xy: 0.14
+      y: 0.1
+    cep90: 0.25
+    iterative_mean:
+      x: -0.08
+      xy: 0.11
+      y: 0.08
+    iterative_stddev:
+      x: 0.1
+      xy: 0.13
+      y: 0.09
+    mean:
+      x: -0.08
+      xy: 0.11
+      y: 0.07
+    stddev:
+      x: 0.21
+      xy: 0.29
+      y: 0.2
+fmask:
+  parameters:
+    cloud_buffer_distance_metres: 0.0
+    cloud_shadow_buffer_distance_metres: 0.0
+    frantz_parallax_sentinel_2: false
+  percent_class_distribution:
+    clear: 92.83423031420485
+    cloud: 4.5802643665262694
+    cloud_shadow: 1.6640199264542563
+    snow: 0.0
+    water: 0.9214853928146275
+software_versions:
+- name: modtran
+  url: http://www.ontar.com/software/productdetails.aspx?item=modtran
+  version: 6.0.1
+- name: wagl
+  url: https://github.com/GeoscienceAustralia/wagl
+  version: 5.9.0
+- name: eugl
+  url: https://github.com/OpenDataCubePipelines/eugl
+  version: 0.6.0
+- name: gverify
+  url:
+  version: v0.25c
+- name: fmask
+  url: https://www.pythonfmask.org/
+  version: 0.5.7
+- name: tesp
+  url: https://github.com/OpenDataCubePipelines/tesp
+  version: 0.14.2
+- name: eodatasets3
+  url: https://github.com/GeoscienceAustralia/eo-datasets
+  version: 0.27.7
+...

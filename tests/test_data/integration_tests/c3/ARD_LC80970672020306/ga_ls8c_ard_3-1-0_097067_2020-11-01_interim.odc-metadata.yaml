@@ -1,0 +1,159 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 83a68211-5e16-47ca-85d0-e6c4ab7132ae
+
+label: ga_ls8c_ard_3-1-0_097067_2020-11-01_interim
+product:
+  name: ga_ls8c_ard_3
+  href: https://collections.dea.ga.gov.au/product/ga_ls8c_ard_3
+
+crs: epsg:32655
+geometry:
+  type: Polygon
+  coordinates: [[[160977.4805729841, -1196619.5475819684], [160894.40984278425, -1196602.1782467747],
+      [160837.5, -1196572.5], [167707.81518355128, -1163509.4412149687], [179272.81729147432,
+        -1108054.4311125225], [195682.81924575413, -1029619.4217773356], [200917.8217532252,
+        -1004659.4098427843], [200962.83296378882, -1004449.357063669], [200992.5,
+        -1004407.5], [201068.95284420665, -1004423.4637617171], [201075.0, -1004415.0],
+      [387598.416407865, -1043358.16718427], [387595.6963285122, -1043371.2428503096],
+      [387697.5, -1043392.5], [347720.916407865, -1235579.2082039325], [347603.5904186341,
+        -1235556.9172305984], [347469.1165159459, -1235564.4174202709], [345158.8711750334,
+        -1235084.3672862984], [161168.87041270421, -1196684.3671271931], [160977.4805729841,
+        -1196619.5475819684]]]
+grids:
+  default:
+    shape: [7711, 7581]
+    transform: [30.0, 0.0, 160485.0, 0.0, -30.0, -1004385.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15421, 15161]
+    transform: [15.0, 0.0, 160492.5, 0.0, -15.0, -1004392.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2020-11-01 00:27:05.662065Z
+  dea:dataset_maturity: interim
+  dtr:end_datetime: 2020-11-01 00:27:20.912787Z
+  dtr:start_datetime: 2020-11-01 00:26:50.371844Z
+  eo:cloud_cover: 7.371716550805788
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 102.97998588
+  eo:sun_elevation: 65.98727936
+  fmask:clear: 4.900080885889185
+  fmask:cloud: 7.371716550805788
+  fmask:cloud_shadow: 1.4330587825457894
+  fmask:snow: 3.19619611357796e-05
+  fmask:water: 86.29511181879809
+  gqa:abs_iterative_mean_x: 0.44
+  gqa:abs_iterative_mean_xy: 0.49
+  gqa:abs_iterative_mean_y: 0.22
+  gqa:abs_x: 0.65
+  gqa:abs_xy: 0.79
+  gqa:abs_y: 0.45
+  gqa:cep90: 0.9
+  gqa:iterative_mean_x: -0.41
+  gqa:iterative_mean_xy: 0.42
+  gqa:iterative_mean_y: 0.12
+  gqa:iterative_stddev_x: 0.31
+  gqa:iterative_stddev_xy: 0.41
+  gqa:iterative_stddev_y: 0.27
+  gqa:mean_x: -0.37
+  gqa:mean_xy: 0.4
+  gqa:mean_y: 0.15
+  gqa:stddev_x: 1.06
+  gqa:stddev_xy: 1.49
+  gqa:stddev_y: 1.05
+  landsat:collection_category: T2
+  landsat:collection_number: 1
+  landsat:landsat_product_id: LC08_L1GT_097067_20201101_20201106_01_T2
+  landsat:landsat_scene_id: LC80970672020306LGN00
+  landsat:wrs_path: 97
+  landsat:wrs_row: 67
+  odc:dataset_version: 3.1.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2020-11-11 00:07:14.210919Z
+  odc:producer: ga.gov.au
+  odc:product_family: ard
+  odc:region_code: '097067'
+
+measurements:
+  nbar_blue:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band02.tif
+  nbar_coastal_aerosol:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band01.tif
+  nbar_green:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band03.tif
+  nbar_nir:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band05.tif
+  nbar_panchromatic:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band08.tif
+    grid: panchromatic
+  nbar_red:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band04.tif
+  nbar_swir_1:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band06.tif
+  nbar_swir_2:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_band07.tif
+  nbart_blue:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band02.tif
+  nbart_coastal_aerosol:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band01.tif
+  nbart_green:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band03.tif
+  nbart_nir:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band05.tif
+  nbart_panchromatic:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band08.tif
+    grid: panchromatic
+  nbart_red:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band04.tif
+  nbart_swir_1:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band06.tif
+  nbart_swir_2:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_band07.tif
+  oa_azimuthal_exiting:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_azimuthal-exiting.tif
+  oa_azimuthal_incident:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_azimuthal-incident.tif
+  oa_combined_terrain_shadow:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_combined-terrain-shadow.tif
+  oa_exiting_angle:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_exiting-angle.tif
+  oa_fmask:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_fmask.tif
+  oa_incident_angle:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_incident-angle.tif
+  oa_nbar_contiguity:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_nbar-contiguity.tif
+  oa_nbart_contiguity:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_nbart-contiguity.tif
+  oa_relative_azimuth:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_relative-azimuth.tif
+  oa_relative_slope:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_relative-slope.tif
+  oa_satellite_azimuth:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_satellite-azimuth.tif
+  oa_satellite_view:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_satellite-view.tif
+  oa_solar_azimuth:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_solar-azimuth.tif
+  oa_solar_zenith:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_solar-zenith.tif
+  oa_time_delta:
+    path: ga_ls8c_oa_3-1-0_097067_2020-11-01_interim_time-delta.tif
+
+accessories:
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-1-0_097067_2020-11-01_interim_thumbnail.jpg
+  thumbnail:nbar:
+    path: ga_ls8c_nbar_3-1-0_097067_2020-11-01_interim_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls8c_ard_3-1-0_097067_2020-11-01_interim.sha1
+  metadata:processor:
+    path: ga_ls8c_ard_3-1-0_097067_2020-11-01_interim.proc-info.yaml
+
+lineage:
+  level1:
+  - 3442205b-1002-5482-a637-0b2bb17310f8
+...

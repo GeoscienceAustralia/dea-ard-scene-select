@@ -1,0 +1,99 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: e397168e-2d2e-5885-8579-2c45156841e0
+
+label: usgs_ls8c_level1_2-0-20230227_102079_2023-01-29
+product:
+  name: usgs_ls8c_level1_2
+  href: https://collections.dea.ga.gov.au/product/usgs_ls8c_level1_2
+
+crs: epsg:32653
+geometry:
+  type: Polygon
+  coordinates: [[[206752.5, -3111952.5], [213277.818289554, -3080599.4263412063],
+      [225397.820741566, -3022744.4146520733], [239992.82348573694, -2953399.4016247666],
+      [246877.8241921808, -2920819.3982803393], [246997.5, -2920342.5], [247060.5961347698,
+        -2920355.750682808], [247065.0, -2920335.0], [432390.2108384115, -2959276.4222629685],
+      [434920.58393997734, -2959807.820445708], [434923.5024538457, -2959808.72964881],
+      [434968.416407865, -2959818.16718427], [434968.15771475877, -2959822.641078929],
+      [435078.10660171777, -2959856.893398282], [395137.5, -3151312.5], [395032.52014651184,
+        -3151290.575559747], [395025.0, -3151305.0], [253899.4447463851, -3121815.742279648],
+      [208609.4319354183, -3112357.182880498], [208037.39038794072, -3112232.5173411844],
+      [206805.0, -3111975.0], [206807.20117601016, -3111964.4210774787], [206752.5,
+        -3111952.5]]]
+grids:
+  default:
+    shape: [7711, 7631]
+    transform: [30.0, 0.0, 206385.0, 0.0, -30.0, -2920185.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15421, 15261]
+    transform: [15.0, 0.0, 206392.5, 0.0, -15.0, -2920192.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 1944-01-29 01:02:50.795135Z
+  eo:cloud_cover: 99.99
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 80.81712708
+  eo:sun_elevation: 57.09125308
+  landsat:collection_category: T2
+  landsat:collection_number: 2
+  landsat:data_type: L1GT
+  landsat:landsat_product_id: LC08_L1GT_102079_20230129_20230227_02_T2
+  landsat:landsat_scene_id: LC81020792023029LGN00
+  landsat:processing_software_version: LPGS_16.2.0
+  landsat:station_id: LGN
+  landsat:wrs_path: 102
+  landsat:wrs_row: 79
+  odc:dataset_version: 2.0.20230227
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2023-02-27 17:11:47Z
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '102079'
+
+measurements:
+  blue:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B2.TIF
+  cirrus:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B9.TIF
+  coastal_aerosol:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B1.TIF
+  green:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B3.TIF
+  lwir_1:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B10.TIF
+  lwir_2:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B11.TIF
+  nir:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B5.TIF
+  panchromatic:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B8.TIF
+    grid: panchromatic
+  qa_radsat:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_QA_RADSAT.TIF
+  quality:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_QA_PIXEL.TIF
+  red:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B4.TIF
+  solar_azimuth:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_SAA.TIF
+  solar_zenith:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_SZA.TIF
+  swir_1:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B6.TIF
+  swir_2:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_B7.TIF
+  view_azimuth:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_VAA.TIF
+  view_zenith:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_VZA.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LC08_L1GT_102079_20230129_20230227_02_T2_MTL.txt
+
+lineage: {}
+...

@@ -3,6 +3,10 @@
 # therefor I'm going to move some actual zips and assume they are there,
 # along with the dir structure
 
+# Note: This test relies on test data files of a large
+# size which is to be found in an absolute path. Thus,
+# to run it, we need the /g/data/u46/users/dsg547/test_data/c3/s2_autogen
+# path to be present.
 
 S2L1DIR='/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/'
 AUTODIR='/g/data/u46/users/dsg547/test_data/c3/s2_autogen'

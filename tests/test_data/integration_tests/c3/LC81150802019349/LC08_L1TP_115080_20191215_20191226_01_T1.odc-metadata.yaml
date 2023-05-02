@@ -1,0 +1,91 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 760315b3-e147-5db2-bb7f-0e52efd4453d
+
+label: usgs_ls8c_level1_1-0-20191226_115080_2019-12-15
+product:
+  name: usgs_ls8c_level1_1
+  href: https://collections.dea.ga.gov.au/product/usgs_ls8c_level1_1
+
+crs: epsg:32649
+geometry:
+  type: Polygon
+  coordinates: [[[556585.5357399118, -3267536.40714506], [556507.5, -3267517.5], [
+        563782.9203684423, -3237348.97376353], [580927.922180121, -3166518.966281339],
+      [602332.9249859526, -3078273.954726313], [602557.5, -3077422.5], [602619.53892237,
+        -3077437.4998764386], [602625.0, -3077415.0], [788362.0680007687, -3122325.8444968294],
+      [789472.2760687511, -3122595.8957249955], [789550.443793352, -3122651.7446990656],
+      [789652.5, -3122677.5], [743797.081105825, -3312641.020135355], [743722.5, -3312877.5],
+      [743625.2562198658, -3312853.9389719474], [743625.0, -3312855.0], [743467.9607840069,
+        -3312854.1624662573], [742597.9363007988, -3312644.156545639], [556583.7867965644,
+        -3267546.2132034358], [556585.5357399118, -3267536.40714506]]]
+grids:
+  default:
+    shape: [7851, 7791]
+    transform: [30.0, 0.0, 556185.0, 0.0, -30.0, -3077385.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15701, 15581]
+    transform: [15.0, 0.0, 556192.5, 0.0, -15.0, -3077392.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2019-12-15 02:23:30.287243Z
+  eo:cloud_cover: 2.48
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 85.21624006
+  eo:sun_elevation: 62.50714847
+  landsat:collection_category: T1
+  landsat:collection_number: 1
+  landsat:data_type: L1TP
+  landsat:geometric_rmse_model_x: 3.901
+  landsat:geometric_rmse_model_y: 5.983
+  landsat:ground_control_points_model: 9
+  landsat:ground_control_points_version: 4
+  landsat:landsat_product_id: LC08_L1TP_115080_20191215_20191226_01_T1
+  landsat:landsat_scene_id: LC81150802019349LGN00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:station_id: LGN
+  landsat:wrs_path: 115
+  landsat:wrs_row: 80
+  odc:dataset_version: 1.0.20191226
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2019-12-26 16:34:16Z
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '115080'
+
+measurements:
+  blue:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B2.TIF
+  cirrus:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B9.TIF
+  coastal_aerosol:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B1.TIF
+  green:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B3.TIF
+  lwir_1:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B10.TIF
+  lwir_2:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B11.TIF
+  nir:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B5.TIF
+  panchromatic:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B8.TIF
+    grid: panchromatic
+  quality:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_BQA.TIF
+  red:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B4.TIF
+  swir_1:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B6.TIF
+  swir_2:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_B7.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LC08_L1TP_115080_20191215_20191226_01_T1_MTL.txt
+
+lineage: {}
+...

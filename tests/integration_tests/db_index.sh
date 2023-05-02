@@ -11,14 +11,12 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   module load dea/20221025
   #module load ard-pipeline/devv2.1
-
-  TEST_DATA=/g/data/u46/users/dsg547/test_data
   ODCCONF="--config ${USER}_dev.conf"
+  echo "Using local user's config, ${ODCCONF}"
   
 else
   echo "not NCI"
   ODCCONF="--config ${USER}_local.conf"
-  TEST_DATA=$HOME/test_data
   # datacube -v  $ODCCONF system init
 fi
 
@@ -70,6 +68,10 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 # ---------------------
 # R1.1 for ls: Unfiltered scenes are ARD processed
 # The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C1/092_085/LC80920852020223
+
+script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
+TEST_DATA="$script_directory/test_data/integration_tests"
+
 datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml
 
 # ls9 - The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239

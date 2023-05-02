@@ -1,0 +1,151 @@
+---
+wagl:
+  algorithm_information:
+    algorithm_version: 2.0
+    nbar_doi: http://dx.doi.org/10.1109/JSTARS.2010.2042281
+    nbar_terrain_corrected_doi: http://dx.doi.org/10.1016/j.rse.2012.06.018
+  ancillary:
+    aerosol:
+      id: []
+      tier: FALLBACK_DEFAULT
+      value: 0.06
+    brdf:
+      alpha_1:
+        band_1: 0.0
+        band_2: 0.0
+        band_3: 0.0
+        band_4: 0.0
+        band_5: 0.0
+        band_6: 0.0
+        band_7: 0.0
+      alpha_2:
+        band_1: 0.0
+        band_2: 0.0
+        band_3: 0.0
+        band_4: 0.0
+        band_5: 0.0
+        band_6: 0.0
+        band_7: 0.0
+      id:
+      - e98668dc-eff0-56ef-9749-781e329d0490
+      tier: FALLBACK_DATASET
+    elevation:
+      id:
+      - 27ca9489-8222-5117-96f6-2af42655c604
+      - 8ad73086-72cf-561a-aa0f-1e3c64d53384
+    ozone:
+      id:
+      - 996d2a44-c4de-5d21-ad4c-fe5382829740
+      tier: DEFINITIVE
+      value: 0.256
+    water_vapour:
+      id:
+      - b67c8920-7adc-5a08-91c0-aa54d11ea910
+      tier: DEFINITIVE
+      value: 2.6700000762939453
+  id: 44b1d4a1-3078-41e0-b2ed-e3ef838633ba
+  parameters:
+    buffer_distance: 8000
+    esun:
+      BAND-1: 1990.1994914218405
+      BAND-2: 2063.6374577427982
+      BAND-3: 1892.8807586632463
+      BAND-4: 1581.6338311772352
+      BAND-5: 962.8859003610247
+      BAND-6: 243.14207622366877
+      BAND-7: 82.74877055873169
+      BAND-8: 1780.5429291406072
+    method: 2
+    normalized_solar_zenith: 45.0
+    rori: 0.52
+    vertices:
+    - 3
+    - 3
+  source_datasets:
+    acquisition_datetime: 2020-11-01 00:27:29.582756Z
+    atime: 2020-11-11 01:31:41Z
+    ctime: 2020-11-11 00:48:56Z
+    mtime: 2020-11-11 00:48:56Z
+    owner_id: '6767'
+    platform_id: LANDSAT_8
+    sensor_id: OLI
+    source_level1: /g/data/u46/users/dsg547/test_data/c3/LC80970682020306/LC08_L1GT_097068_20201101_20201106_01_T2.tar
+  system_information:
+    hostname: gadi-cpu-clx-2697.gadi.nci.org.au
+    runtime_id: 701e0f1a-23bf-11eb-b8e6-20000a8efe80
+    time_processed: 2020-11-11 01:44:29.158512Z
+    uname: 'Linux gadi-cpu-clx-2697.gadi.nci.org.au 4.18.0-193.19.1.el8.nci.x86_64
+      #1 SMP Fri Sep 18 06:31:13 UTC 2020 x86_64'
+gqa:
+  colors:
+    blue: 18.0
+    green: 94.0
+    red: 5.0
+    teal: 38.0
+    yellow: 16.0
+  error_message: no errors
+  final_qa_count: 143
+  granule: LC80970682020306LGN00
+  ref_date: '2015-02-21T00:00:00+00:00'
+  ref_source: GQA_v3
+  ref_source_path: /g/data/v10/eoancillarydata/GCP/GQA_v3/wrs2/097/068/LC80970682015052LGN00_B2.TIF
+  residual:
+    abs:
+      x: 0.71
+      xy: 0.89
+      y: 0.54
+    abs_iterative_mean:
+      x: 0.34
+      xy: 0.41
+      y: 0.23
+    cep90: 0.89
+    iterative_mean:
+      x: -0.12
+      xy: 0.15
+      y: 0.1
+    iterative_stddev:
+      x: 0.43
+      xy: 0.52
+      y: 0.28
+    mean:
+      x: -0.03
+      xy: 0.05
+      y: 0.04
+    stddev:
+      x: 1.35
+      xy: 1.72
+      y: 1.07
+fmask:
+  parameters:
+    cloud_buffer_distance_metres: 0.0
+    cloud_shadow_buffer_distance_metres: 0.0
+    frantz_parallax_sentinel_2: false
+  percent_class_distribution:
+    clear: 1.8315730932285366
+    cloud: 9.87114539796096
+    cloud_shadow: 4.415986041339002
+    snow: 0.0
+    water: 83.8812954674715
+software_versions:
+- name: modtran
+  url: http://www.ontar.com/software/productdetails.aspx?item=modtran
+  version: 6.0.1
+- name: wagl
+  url: https://github.com/GeoscienceAustralia/wagl
+  version: 5.5.1
+- name: eugl
+  url: https://github.com/OpenDataCubePipelines/eugl
+  version: 0.3.1
+- name: gverify
+  url:
+  version: v0.25c
+- name: fmask
+  url: https://www.pythonfmask.org/
+  version: 0.5.5
+- name: tesp
+  url: https://github.com/OpenDataCubePipelines/tesp
+  version: 0.8.0
+- name: eodatasets3
+  url: https://github.com/GeoscienceAustralia/eo-datasets
+  version: 0.14.2
+...
