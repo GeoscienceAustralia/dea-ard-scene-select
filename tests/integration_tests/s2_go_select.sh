@@ -14,8 +14,9 @@ else
     SSPATH=$HOME/sandbox/dea-ard-scene-select
 fi
 
-TEST_DATA=/g/data/u46/users/dsg547/test_data
-yamdir=' --yamls-dir '$TEST_DATA'/s2/autogen/yaml'
+script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
+TEST_DATA="$script_directory/test_data/integration_tests/"
+yamdir=" --yamls-dir '$TEST_DATA'/s2/autogen/yaml "
 
 # so it uses the dev scene select
 #echo $PYTHONPATH

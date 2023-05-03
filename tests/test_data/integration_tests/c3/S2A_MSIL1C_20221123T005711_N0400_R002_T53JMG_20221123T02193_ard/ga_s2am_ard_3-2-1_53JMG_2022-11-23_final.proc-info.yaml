@@ -1,0 +1,175 @@
+---
+wagl:
+  algorithm_information:
+    algorithm_version: 2.0
+    nbar_doi: http://dx.doi.org/10.1109/JSTARS.2010.2042281
+    nbar_terrain_corrected_doi: http://dx.doi.org/10.1016/j.rse.2012.06.018
+  ancillary:
+    aerosol:
+      id:
+      - 3e541f52-5aa3-541a-a508-e57b8266f863
+      tier: AATSR_CMP_MONTH
+      value: 0.09281254559755325
+    brdf:
+      alpha_1:
+        band_1: 0.21922424254875506
+        band_11: 0.1986469245329036
+        band_12: 0.03729458575588461
+        band_2: 0.21923103186088896
+        band_3: 0.5002530882748941
+        band_4: 0.1969734972048203
+        band_5: 0.19700746339732816
+        band_6: 0.19700695640970775
+        band_7: 0.5201166388587056
+        band_8: 0.52011098246861
+        band_8a: 0.5201071505141638
+      alpha_2:
+        band_1: 0.17031479332479071
+        band_11: 0.14782164171944037
+        band_12: 0.18383571951892305
+        band_2: 0.1703039336091632
+        band_3: 0.13774347402409468
+        band_4: 0.17704999232764984
+        band_5: 0.17704687036559139
+        band_6: 0.17704541801361887
+        band_7: 0.09441596950090726
+        band_8: 0.09441903037487993
+        band_8a: 0.0944193351350048
+      id:
+      - 67569ba2-c376-55fe-961b-3fd67416611e
+      - 811390cc-1c14-5c04-8016-21d623c1bab8
+      tier: DEFINITIVE
+    elevation:
+      id:
+      - 27ca9489-8222-5117-96f6-2af42655c604
+      - 8ad73086-72cf-561a-aa0f-1e3c64d53384
+    ozone:
+      id:
+      - 996d2a44-c4de-5d21-ad4c-fe5382829740
+      tier: DEFINITIVE
+      value: 0.3
+    water_vapour:
+      id:
+      - e7f02e62-710e-527f-9aed-107356edb0fd
+      tier: DEFINITIVE
+      value: 0.9600000381469727
+  id: e4dc2251-275d-4c72-a89c-ec1a5a080ed4
+  parameters:
+    buffer_distance: 8000
+    esun:
+      BAND-1: 2000.9861161064193
+      BAND-11: 243.60016261518095
+      BAND-12: 83.31557412884312
+      BAND-2: 2045.3111050593116
+      BAND-3: 1915.1372316313177
+      BAND-4: 1563.709964595413
+      BAND-5: 1443.5050793502503
+      BAND-6: 1317.2028201076384
+      BAND-7: 1205.8246696375643
+      BAND-8: 1067.9627390284693
+      BAND-8A: 973.8980935610231
+    method: 2
+    normalized_solar_zenith: 45.0
+    rori: 0.52
+    vertices:
+    - 3
+    - 3
+  source_datasets:
+    acquisition_datetime: 2022-11-23 01:05:41.064684Z
+    atime: 2022-12-05 10:55:34Z
+    ctime: 2022-11-23 04:42:43Z
+    mtime: 2022-11-23 04:42:39Z
+    owner_id: '12232'
+    platform_id: SENTINEL_2A
+    sensor_id: MSI
+    source_level1: /g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.zip
+  system_information:
+    hostname: gadi-cpu-clx-1801.gadi.nci.org.au
+    runtime_id: 57f803ea-748b-11ed-95bb-00000189fe80
+    time_processed: 2022-12-05 10:55:34.348803Z
+    uname: 'Linux gadi-cpu-clx-1801.gadi.nci.org.au 4.18.0-372.26.1.el8.nci.x86_64
+      #1 SMP Mon Sep 19 12:09:59 AEST 2022 x86_64'
+gqa:
+  colors:
+    blue: 10.0
+    green: 2820.0
+    red: 3.0
+    teal: 41.0
+    yellow: 1.0
+  error_message: no errors
+  final_qa_count: 2366
+  granule: S2A_OPER_MSI_L1C_TL_ATOS_20221123T021932_A038752_T53JMG_N04.00
+  ref_date: '2014-01-06T00:00:00+00:00'
+  ref_source: GQA_v3
+  ref_source_path: /g/data/v10/eoancillarydata/GCP/GQA_v3/wrs2/100/081/LC81000812014006LGN00_B6.TIF
+  residual:
+    abs:
+      x: 0.15
+      xy: 0.17
+      y: 0.09
+    abs_iterative_mean:
+      x: 0.13
+      xy: 0.14
+      y: 0.06
+    cep90: 0.26
+    iterative_mean:
+      x: 0.12
+      xy: 0.12
+      y: -0.02
+    iterative_stddev:
+      x: 0.1
+      xy: 0.12
+      y: 0.07
+    mean:
+      x: 0.11
+      xy: 0.12
+      y: -0.03
+    stddev:
+      x: 0.24
+      xy: 0.29
+      y: 0.15
+fmask:
+  parameters:
+    cloud_buffer_distance_metres: 0.0
+    cloud_shadow_buffer_distance_metres: 0.0
+    frantz_parallax_sentinel_2: false
+  percent_class_distribution:
+    clear: 99.80331232753781
+    cloud: 0.029962707508609538
+    cloud_shadow: 0.01596084204906639
+    snow: 0.09215539707042437
+    water: 0.0586087258340969
+s2cloudless:
+  parameters:
+    average_over: 4
+    dilation_size: 2
+    threshold: 0.4
+  percent_class_distribution:
+    clear: 99.80603540533568
+    cloud: 0.19396459466432497
+software_versions:
+- name: modtran
+  url: http://www.ontar.com/software/productdetails.aspx?item=modtran
+  version: 6.0.1
+- name: wagl
+  url: https://github.com/GeoscienceAustralia/wagl
+  version: 5.8.4
+- name: eugl
+  url: https://github.com/OpenDataCubePipelines/eugl
+  version: 0.5.2
+- name: gverify
+  url:
+  version: v0.25c
+- name: fmask
+  url: https://www.pythonfmask.org/
+  version: 0.5.5
+- name: s2cloudless
+  url: https://github.com/sentinel-hub/sentinel2-cloud-detector
+  version: 1.5.0
+- name: tesp
+  url: https://github.com/OpenDataCubePipelines/tesp
+  version: 0.14.1
+- name: eodatasets3
+  url: https://github.com/GeoscienceAustralia/eo-datasets
+  version: 0.27.3
+...

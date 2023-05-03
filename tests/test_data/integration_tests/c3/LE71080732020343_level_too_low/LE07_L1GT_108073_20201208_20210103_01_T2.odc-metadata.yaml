@@ -1,0 +1,92 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 4f8946fc-0c4b-5990-bfe8-bd5e81b6c407
+
+label: usgs_ls7e_level1_1-0-20210103_108073_2020-12-08
+product:
+  name: usgs_ls7e_level1_1
+  href: https://collections.dea.ga.gov.au/product/usgs_ls7e_level1_1
+
+crs: epsg:32652
+geometry:
+  type: Polygon
+  coordinates: [[[77551.46644956405, -2107478.492522993], [81585.5755089104, -2087019.15198118],
+      [92055.58071403083, -2034369.1258521415], [102975.58613147671, -1979829.0987849985],
+      [103365.61900082341, -1977938.937254138], [103392.68304504614, -1977917.1045598388],
+      [103567.94786249782, -1977063.8619656244], [103732.5, -1977022.5], [302814.45757565927,
+        -2003212.6282853195], [302843.4251211896, -2003238.8001385625], [305778.9649116027,
+        -2003625.2631629796], [307909.24264068715, -2003925.3015151902], [309201.1458946237,
+        -2004195.6362812424], [309915.0, -2005019.198003735], [309915.0, -2005182.8335424901],
+      [309764.43179009185, -2006090.8111730304], [276374.42915172555, -2175200.8245196124],
+      [274821.60782614304, -2182874.263230062], [273885.0, -2183085.0], [272351.1608598711,
+        -2182964.753335999], [107531.14082333048, -2161604.7507437794], [69310.75735931288,
+        -2156624.69848481], [69288.49289064387, -2156620.156584801], [68137.79128986463,
+        -2156470.441742027], [68059.32734897944, -2156061.269537143], [68040.92534322114,
+        -2156051.493471584], [68047.65464655925, -2156000.39895975], [68047.65075759508,
+        -2156000.3786796564], [68047.73461399197, -2155999.791779967], [68175.56149803114,
+        -2155029.222924457], [70561.40195470127, -2142929.2222394585], [73822.78641461344,
+        -2126284.582740143], [77551.46644956405, -2107478.492522993]]]
+grids:
+  default:
+    shape: [6891, 8071]
+    transform: [30.0, 0.0, 67785.0, 0.0, -30.0, -1976685.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [13781, 16141]
+    transform: [15.0, 0.0, 67792.5, 0.0, -15.0, -1976692.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2020-12-08 00:57:23.590277Z
+  eo:cloud_cover: 100.0
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: ETM
+  eo:platform: landsat-7
+  eo:sun_azimuth: 103.05521799
+  eo:sun_elevation: 54.74173657
+  landsat:collection_category: T2
+  landsat:collection_number: 1
+  landsat:data_type: L1GT
+  landsat:ephemeris_type: DEFINITIVE
+  landsat:landsat_product_id: LE07_L1GT_108073_20201208_20210103_01_T2
+  landsat:landsat_scene_id: LE71080732020343ASA00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:scan_gap_interpolation: 2.0
+  landsat:station_id: ASA
+  landsat:wrs_path: 108
+  landsat:wrs_row: 73
+  odc:dataset_version: 1.0.20210103
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2021-01-03 10:04:30Z
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '108073'
+
+measurements:
+  blue:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B1.TIF
+  green:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B2.TIF
+  nir:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B4.TIF
+  panchromatic:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B8.TIF
+    grid: panchromatic
+  quality:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_BQA.TIF
+  red:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B3.TIF
+  swir_1:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B5.TIF
+  swir_2:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B7.TIF
+  tir_1:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B6_VCID_1.TIF
+  tir_2:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_B6_VCID_2.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LE07_L1GT_108073_20201208_20210103_01_T2_MTL.txt
+
+lineage: {}
+...

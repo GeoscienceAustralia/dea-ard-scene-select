@@ -1,0 +1,159 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: 23b629b0-55a9-446c-9f04-d226e72f9c8f
+
+label: ga_ls8c_ard_3-2-0_107069_2020-07-18_final
+product:
+  name: ga_ls8c_ard_3
+  href: https://collections.dea.ga.gov.au/product/ga_ls8c_ard_3
+
+crs: epsg:32652
+geometry:
+  type: Polygon
+  coordinates: [[[410893.5448760034, -1322871.724200828], [410895.0, -1322865.0],
+      [596271.3172011545, -1362765.6726583275], [597150.5190276088, -1362986.2155327846],
+      [597419.2082039325, -1363044.083592135], [597427.1670362111, -1363120.642936331],
+      [597292.1644522088, -1363750.6549709057], [556207.1644522088, -1554715.6549709057],
+      [556162.5, -1554832.5], [556067.5606958827, -1554813.102813388], [556065.0,
+        -1554825.0], [555015.5592579204, -1554598.1668772346], [554839.3309939458,
+        -1554562.1614256], [529632.5703277866, -1549111.7183210913], [369525.0, -1514505.0],
+      [369527.72650083574, -1514492.341654949], [369461.8933982822, -1514478.1066017179],
+      [377332.83682960464, -1477879.3390770406], [391507.8378579877, -1412179.3343102473],
+      [410827.5, -1322857.5], [410893.5448760034, -1322871.724200828]]]
+grids:
+  default:
+    shape: [7741, 7611]
+    transform: [30.0, 0.0, 369285.0, 0.0, -30.0, -1322685.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15481, 15221]
+    transform: [15.0, 0.0, 369292.5, 0.0, -15.0, -1322692.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2020-07-18 01:29:15.819105Z
+  dea:dataset_maturity: final
+  dtr:end_datetime: 2020-07-18 01:29:31.041456Z
+  dtr:start_datetime: 2020-07-18 01:29:00.566631Z
+  eo:cloud_cover: 0.0
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 41.72189564
+  eo:sun_elevation: 44.76079751
+  fmask:clear: 0.006183280856200918
+  fmask:cloud: 0.0
+  fmask:cloud_shadow: 0.0
+  fmask:snow: 0.0
+  fmask:water: 99.99381671914381
+  gqa:abs_iterative_mean_x: .nan
+  gqa:abs_iterative_mean_xy: .nan
+  gqa:abs_iterative_mean_y: .nan
+  gqa:abs_x: .nan
+  gqa:abs_xy: .nan
+  gqa:abs_y: .nan
+  gqa:cep90: .nan
+  gqa:iterative_mean_x: .nan
+  gqa:iterative_mean_xy: .nan
+  gqa:iterative_mean_y: .nan
+  gqa:iterative_stddev_x: .nan
+  gqa:iterative_stddev_xy: .nan
+  gqa:iterative_stddev_y: .nan
+  gqa:mean_x: .nan
+  gqa:mean_xy: .nan
+  gqa:mean_y: .nan
+  gqa:stddev_x: .nan
+  gqa:stddev_xy: .nan
+  gqa:stddev_y: .nan
+  landsat:collection_category: T2
+  landsat:collection_number: 1
+  landsat:landsat_product_id: LC08_L1GT_107069_20200718_20200722_01_T2
+  landsat:landsat_scene_id: LC81070692020200LGN00
+  landsat:wrs_path: 107
+  landsat:wrs_row: 69
+  odc:dataset_version: 3.2.0
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2020-11-11 01:44:36.773207Z
+  odc:producer: ga.gov.au
+  odc:product_family: ard
+  odc:region_code: '107069'
+
+measurements:
+  nbar_blue:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band02.tif
+  nbar_coastal_aerosol:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band01.tif
+  nbar_green:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band03.tif
+  nbar_nir:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band05.tif
+  nbar_panchromatic:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band08.tif
+    grid: panchromatic
+  nbar_red:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band04.tif
+  nbar_swir_1:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band06.tif
+  nbar_swir_2:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_band07.tif
+  nbart_blue:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band02.tif
+  nbart_coastal_aerosol:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band01.tif
+  nbart_green:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band03.tif
+  nbart_nir:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band05.tif
+  nbart_panchromatic:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band08.tif
+    grid: panchromatic
+  nbart_red:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band04.tif
+  nbart_swir_1:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band06.tif
+  nbart_swir_2:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_band07.tif
+  oa_azimuthal_exiting:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_azimuthal-exiting.tif
+  oa_azimuthal_incident:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_azimuthal-incident.tif
+  oa_combined_terrain_shadow:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_combined-terrain-shadow.tif
+  oa_exiting_angle:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_exiting-angle.tif
+  oa_fmask:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_fmask.tif
+  oa_incident_angle:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_incident-angle.tif
+  oa_nbar_contiguity:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_nbar-contiguity.tif
+  oa_nbart_contiguity:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_nbart-contiguity.tif
+  oa_relative_azimuth:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_relative-azimuth.tif
+  oa_relative_slope:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_relative-slope.tif
+  oa_satellite_azimuth:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_satellite-azimuth.tif
+  oa_satellite_view:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_satellite-view.tif
+  oa_solar_azimuth:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_solar-azimuth.tif
+  oa_solar_zenith:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_solar-zenith.tif
+  oa_time_delta:
+    path: ga_ls8c_oa_3-2-0_107069_2020-07-18_final_time-delta.tif
+
+accessories:
+  thumbnail:nbart:
+    path: ga_ls8c_nbart_3-2-0_107069_2020-07-18_final_thumbnail.jpg
+  thumbnail:nbar:
+    path: ga_ls8c_nbar_3-2-0_107069_2020-07-18_final_thumbnail.jpg
+  checksum:sha1:
+    path: ga_ls8c_ard_3-2-0_107069_2020-07-18_final.sha1
+  metadata:processor:
+    path: ga_ls8c_ard_3-2-0_107069_2020-07-18_final.proc-info.yaml
+
+lineage:
+  level1:
+  - eaf3ef69-f813-59f7-836a-7cb0ed888d96
+...

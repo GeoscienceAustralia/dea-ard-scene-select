@@ -7,9 +7,8 @@ WORKDIR=workdir_$tag
 #tag=zip
 L1_LIST=s2_$tag.txt
 
-yamdir=''
-yamdir=" --yamls-dir /g/data/u46/users/${USER}/test_data/s2/autogen/yaml/2022/2022-01/"
-
+script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
+yamdir=" --yamls-dir $script_directory/test_data/integration_tests/s2/autogen/yaml/2022/2022-01/"
 
 #WORKDIR=/g/data/up71/tmp/s2_dass
 

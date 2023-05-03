@@ -1,0 +1,86 @@
+---
+# Dataset
+$schema: https://schemas.opendatacube.org/dataset
+id: bd8283cf-9215-5b96-a809-ba6c531a4bbb
+
+label: usgs_ls8c_level1_1-0-20201106_097068_2020-11-01
+product:
+  name: usgs_ls8c_level1_1
+  href: https://collections.dea.ga.gov.au/product/usgs_ls8c_level1_1
+
+crs: epsg:32655
+geometry:
+  type: Polygon
+  coordinates: [[[167563.5574275323, -1164621.1866437974], [167565.0, -1164615.0],
+      [351381.0900135181, -1202685.6246406771], [353324.2624897119, -1203109.55862778],
+      [354280.5450067591, -1203307.8123203386], [354397.5, -1203352.5], [314737.5,
+        -1395577.5], [314630.8312021059, -1395567.780750759], [314625.0, -1395585.0],
+      [128078.92183187892, -1357004.3778125853], [127727.35741372666, -1356895.061311837],
+      [127642.5, -1356877.5], [134347.81026367823, -1324309.464930512], [148087.81232033856,
+        -1257919.454993241], [163057.81447425988, -1185844.4446221616], [167467.81529370393,
+        -1164664.4406861884], [167497.5, -1164607.5], [167563.5574275323, -1164621.1866437974]]]
+grids:
+  default:
+    shape: [7701, 7571]
+    transform: [30.0, 0.0, 127485.0, 0.0, -30.0, -1164585.0, 0.0, 0.0, 1.0]
+  panchromatic:
+    shape: [15401, 15141]
+    transform: [15.0, 0.0, 127492.5, 0.0, -15.0, -1164592.5, 0.0, 0.0, 1.0]
+
+properties:
+  datetime: 2020-11-01 00:27:29.582756Z
+  eo:cloud_cover: 13.31
+  eo:gsd: 15.0  # Ground sample distance (m)
+  eo:instrument: OLI_TIRS
+  eo:platform: landsat-8
+  eo:sun_azimuth: 99.74096336
+  eo:sun_elevation: 66.06491636
+  landsat:collection_category: T2
+  landsat:collection_number: 1
+  landsat:data_type: L1GT
+  landsat:landsat_product_id: LC08_L1GT_097068_20201101_20201106_01_T2
+  landsat:landsat_scene_id: LC80970682020306LGN00
+  landsat:processing_software_version: LPGS_13.1.0
+  landsat:station_id: LGN
+  landsat:wrs_path: 97
+  landsat:wrs_row: 68
+  odc:dataset_version: 1.0.20201106
+  odc:file_format: GeoTIFF
+  odc:processing_datetime: 2020-11-06 11:00:12Z
+  odc:producer: usgs.gov
+  odc:product_family: level1
+  odc:region_code: '097068'
+
+measurements:
+  blue:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B2.TIF
+  cirrus:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B9.TIF
+  coastal_aerosol:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B1.TIF
+  green:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B3.TIF
+  lwir_1:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B10.TIF
+  lwir_2:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B11.TIF
+  nir:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B5.TIF
+  panchromatic:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B8.TIF
+    grid: panchromatic
+  quality:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_BQA.TIF
+  red:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B4.TIF
+  swir_1:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B6.TIF
+  swir_2:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_B7.TIF
+
+accessories:
+  metadata:landsat_mtl:
+    path: LC08_L1GT_097068_20201101_20201106_01_T2_MTL.txt
+
+lineage: {}
+...
