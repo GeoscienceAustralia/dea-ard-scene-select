@@ -111,13 +111,9 @@ def find_blocked(dc, product, scene_limit):
         ard_id = tmp_dataset.id
         ard_dataset = dc.index.datasets.get(ard_id, include_sources=True)
 
-        # pprint.pprint (ard_dataset.metadata_doc)
         l1_id = ard_dataset.metadata_doc["lineage"]["source_datasets"]["level1"]["id"]
         l1_ds = dc.index.datasets.get(l1_id)
 
-        # LOGGER.info("data", blocking_l1_ds=blocking_l1_id,
-        #     archive=ard_id,
-        #     l1_is_archived=blocking_l1_ds.is_archived)
         if l1_ds.is_archived:
             # All blocking l1s are archived.
             # l1s are archived for other reasons too though.
@@ -167,10 +163,6 @@ def move_blocked(
         for scene in blocked_scenes:
             # move the blocking ARD
             if dry_run:
-                LOGGER.info(
-                    "dry run: reprocess",
-                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
-                )
                 worked = True
                 status = None
                 outs = None

@@ -4,7 +4,8 @@
 # sudo service postgresql start
 
 ODCDB="${USER}_dev"
-TEST_DATA_REL="../test_data/ls9_reprocessing"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+TEST_DATA_REL="${SCRIPT_DIR}/../test_data/ls9_reprocessing"
 TEST_DATA=$(realpath "$TEST_DATA_REL")
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
@@ -13,7 +14,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   module load dea/20221025
 
-  ODCCONF="--config ${USER}_dev.conf"
+  ODCCONF="--config ${SCRIPT_DIR}/${USER}_dev.conf"
   host=deadev.nci.org.au
 else
   echo "not NCI"
@@ -25,8 +26,8 @@ fi
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "duncans laptop"
-  echo "conda activate odc2020"
-  ODCCONF="--config dsg547_dev_local.conf"
+  echo "conda activate /home/duncan/bin/miniconda3/envs/odc2020"
+  ODCCONF="--config ${SCRIPT_DIR}/dsg547_dev_local.conf"
   ODCDB="dsg547_dev"
   #export DATACUBE_ENVIRONMENT="$ODCDB"_local
 fi
@@ -48,7 +49,7 @@ mkdir -p $TEST_DATA/moved/
 mkdir -p $TEST_DATA/scratch/   # for test logs
 
 # clean up the database
-psql -h $host $USER -d ${ODCDB} -a -f db_delete_odc.sql
+psql -h $host $USER -d ${ODCDB} -a -f ${SCRIPT_DIR}/db_delete_odc.sql
 
 
 # Fill the database with scenes
@@ -109,14 +110,13 @@ echo $PYTHONPATH
 echo $PYTHONPATH
 
 # Doing this at the start messes with  $ODCCONF
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-export DATACUBE_CONFIG_PATH=$DIR/datacube.conf
+export DATACUBE_CONFIG_PATH=${SCRIPT_DIR}/datacube.conf
 export DATACUBE_ENVIRONMENT=$ODCDB
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
-  export DATACUBE_ENVIRONMENT="$ODCDB"_local
+  export DATACUBE_ENVIRONMENT="${ODCDB}_local"
 fi
 
 datacube system check
 
-pytest -s test_ard_reprocessed_l1s.py
+pytest -s ${SCRIPT_DIR}/test_ard_reprocessed_l1s.py
