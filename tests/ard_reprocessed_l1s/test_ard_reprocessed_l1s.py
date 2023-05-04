@@ -4,6 +4,9 @@ from pathlib import Path
 from click.testing import CliRunner
 import os.path
 import uuid
+from subprocess import check_output, STDOUT
+import pytest
+import os
 
 from scene_select.ard_reprocessed_l1s import ard_reprocessed_l1s, DIR_TEMPLATE
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
@@ -15,8 +18,25 @@ SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
 
 # orig_arl1s = ard_reprocessed_l1s.__wrapped__
 
+@pytest.fixture
+def set_up_dirs_and_db():
+    setup_script = Path(__file__).parent.joinpath("db_index.sh")
+    cmd = [setup_script]
+    try:
+        cmd_stdout = check_output(cmd, stderr=STDOUT, shell=True).decode()
+    except Exception as e:
+        print(e.output.decode()) # print out the stdout messages up to the exception
+        print(e) # To print out the exception message
+    print ('====================')
+    print (cmd_stdout)
+    print ('====================')
+    os.environ['DATACUBE_ENVIRONMENT'] = 'dsg547_dev_local'
+    os.environ['DATACUBE_CONFIG_PATH'] = str(Path(__file__).parent.joinpath("datacube.conf"))
 
-def test_scene_move():
+
+def test_scene_move(set_up_dirs_and_db):
+    """Test the scene move function."""
+
     current_base_path = REPROCESS_TEST_DIR
     new_base_path = REPROCESS_TEST_DIR.joinpath("moved")
     dry_run = False

@@ -7,6 +7,7 @@ ODCDB="${USER}_dev"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TEST_DATA_REL="${SCRIPT_DIR}/../test_data/ls9_reprocessing"
 TEST_DATA=$(realpath "$TEST_DATA_REL")
+
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
@@ -50,7 +51,6 @@ mkdir -p $TEST_DATA/scratch/   # for test logs
 
 # clean up the database
 psql -h $host $USER -d ${ODCDB} -a -f ${SCRIPT_DIR}/db_delete_odc.sql
-
 
 # Fill the database with scenes
 
@@ -102,21 +102,21 @@ datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/l1_Landsat_C2/095_0
 datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml
 
 
-SSPATH=$PWD/../..
+# SSPATH=$PWD/../..
 
-# so it uses the dev scene select
-echo $PYTHONPATH
-[[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
-echo $PYTHONPATH
+# # so it uses the dev scene select
+# echo $PYTHONPATH
+# [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+# echo $PYTHONPATH
 
-# Doing this at the start messes with  $ODCCONF
-export DATACUBE_CONFIG_PATH=${SCRIPT_DIR}/datacube.conf
-export DATACUBE_ENVIRONMENT=$ODCDB
+# # Doing this at the start messes with  $ODCCONF
+# export DATACUBE_CONFIG_PATH=${SCRIPT_DIR}/datacube.conf
+# export DATACUBE_ENVIRONMENT=$ODCDB
 
-if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
-  export DATACUBE_ENVIRONMENT="${ODCDB}_local"
-fi
+# if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
+#   export DATACUBE_ENVIRONMENT="${ODCDB}_local"
+# fi
 
-datacube system check
+# datacube system check
 
-pytest -s ${SCRIPT_DIR}/test_ard_reprocessed_l1s.py
+# pytest -s ${SCRIPT_DIR}/test_ard_reprocessed_l1s.py
