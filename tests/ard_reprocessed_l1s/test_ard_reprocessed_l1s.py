@@ -18,6 +18,7 @@ SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
 
 # orig_arl1s = ard_reprocessed_l1s.__wrapped__
 
+
 @pytest.fixture
 def set_up_dirs_and_db():
     setup_script = Path(__file__).parent.joinpath("db_index.sh")
@@ -25,13 +26,15 @@ def set_up_dirs_and_db():
     try:
         cmd_stdout = check_output(cmd, stderr=STDOUT, shell=True).decode()
     except Exception as e:
-        print(e.output.decode()) # print out the stdout messages up to the exception
-        print(e) # To print out the exception message
-    print ('====================')
-    print (cmd_stdout)
-    print ('====================')
-    os.environ['DATACUBE_ENVIRONMENT'] = 'dsg547_dev_local'
-    os.environ['DATACUBE_CONFIG_PATH'] = str(Path(__file__).parent.joinpath("datacube.conf"))
+        print(e.output.decode())  # print out the stdout messages up to the exception
+        print(e)  # To print out the exception message
+    print("====================")
+    print(cmd_stdout)
+    print("====================")
+    os.environ["DATACUBE_ENVIRONMENT"] = "dsg547_dev_local"
+    os.environ["DATACUBE_CONFIG_PATH"] = str(
+        Path(__file__).parent.joinpath("datacube.conf")
+    )
 
 
 def test_scene_move(set_up_dirs_and_db):
