@@ -26,12 +26,10 @@ from scene_select import utils
 
 AOI_FILE = "Australian_AOI.json"
 
-# DATA_DIR = Path(__file__).parent.joinpath("data")
 PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
 
 # Logging
-# LOG_CONFIG_FILE = "log_config.ini"
 GEN_LOG_FILE = "ard_scene_select.log"
 
 # LOGGER events
