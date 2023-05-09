@@ -33,7 +33,7 @@ def set_up_dirs_and_db():
     print("====================")
 
     # So the scene select call uses the correct DB
-    if "gadi" in os.environ["HOSTNAME"]:
+    if "HOSTNAME" in os.environ and "gadi" in os.environ["HOSTNAME"]:
         # Nobody call their system Brigadiers, ok.
         end_tag = "_dev"
     else:

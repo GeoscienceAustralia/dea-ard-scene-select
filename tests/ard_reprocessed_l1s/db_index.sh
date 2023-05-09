@@ -28,8 +28,8 @@ fi
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "duncans laptop"
   echo "conda activate /home/duncan/bin/miniconda3/envs/odc2020"
-  ODCCONF="--config ${SCRIPT_DIR}/dsg547_dev_local.conf"
-  ODCDB="dsg547_dev"
+  ODCCONF="--config ${SCRIPT_DIR}/duncan_local.conf"
+  ODCDB="${USER}_local"
   #export DATACUBE_ENVIRONMENT="$ODCDB"_local
 fi
 
