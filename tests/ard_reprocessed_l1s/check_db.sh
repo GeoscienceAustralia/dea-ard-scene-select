@@ -22,12 +22,8 @@ fi
 
 datacube  $ODCCONF product list # 
 
-
-
 echo product='usgs_ls9c_level1_2'
 datacube  $ODCCONF dataset search product='usgs_ls9c_level1_2' | grep '^id: '
 
 echo product='ga_ls9c_ard_3'
 datacube  $ODCCONF dataset search product='ga_ls9c_ard_3' | grep '^id: '
-
-

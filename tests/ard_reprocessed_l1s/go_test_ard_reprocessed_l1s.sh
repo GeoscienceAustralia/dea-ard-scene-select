@@ -16,9 +16,4 @@ echo $PYTHONPATH
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 echo $PYTHONPATH
 
-# Getting the scene select call to 
-# use the right database
-# export DATACUBE_CONFIG_PATH=$DIR/datacube.conf
-# export DATACUBE_ENVIRONMENT=$ODCDB
-
 python3 -m pytest test_ard_reprocessed_l1s.py

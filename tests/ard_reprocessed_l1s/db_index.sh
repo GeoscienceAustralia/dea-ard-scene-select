@@ -113,14 +113,3 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 export DATACUBE_CONFIG_PATH=$DIR/datacube.conf
 export DATACUBE_ENVIRONMENT=$ODCDB
 mkdir -p $DIR/scratch/   # for test logs
-# # Doing this at the start messes with  $ODCCONF
-# export DATACUBE_CONFIG_PATH=${SCRIPT_DIR}/datacube.conf
-# export DATACUBE_ENVIRONMENT=$ODCDB
-
-# if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
-#   export DATACUBE_ENVIRONMENT="${ODCDB}_local"
-# fi
-
-# datacube system check
-
-# pytest -s ${SCRIPT_DIR}/test_ard_reprocessed_l1s.py
