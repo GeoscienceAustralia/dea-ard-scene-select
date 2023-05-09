@@ -31,7 +31,14 @@ def set_up_dirs_and_db():
     print("====================")
     print(cmd_stdout)
     print("====================")
-    os.environ["DATACUBE_ENVIRONMENT"] = "dsg547_dev_local"
+
+    # So the scene select call uses the correct DB
+    if "gadi" in os.environ["HOSTNAME"]:
+        # Nobody call their system Brigadiers, ok.
+        end_tag = "_dev"
+    else:
+        end_tag = "_local"
+    os.environ["DATACUBE_ENVIRONMENT"] = f"{os.getenv('USER')}{end_tag}"
     os.environ["DATACUBE_CONFIG_PATH"] = str(
         Path(__file__).parent.joinpath("datacube.conf")
     )
