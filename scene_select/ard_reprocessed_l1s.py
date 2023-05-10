@@ -8,6 +8,7 @@ from logging.config import fileConfig
 import click
 from datetime import timedelta, datetime
 import pprint
+import uuid
 
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select import utils
@@ -323,10 +324,10 @@ def ard_reprocessed_l1s(
     # R0913: Too many arguments
     # R0914: Too many local variables
 
-    # logdir = Path(logdir).resolve()
+    logdir = Path(logdir).resolve()
     # If we write a file we write it in the job dir
     # set up the scene select job dir in the log dir
-    # jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
+    jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
 
     if not stop_logging:
