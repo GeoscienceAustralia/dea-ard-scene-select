@@ -20,7 +20,7 @@ else
   # datacube -v  $ODCCONF system init
 fi
 
-datacube  $ODCCONF product list # 
+datacube  $ODCCONF product list
 
 echo product='usgs_ls9c_level1_2'
 datacube  $ODCCONF dataset search product='usgs_ls9c_level1_2' | grep '^id: '

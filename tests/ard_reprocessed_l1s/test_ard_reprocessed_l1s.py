@@ -108,13 +108,15 @@ def test_scene_move(set_up_dirs_and_db):
 
     # uuids have been written to an archive file
     filename = jobdir.joinpath(ARCHIVE_FILE)
-    temp = open(filename, "r").read().splitlines()
+    with open(filename, "r", encoding="utf-8") as f:
+        temp = f.read().splitlines()
+
     assert sorted(
-        ["3de6cb49-60da-4160-802b-65903dcbbac8", "d9a499d1-1abd-4ed1-8411-d584ca45de25"]
+    ["3de6cb49-60da-4160-802b-65903dcbbac8", "d9a499d1-1abd-4ed1-8411-d584ca45de25"]
     ) == sorted(temp)
-    # The l1's have been written to a zip file
     filename = jobdir.joinpath(ODC_FILTERED_FILE)
-    temp = open(filename, "r").read().splitlines()
+    with open(filename, "r", encoding="utf-8") as f:
+        temp = f.read().splitlines()
     a_dir = REPROCESS_TEST_DIR.joinpath(
         "l1_Landsat_C2",
         "092_081",
@@ -130,4 +132,4 @@ def test_scene_move(set_up_dirs_and_db):
     assert sorted([str(a_dir), str(b_dir)]) == sorted(temp)
     # There is a run ard pbs file
     filename = jobdir.joinpath(PBS_ARD_FILE)
-    assert os.path.isfile(fname) == True
+    assert os.path.isfile(fname) is True
