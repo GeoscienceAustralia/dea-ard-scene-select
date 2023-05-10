@@ -6,7 +6,8 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/private/modules/modulefiles
 	module use /g/data/u46/users/$USER/devmodules/modulefiles
 
-	module load ard-scene-select-py3-dea/20220516
+	module load ard-scene-select-py3-dea/dev_20230510
+
 fi
 
 # Run the local scene select
@@ -25,10 +26,8 @@ mkdir -p "$SCRATCH"
 
 ARD_ENV="$DIR"/../prod/ard_env/prod-wagl-ls.env
 
-# The module scene-select
-# time ard-scene-select --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  \
-# --env $ARD_ENV  --products $PRODUCTS --scene-limit 999999 #--find-blocked
+# ard_reprocessed_l1s.py in this repo
+#time python3 "$DIR"/../../scene_select/ard_reprocessed_l1s.py --workdir "$SCRATCH"  --pkgdir  "$SCRATCH" --logdir "$SCRATCH" --project u46  --env $ARD_ENV  --scene-limit 1 --dry-run
 
-# Scene select in this repo
-time python3 "$DIR"/../../scene_select/ard_reprocessed_l1s.py --workdir "$SCRATCH"  --pkgdir  "$SCRATCH" --logdir "$SCRATCH" --project u46  \
---env $ARD_ENV  --scene-limit 1 --dry-run
+# ard-reprocessed-l1s module
+ard-reprocessed-l1s --workdir "$SCRATCH"  --pkgdir  "$SCRATCH" --logdir "$SCRATCH" --project u46  --env $ARD_ENV  --scene-limit 1 --dry-run
