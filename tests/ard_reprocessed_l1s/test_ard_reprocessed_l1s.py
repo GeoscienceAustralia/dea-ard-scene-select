@@ -112,7 +112,7 @@ def test_scene_move(set_up_dirs_and_db):
         temp = f.read().splitlines()
 
     assert sorted(
-    ["3de6cb49-60da-4160-802b-65903dcbbac8", "d9a499d1-1abd-4ed1-8411-d584ca45de25"]
+        ["3de6cb49-60da-4160-802b-65903dcbbac8", "d9a499d1-1abd-4ed1-8411-d584ca45de25"]
     ) == sorted(temp)
     filename = jobdir.joinpath(ODC_FILTERED_FILE)
     with open(filename, "r", encoding="utf-8") as f:

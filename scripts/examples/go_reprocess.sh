@@ -30,4 +30,4 @@ ARD_ENV="$DIR"/../prod/ard_env/prod-wagl-ls.env
 time python3 "$DIR"/../../scene_select/ard_reprocessed_l1s.py --workdir "$SCRATCH"  --pkgdir  "$SCRATCH" --logdir "$SCRATCH" --project u46  --env $ARD_ENV  --scene-limit 1 --dry-run
 
 # ard-reprocessed-l1s module
-#ard-reprocessed-l1s --workdir "$SCRATCH"  --pkgdir  "$SCRATCH" --logdir "$SCRATCH" --project u46  --env $ARD_ENV  --scene-limit 1 --dry-run
+# ard-reprocessed-l1s --workdir "$SCRATCH"  --pkgdir  "$SCRATCH" --logdir "$SCRATCH" --project u46  --env $ARD_ENV  --scene-limit 1 --dry-run
