@@ -10,5 +10,5 @@ if [[ $1 == "--prod" ]]; then
     ./package-module.sh "${2:-$(date +'%Y%m%d')}" --prod
 else
     # dev version
-    ./package-module.sh  dev_${2:-$(date +'%Y%m%d')}
+    ./package-module.sh  dev_${2:-$(date +'%Y%m%d')} ---not-prod
 fi

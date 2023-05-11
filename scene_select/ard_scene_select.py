@@ -26,12 +26,10 @@ from scene_select import utils
 
 AOI_FILE = "Australian_AOI.json"
 
-DATA_DIR = Path(__file__).parent.joinpath("data")
 PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
 
 # Logging
-LOG_CONFIG_FILE = "log_config.ini"
 GEN_LOG_FILE = "ard_scene_select.log"
 
 # LOGGER events
@@ -167,23 +165,6 @@ PROCESSING_PATTERN_MAPPING = {
     "esa_s2am_level1_0": S2_PATTERN,
     "esa_s2bm_level1_0": S2_PATTERN,
 }
-
-
-class PythonLiteralOption(click.Option):
-    """Load click value representing a Python list."""
-
-    def type_cast_value(self, ctx, value):
-        try:
-            value = str(value)
-            assert value.count("[") == 1
-            assert value.count("]") == 1
-            list_str = value.replace('"', "'").split("[")[1].split("]")[0]
-            l_items = [item.strip().strip("'") for item in list_str.split(",")]
-            if l_items == [""]:
-                l_items = []
-            return l_items
-        except Exception:
-            raise click.BadParameter(value)
 
 
 def load_aoi(file_name: Path) -> Dict:
@@ -421,7 +402,9 @@ def l1_filter(
     for l1_dataset in dc.index.datasets.search(product=l1_product):
         if sat_key == "ls":
             product_id = l1_dataset.metadata.landsat_product_id
-            choppedsceneid = utils.chopped_scene_id(l1_dataset.metadata.landsat_scene_id)
+            choppedsceneid = utils.chopped_scene_id(
+                l1_dataset.metadata.landsat_scene_id
+            )
         elif sat_key == "s2":
             product_id = l1_dataset.metadata.sentinel_tile_id
             # S2 has no eqivalent to a scene id
@@ -564,7 +547,7 @@ def l1_scenes_to_process(
 @click.option(
     "--allowed-codes",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    default=DATA_DIR.joinpath(AOI_FILE),
+    default=utils.DATA_DIR.joinpath(AOI_FILE),
     help="full path to a json file containing path/row and "
     "MGRS tiles to act as a area of interest filter",
 )
@@ -577,7 +560,7 @@ def l1_scenes_to_process(
 )
 @click.option(
     "--products",
-    cls=PythonLiteralOption,
+    cls=utils.PythonLiteralOption,
     type=list,
     help="List the ODC products to be processed. e.g."
     ' \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
@@ -617,7 +600,7 @@ Does not work for multigranule zip files.",
 )
 @click.option(
     "--days-to-exclude",
-    cls=PythonLiteralOption,
+    cls=utils.PythonLiteralOption,
     type=list,
     help="List of ranges of dates to not process, "
     "as (start date: end date) with format (yyyy-mm-dd:yyyy-mm-dd). e.g."
@@ -640,7 +623,7 @@ Does not work for multigranule zip files.",
 @click.option(
     "--log-config",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    default=DATA_DIR.joinpath(LOG_CONFIG_FILE),
+    default=utils.DATA_DIR.joinpath(utils.LOG_CONFIG_FILE),
     help="full path to the logging configuration file",
 )
 @click.option(
@@ -734,7 +717,6 @@ def scene_select(
     jobdir = logdir.joinpath(FMT2.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
 
-    # FIXME test this
     if not stop_logging:
         gen_log_file = jobdir.joinpath(GEN_LOG_FILE).resolve()
         fileConfig(

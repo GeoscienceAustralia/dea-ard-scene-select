@@ -29,6 +29,7 @@ setup(
         "console_scripts": [
             "ard-scene-select = scene_select.ard_scene_select:scene_select",
             "generate-aoi = scene_select.generate_aoi:generate_region",
+            "ard-reprocessed-l1s = scene_select.ard_reprocessed_l1s:ard_reprocessed_l1s",
         ]
     },
 )
