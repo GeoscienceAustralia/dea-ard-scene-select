@@ -7,7 +7,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 	module use /g/data/u46/users/$USER/devmodules/modulefiles
 
   #module load dea/20221025
-	module load ard-scene-select-py3-dea/dev_20230511
+  module load ard-scene-select-py3-dea/dev_20230511
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
