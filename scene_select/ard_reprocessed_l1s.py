@@ -327,7 +327,9 @@ def ard_reprocessed_l1s(
     logdir = Path(logdir).resolve()
     # If we write a file we write it in the job dir
     # set up the scene select job dir in the log dir
-    jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
+    if jobdir is None:
+        logdir = Path(logdir).resolve()
+        jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
 
     if not stop_logging:
