@@ -13,7 +13,7 @@ import structlog
 
 LOG = structlog.get_logger()
 BRDF_DEFINITIVE_START_DATE = datetime.datetime(2002, 7, 1)
-BRDF_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.006"
+BRDF_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061"
 WV_DIR = "/g/data/v10/eoancillarydata-2/water_vapour"
 WV_FMT = "pr_wtr.eatm.{year}.h5"
 
