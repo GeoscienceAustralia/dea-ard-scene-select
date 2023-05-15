@@ -52,7 +52,7 @@ def test_scene_move(set_up_dirs_and_db):
     dry_run = False
     product = "ga_ls9c_ard_3"
     logdir = SCRATCH_DIR
-    scene_limit = 1
+    scene_limit = 2
     run_ard = False
 
     # in bash
