@@ -5,7 +5,9 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
     module use /g/data/v10/public/modules/modulefiles
     module use /g/data/v10/private/modules/modulefiles
 
-    module load ard-scene-select-py3-dea/20211115
+    #module load ard-scene-select-py3-dea/20211115
+    module load ard-scene-select-py3-dea/20230515
+
     SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     SSPATH="$SCRIPT_DIR/../.."
 else
@@ -15,9 +17,9 @@ fi
 
 
 # so it uses the dev scene select
-#echo $PYTHONPATH
+# echo $PYTHONPATH
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
-#echo $PYTHONPATH
+# echo $PYTHONPATH
 
 scratch=scratch_ls
 mkdir -p $scratch
