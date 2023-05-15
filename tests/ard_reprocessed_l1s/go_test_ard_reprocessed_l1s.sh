@@ -10,6 +10,13 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   module load ard-scene-select-py3-dea/dev_20230511
 fi
 
+
+if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
+    echo "duncans laptop"
+    echo "conda activate /home/duncan/bin/miniconda3/envs/odc2020"
+    echo "sudo service postgresql start"
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SSPATH=$DIR/../..
 
