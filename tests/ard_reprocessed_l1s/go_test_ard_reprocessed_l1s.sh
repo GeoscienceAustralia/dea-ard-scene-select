@@ -8,7 +8,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   # Needed for pytest to be loaded
   module load dea/20221025
-  # module load ard-scene-select-py3-dea/dev_20230512
+  # module load ard-scene-select-py3-dea/dev_20230522
   # module load ard-scene-select-py3-dea/20230515
 fi
 
