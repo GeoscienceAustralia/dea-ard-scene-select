@@ -71,7 +71,7 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
             LOGGER.info(
                 "skipped l1 pairs with different chopped scene ids",
                 blocking_scene_id=blocking_scene_id,
-                previous_dataset_id=previous_dataset.id,
+                other_l1_id=previous_dataset.id,
                 blocking_l1_ds=dataset,
             )
             continue
@@ -83,8 +83,8 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
         if previous_date < blocking_date:
             LOGGER.info(
                 "skipped l1 pairs with blocked processing date less than blocking date",
-                blocking_scene_id=blocking_scene_id,
-                previous_dataset_id=previous_dataset.id,
+                blocking_l1_id=blocking_scene_id,
+                blocked_l1_id=previous_dataset.id,
                 blocking_l1_ds=dataset,
             )
             continue
@@ -92,7 +92,7 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
         LOGGER.info(
             "l1 pairs",
             blocking_scene_id=blocking_scene_id,
-            previous_dataset_id=previous_dataset.id,
+            blocked_l1_id=previous_dataset.id,
             blocking_l1_ds=dataset,
         )
 
@@ -135,7 +135,7 @@ def find_blocked(dc, product, scene_limit):
             )
             # pprint.pprint (blocked_l1[0].metadata_doc)
             LOGGER.info(
-                "reprocess",
+                "Found_blocked_l1",
                 blocked_l1_zip_path=blocked_l1_zip_path,
                 archive=str(ard_id),
             )
@@ -146,7 +146,12 @@ def find_blocked(dc, product, scene_limit):
                     "blocking_ard_zip_path": blocking_ard_zip_path,
                 }
             )
-        if len(blocked_scenes) > scene_limit:
+        if len(blocked_scenes) >= scene_limit:
+            LOGGER.info(
+                "scene_limit reached",
+                len_blocked_scenes=str(len(blocked_scenes)),
+                scene_limit=str(scene_limit),
+            )
             break
     return blocked_scenes
 
@@ -179,7 +184,7 @@ def move_blocked(
                 uuids2archive.append(scene["blocking_ard_id"])
 
                 LOGGER.info(
-                    "reprocess",
+                    "To reprocess",
                     blocking_ard_zip_path=scene["blocking_ard_zip_path"],
                     blocked_l1_zip_path=scene["blocked_l1_zip_path"],
                     blocking_ard_id=scene["blocking_ard_id"],

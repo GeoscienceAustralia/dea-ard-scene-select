@@ -4,8 +4,12 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
     echo "gadi - NCI"
     module use /g/data/v10/public/modules/modulefiles
     module use /g/data/v10/private/modules/modulefiles
+    module use /g/data/u46/users/$USER/devmodules/modulefiles
 
-    module load ard-scene-select-py3-dea/20221025
+    # Needed for pytest to be loaded
+    module load dea/20221025
+    # module load ard-scene-select-py3-dea/dev_20230522
+    # module load ard-scene-select-py3-dea/20230515
     
     SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     SSPATH="$SCRIPT_DIR/../.."
@@ -19,9 +23,9 @@ TEST_DATA="$script_directory/test_data/integration_tests/"
 yamdir=" --yamls-dir '$TEST_DATA'/s2/autogen/yaml "
 
 # so it uses the dev scene select
-#echo $PYTHONPATH
+# echo $PYTHONPATH
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
-#echo $PYTHONPATH
+# echo $PYTHONPATH
 
 scratch=scratch_s2
 mkdir -p $scratch
