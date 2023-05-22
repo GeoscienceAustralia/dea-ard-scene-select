@@ -6,8 +6,8 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/private/modules/modulefiles
 	module use /g/data/u46/users/$USER/devmodules/modulefiles
 
-	#module load ard-scene-select-py3-dea/dev_20230512
-	module load ard-scene-select-py3-dea/20230515
+	# module load ard-scene-select-py3-dea/dev_20230512
+	# module load ard-scene-select-py3-dea/20230515
 
 fi
 
@@ -15,9 +15,9 @@ fi
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 SSPATH="$DIR"/../..
-# #SSPATH=$script_directory
-# [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
-# # echo $PYTHONPATH
+#SSPATH=$script_directory
+[[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+# echo $PYTHONPATH
 
 SCRATCH="$DIR"/scratch/
 mkdir -p "$SCRATCH"
