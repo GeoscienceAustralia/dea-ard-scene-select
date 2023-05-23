@@ -19,15 +19,15 @@ mkdir -p $SCRATCH
 
 pkgdir=$SCRATCH/pkgdir$RANDOM
 mkdir -p $pkgdir
-echo $pkgdir
 
 PRODWAGLLS="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-ls.env"
+ENV_FILE="$DIR/index-test-odc.env"
 ard-scene-select  --config ${USER}_dev.conf \
---workdir $SCRATCH \
---pkgdir  $pkgdir \
---logdir $SCRATCH  \
- --env $PRODWAGLLS  \
- --index-datacube-env  $DIR"/index-test-odc.env" \
+   --workdir $SCRATCH \
+   --pkgdir  $pkgdir \
+   --logdir $SCRATCH  \
+   --env $PRODWAGLLS  \
+   --index-datacube-env $ENV_FILE \
    --products $PRODUCTS \
    --project u46 \
    --walltime 05:00:00 \
