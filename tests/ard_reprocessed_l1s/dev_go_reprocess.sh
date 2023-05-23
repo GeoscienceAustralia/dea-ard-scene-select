@@ -9,9 +9,11 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	echo If module load breaks check out a clean environment
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
-  	# module use /g/data/u46/users/$USER/devmodules/modulefiles
+  	
+	module use /g/data/u46/users/$USER/devmodules/modulefiles
 
-	module load ard-scene-select-py3-dea/20230522
+	module load ard-scene-select-py3-dea/dev_20230523
+	# module load ard-scene-select-py3-dea/20230522
 
 fi
 
