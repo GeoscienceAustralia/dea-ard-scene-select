@@ -79,6 +79,7 @@ else
 	else
    		dryrun=" "
 		runard="--run-ard"
+		#runard=""
 		# This is so scene select uses the dev database
 		export DATACUBE_CONFIG_PATH="${DIR}/datacube.conf"
 		export DATACUBE_ENVIRONMENT="${USER}_dev"
