@@ -131,8 +131,6 @@ def test_scene_move(set_up_dirs_and_db):
         "LC91020762022178",
         "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
     )
-    print(sorted([str(a_dir), str(b_dir)]))
-    print(sorted(temp))
     assert sorted([str(a_dir), str(b_dir)]) == sorted(temp)
     # There is a run ard pbs file
     filename = jobdir.joinpath(PBS_ARD_FILE)
