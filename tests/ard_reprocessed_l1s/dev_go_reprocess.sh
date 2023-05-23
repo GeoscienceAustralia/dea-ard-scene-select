@@ -9,11 +9,17 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	echo If module load breaks check out a clean environment
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
+<<<<<<< HEAD
   	
 	module use /g/data/u46/users/$USER/devmodules/modulefiles
 
 	module load ard-scene-select-py3-dea/dev_20230523
 	# module load ard-scene-select-py3-dea/20230522
+=======
+  	# module use /g/data/u46/users/$USER/devmodules/modulefiles
+
+	module load ard-scene-select-py3-dea/20230522
+>>>>>>> 94b1f72 (testing the ls9 reprocessing call script)
 
 fi
 
@@ -81,7 +87,6 @@ else
 	else
    		dryrun=" "
 		runard="--run-ard"
-		#runard=""
 		# This is so scene select uses the dev database
 		export DATACUBE_CONFIG_PATH="${DIR}/datacube.conf"
 		export DATACUBE_ENVIRONMENT="${USER}_dev"
