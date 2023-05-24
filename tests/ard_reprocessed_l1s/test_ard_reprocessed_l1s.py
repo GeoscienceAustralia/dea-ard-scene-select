@@ -122,14 +122,10 @@ def test_scene_move(set_up_dirs_and_db):
     else:
         base_location = REPROCESS_TEST_DIR.joinpath("l1_Landsat_C2")
     a_dir = base_location.joinpath(
-        "092_081",
-        "LC90920812022172",
-        "LC09_L1TP_092081_20220621_20220802_02_T1.tar",
+        "092_081", "LC90920812022172", "LC09_L1TP_092081_20220621_20220802_02_T1.tar",
     )
     b_dir = base_location.joinpath(
-        "102_076",
-        "LC91020762022178",
-        "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
+        "102_076", "LC91020762022178", "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
     )
     assert sorted([str(a_dir), str(b_dir)]) == sorted(temp)
     # There is a run ard pbs file
