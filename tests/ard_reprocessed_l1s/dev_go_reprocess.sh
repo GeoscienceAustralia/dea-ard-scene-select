@@ -22,19 +22,18 @@ fi
 if [ -z "$1" ]
   then
     echo "No argument supplied"
-	scenelimitvalue=400
+	scene_limit_value=400
 else
-	scenelimitvalue=$1
+	scene_limit_value=$1
 fi
 
 dry_run=" "
-runard="--run-ard"
+run_ard="--run-ard"
 ard_env="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-ls.env"
 index_arg="--index-datacube-env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/index-datacube.env"
 base_path="/g/data/xu18/ga/"
 new_base_path="/g/data/xu18/ga/reprocessing_staged_for_removal"
 
-scenelimit="--scene-limit $scenelimitvalue"
 project="v10"
 pkgdir="/g/data/xu18/ga"
 date=$(date '+%Y%m%d_%H%M%S')
@@ -55,12 +54,12 @@ if [ "$run" = "prod" ]; then
    	# This will use the production database when calling scene select
    	# A dry run is necessary to avoid trying to move production ARD.
 	dry_run="--dry-run"
-	runard=""
+	run_ard=""
 else
    	# This will use the dev database when calling scene select
    	# and indexing the ARD.
 
-	runard="--run-ard"
+	run_ard="--run-ard"
 
    	# Run the local scene select
 	DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -104,4 +103,7 @@ ard-reprocessed-l1s --walltime 10:00:00 \
 --env "$ard_env"  \
 --current-base-path $base_path \
 --new-base-path $new_base_path \
-$scenelimit $dryrun $runard $index_arg
+--scene-limit $scene_limit_value \
+$dry_run \
+$run_ard \
+$index_arg
