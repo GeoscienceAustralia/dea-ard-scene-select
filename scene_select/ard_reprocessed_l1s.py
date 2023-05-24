@@ -249,12 +249,6 @@ Does not work for multigranule zip files.",
     default=utils.LOG_CONFIG,
     help="full path to the logging configuration file",
 )
-@click.option(
-    "--yamls-dir",
-    type=PathPath(file_okay=False),
-    default="",
-    help="The base directory for level-1 dataset documents.",
-)
 @click.option("--stop-logging", default=False, is_flag=True, help="No logs.")
 @click.option("--walltime", help="Job walltime in `hh:mm:ss` format.")
 @click.option("--email", help="Notification email address.")
@@ -344,6 +338,11 @@ def ard_reprocessed_l1s(
             disable_existing_loggers=False,
             defaults={"genlogfilename": str(gen_log_file)},
         )
+
+    # logdir is used both  by scene select and ard
+    # So put it in the ard parameter dictionary
+    ard_click_params["logdir"] = logdir
+
     LOGGER.info("reprocessed_l1s", **locals())
     dc = datacube.Datacube(app=THIS_TASK)
 

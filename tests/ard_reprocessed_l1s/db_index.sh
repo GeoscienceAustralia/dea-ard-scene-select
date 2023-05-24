@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Note if running on NCI the l1 production data is used for the blocked l1s
+# so ARD processing can be tested
+
 # start a local postgres
 # sudo service postgresql start
 
@@ -77,7 +80,11 @@ datacube $ODCCONF dataset archive 4c68b81a-23a0-5e57-b983-96439fc4518c
 datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml
 # Add the l1 that is blocked by the ARD
 # blocked l1 91e7489e-f05a-5b7e-a96c-f0f0549bdd34
-datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml
+if [[ $HOSTNAME == *"gadi"* ]]; then
+    datacube $ODCCONF dataset add --no-verify-lineage /g/data/da82/AODH/USGS/L1/Landsat/C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml
+else
+    datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml
+fi
 
 # ---------------------
 # add and archive the l1 that produces the blocking ARD
@@ -90,7 +97,11 @@ datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/ga_ls9c_ard_3/102/0
 
 # Add the l1 that is blocked by the ARD
 # blocked l1 17ebb0d1-5a43-5088-a833-5b19e540d891
-datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml
+if [[ $HOSTNAME == *"gadi"* ]]; then
+    datacube $ODCCONF dataset add --no-verify-lineage /g/data/da82/AODH/USGS/L1/Landsat/C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml
+else
+    datacube $ODCCONF dataset add --no-verify-lineage $TEST_DATA/l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml
+fi
 # ---------------------
 # Add a non-blocking ARD
 # add the l1 level1:  a230aceb-528b-5895-a4d7-94226e172dcf

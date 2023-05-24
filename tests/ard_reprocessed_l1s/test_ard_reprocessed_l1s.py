@@ -117,19 +117,17 @@ def test_scene_move(set_up_dirs_and_db):
     filename = jobdir.joinpath(ODC_FILTERED_FILE)
     with open(filename, "r", encoding="utf-8") as f:
         temp = f.read().splitlines()
-    a_dir = REPROCESS_TEST_DIR.joinpath(
-        "l1_Landsat_C2",
-        "092_081",
-        "LC90920812022172",
-        "LC09_L1TP_092081_20220621_20220802_02_T1.tar",
+    if "HOSTNAME" in os.environ and "gadi" in os.environ["HOSTNAME"]:
+        base_location = Path("/g/data/da82/AODH/USGS/L1/Landsat/C2/")
+    else:
+        base_location = REPROCESS_TEST_DIR.joinpath("l1_Landsat_C2")
+    a_l1_tar = base_location.joinpath(
+        "092_081", "LC90920812022172", "LC09_L1TP_092081_20220621_20220802_02_T1.tar",
     )
-    b_dir = REPROCESS_TEST_DIR.joinpath(
-        "l1_Landsat_C2",
-        "102_076",
-        "LC91020762022178",
-        "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
+    b_l1_tar = base_location.joinpath(
+        "102_076", "LC91020762022178", "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
     )
-    assert sorted([str(a_dir), str(b_dir)]) == sorted(temp)
+    assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(temp)
     # There is a run ard pbs file
     filename = jobdir.joinpath(PBS_ARD_FILE)
     assert os.path.isfile(fname) is True

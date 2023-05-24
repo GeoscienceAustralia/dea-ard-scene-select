@@ -85,8 +85,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 	echo
 	echo "Installing ard-scene-select"
-	installrepo ard-scene-select module-prod https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
-	#installrepo ard-scene-select  DSNS-109-fix          https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+	
+	if [[ $2 == "--prod" ]]; then
+		installrepo ard-scene-select module-prod https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+	else
+		installrepo ard-scene-select  dsg_dev    https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+	fi
+	
 	echo
 	echo "Writing modulefile"
 	modulefile_dir="${module_dir}/modulefiles/${package_name}"
