@@ -30,8 +30,8 @@ ard-scene-select  --config ${USER}_dev.conf \
    --products $PRODUCTS \
    --project u46 \
    --walltime 05:00:00 \
-   #--run-ard #--index-datacube-env c3-samples-index-datacube.env
-   #--index-datacube-env $ENV_FILE \
+   --run-ard \
+   --index-datacube-env $ENV_FILE \
 
 
 PRODWAGLLS="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-s2.env"
@@ -44,5 +44,5 @@ ard-scene-select  --config ${USER}_dev.conf \
    --products $PRODUCTS \
    --project u46 \
    --walltime 05:00:00 \
-   #--run-ard #--index-datacube-env c3-samples-index-datacube.env
-   #--index-datacube-env $ENV_FILE \
+   --run-ard \
+   --index-datacube-env $ENV_FILE \
