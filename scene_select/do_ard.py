@@ -113,13 +113,14 @@ def do_ard(
     This function assumes a l1 zip file has been written to the jobdir.
     Though if you specify l1_zips in a list, and usgs_level1_files is None,
       it will write the file."""
+    LOGGER.info("do_ard", **locals())
     try:
         _calc_node_with_defaults(ard_click_params, l1_count)
     except ValueError as err:
         print(err.args)
         LOGGER.warning("ValueError", message=err.args)
 
-    if l1_zips is not None and len(l1_zips) > 0:
+    if l1_zips is not None and len(l1_zips) >= 0:
         assert usgs_level1_files is None
         # ODC_FILTERED_FILE
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
