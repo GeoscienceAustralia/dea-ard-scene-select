@@ -120,7 +120,7 @@ def do_ard(
         print(err.args)
         LOGGER.warning("ValueError", message=err.args)
 
-    if l1_zips is not None and len(l1_zips) >= 0:
+    if l1_zips is not None:
         assert usgs_level1_files is None
         # ODC_FILTERED_FILE
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
