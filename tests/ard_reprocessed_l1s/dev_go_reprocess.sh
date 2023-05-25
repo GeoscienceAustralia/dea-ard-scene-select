@@ -10,12 +10,7 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
   	
-	# remove for the production script
-	module use /g/data/u46/users/$USER/devmodules/modulefiles
-
-	# Update for the production script
-	module load ard-scene-select-py3-dea/dev_20230524
-	# module load ard-scene-select-py3-dea/20230522
+	module load ard-scene-select-py3-dea/20230524
 
 fi
 
@@ -44,6 +39,7 @@ basedir="/g/data/v10/work/ls_c3_ard/"
 # sed '/#\/\*/,/#\*\// d' dev_go_reprocess.sh > go_reprocess.sh
 # sed '/#\/\*/,/#\*\// d' landsat_c3/dev_go_reprocess.sh > landsat_c3/go_reprocess.sh
 
+echo "Do ./db_index.sh first, to initialise the dev ODC"
 project="u46"
 
 # To set up the dev ODC do ./db_index.sh 
