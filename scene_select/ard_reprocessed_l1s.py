@@ -122,7 +122,7 @@ def find_blocked(dc, product, scene_limit):
             # LOGGER.info("ARD with archived l1", blocking_l1=blocking_l1_id, archive=ard_id)
             blocked_l1 = find_blocked_l1_for_a_dataset(dc, l1_ds)
             # blocked_l1 is None or a list with one dataset.
-            if blocked_l1 is None:
+            if blocked_l1 is None or len(blocked_l1) == 0:
                 # Could not find an l1 that is being blocked.
                 continue
             # this is the yaml file
