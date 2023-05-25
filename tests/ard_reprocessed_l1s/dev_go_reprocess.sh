@@ -42,12 +42,21 @@ basedir="/g/data/v10/work/ls_c3_ard/"
 echo "Do ./db_index.sh first, to initialise the dev ODC"
 project="u46"
 
+# Write to this directory for log dir and work dir,
+# by modifying the basedir.
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+basedir="$DIR"/scratch
+# pkgdir needs to be writable
+pkgdir=$basedir/pkgdir$RANDOM
+
 # To set up the dev ODC do ./db_index.sh 
+
+# a dev run uses the dev database for scene select
+# a prod run uses the prod database for scene select
 # run ['dev'|'prod']
 run='dev'
 #run='prod'
 if [ "$run" = "prod" ]; then
-   	# This will use the production database when calling scene select
    	# A dry run is necessary to avoid trying to move production ARD.
 	dry_run="--dry-run"
 	run_ard=""
@@ -58,11 +67,6 @@ else
 	run_ard="--run-ard"
 
    	# Run the local scene select
-	DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-	basedir="$DIR"/scratch
-	pkgdir=$basedir/pkgdir$RANDOM
-
 	# This is so indexing the ARD uses the dev database
 	dev_index_env="${DIR}/index-test-odc.env"
 
