@@ -27,8 +27,22 @@ ard-scene-select  --config ${USER}_dev.conf \
    --pkgdir  $pkgdir \
    --logdir $SCRATCH  \
    --env $PRODWAGLLS  \
-   --index-datacube-env $ENV_FILE \
    --products $PRODUCTS \
    --project u46 \
    --walltime 05:00:00 \
-   --run-ard #--index-datacube-env c3-samples-index-datacube.env
+   #--run-ard #--index-datacube-env c3-samples-index-datacube.env
+   #--index-datacube-env $ENV_FILE \
+
+
+PRODWAGLLS="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-s2.env"
+PRODUCTS='["esa_s2am_level1_0"]'
+ard-scene-select  --config ${USER}_dev.conf \
+   --workdir $SCRATCH \
+   --pkgdir  $pkgdir \
+   --logdir $SCRATCH  \
+   --env $PRODWAGLLS  \
+   --products $PRODUCTS \
+   --project u46 \
+   --walltime 05:00:00 \
+   #--run-ard #--index-datacube-env c3-samples-index-datacube.env
+   #--index-datacube-env $ENV_FILE \
