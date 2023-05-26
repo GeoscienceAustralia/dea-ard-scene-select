@@ -32,7 +32,7 @@ mkdir -p $SCRATCH
 pkgdir=$SCRATCH/pkgdir$RANDOM
 mkdir -p $pkgdir
 
-PRODWAGLLS="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-ls.env"
+PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-ls.env"
 ENV_FILE="$DIR/index-test-odc.env"
 ard-scene-select $ODCCONF \
    --workdir $SCRATCH \
@@ -46,7 +46,7 @@ ard-scene-select $ODCCONF \
    --index-datacube-env $ENV_FILE \
 
 
-PRODWAGLLS="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-s2.env"
+PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
 PRODUCTS='["esa_s2am_level1_0"]'
 ard-scene-select $ODCCONF \
    --workdir $SCRATCH \
