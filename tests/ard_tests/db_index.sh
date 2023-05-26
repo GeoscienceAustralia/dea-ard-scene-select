@@ -61,5 +61,8 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
 
 # S2 - don't know where the tar is
+# id:
+# datacube $ODCCONF dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-01/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.odc-metadata.yaml
+
 # id: df4a46b0-258c-5d51-b48e-aeda4dd7de4e
-datacube $ODCCONF dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-01/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.odc-metadata.yaml
+datacube $ODCCONF dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.odc-metadata.yaml

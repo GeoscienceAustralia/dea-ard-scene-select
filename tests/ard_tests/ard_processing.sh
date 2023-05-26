@@ -42,7 +42,6 @@ ard-scene-select $ODCCONF \
    --products $PRODUCTS \
    --project u46 \
    --walltime 05:00:00 \
-   --yamls-dir $YAML_DIR \
    --run-ard \
    --index-datacube-env $ENV_FILE \
 
@@ -57,5 +56,6 @@ ard-scene-select $ODCCONF \
    --products $PRODUCTS \
    --project u46 \
    --walltime 05:00:00 \
+   --yamls-dir $YAML_DIR \
    --run-ard \
    --index-datacube-env $ENV_FILE \
