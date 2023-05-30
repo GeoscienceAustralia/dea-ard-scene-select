@@ -11,7 +11,6 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/private/modules/modulefiles
 
 	module load ard-scene-select-py3-dea/20230525
->>>>>>> 16adde5 (update modules, remove commented code)
 
 fi
 
