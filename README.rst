@@ -12,7 +12,6 @@ Branch Structure
 
    "master", "Stable code base"
    "production", "The branch used in production. It is the .env files that are used in production."
-   "develop", "The development branch."
    "module-prod", "The branch used to produce a module."
 
 ---
@@ -29,8 +28,8 @@ after cloning to make your life easier, automatically!
 
 ---
 
-Module creation
----------------
+Scene Select Module creation
+----------------------------
 Modules are built off the module-prod branch. Create an annotated tag to tag a module build.
 
 e.g.
@@ -48,6 +47,20 @@ To produce the module run this script;
 
 Change `echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"` to change the destination location of the module.
 
+Updating the ard_pipeline Modules
+---------------------------------
+To update the ard_pipeline modules update the .env files in;
+
+    dea-ard-scene-select/scripts/prod/ard_env
+
+Test that the modules work by doing a development run that produces and indexes ARD.
+This is done from dea-ard-scene-select/tests/ard_tests by running:
+
+    ./overall.sh
+
+To check that the ARD processing was successful run check_db.sh
+
+If this is successful then update the production branch with the new .env files.
 
 To update the .env files used in production manually git pull from the production branch at this location;
 

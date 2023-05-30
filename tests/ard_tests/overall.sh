@@ -3,4 +3,4 @@
 ./delete_odc.sh
 ./db_index.sh
 ./check_db.sh
-./landsat_processing.sh
+./ard_processing.sh
