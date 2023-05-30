@@ -10,7 +10,7 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
 
-	module load ard-scene-select-py3-dea/20230524
+	module load ard-scene-select-py3-dea/20230525
 
 fi
 
@@ -26,13 +26,13 @@ dry_run=" "
 run_ard="--run-ard"
 ard_env="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-ls.env"
 index_arg="--index-datacube-env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/index-datacube.env"
-base_path="/g/data/xu18/ga/"
-new_base_path="/g/data/xu18/ga/reprocessing_staged_for_removal"
+ard_path="/g/data/xu18/ga/"
+new_ard_path="/g/data/xu18/ga/reprocessing_staged_for_removal"
 
 project="v10"
 pkgdir="/g/data/xu18/ga"
-date=$(date '+%Y%m%d_%H%M%S')
-basedir="/g/data/v10/work/ls_c3_ard/"
+date=$(date '+%Y%m%dT%H%M%S')
+basedir="/g/data/v10/work/ls_c3_ard"
 
 # #/* The sed command below will remove this block of test code
 # and generate the production script called go_reprocess.sh
@@ -77,8 +77,8 @@ else
 	index_arg="--index-datacube-env $dev_index_env"
 	test_data_rel="${DIR}/../test_data/ls9_reprocessing"
 	test_data=$(realpath "$test_data_rel")
-	base_path=$test_data
-	new_base_path="$test_data/moved/"
+	ard_path=$test_data
+	new_ard_path="$test_data/moved/"
 
    # Need more info. It has to be just like an airflow prod run
    #index="--index "
@@ -87,8 +87,8 @@ fi
 
 mkdir -p "$pkgdir"
 # #*/ The end of the sed removed block of code
-logdir="$basedir/logdir/$date"
-workdir="$basedir/workdir/$date"
+logdir="$basedir/logdir/${date}_reprocess"
+workdir="$basedir/workdir/${date}_reprocess"
 
 mkdir -p "$logdir"
 mkdir -p "$workdir"
@@ -101,8 +101,8 @@ ard-reprocessed-l1s --walltime 10:00:00 \
 --workdir "$workdir" \
 --project "$project"  \
 --env "$ard_env"  \
---current-base-path $base_path \
---new-base-path $new_base_path \
+--current-base-path $ard_path \
+--new-base-path $new_ard_path \
 --scene-limit $scene_limit_value \
 $dry_run \
 $run_ard \
