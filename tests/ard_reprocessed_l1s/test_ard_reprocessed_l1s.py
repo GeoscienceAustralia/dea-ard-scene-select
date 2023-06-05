@@ -8,8 +8,11 @@ from subprocess import check_output, STDOUT
 import pytest
 import os
 
-from scene_select.ard_reprocessed_l1s import ard_reprocessed_l1s, DIR_TEMPLATE, \
-    move_blocked
+from scene_select.ard_reprocessed_l1s import (
+    ard_reprocessed_l1s,
+    DIR_TEMPLATE,
+    move_blocked,
+)
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
 REPROCESS_TEST_DIR = (
@@ -147,35 +150,38 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
 
 def test_move_blocked(set_up_dirs_and_db):
 
-    #"blocked_l1_zip_path": "/home/duncan/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.tar"
+    # "blocked_l1_zip_path": "/home/duncan/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.tar"
     # "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25"
     # "blocking_ard_zip_path": "/home/duncan/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/ga_ls9c_ard_3/102/076/2022/06/27/LC09_L1TP_102076_20220627_20220627_02_T1.tar"
     # blocking_ard_zip_path the file doesn't matter...I hope
     blocked_scenes = [
-                {
-                    "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
-                    "blocked_l1_zip_path": "not used",
-                    "blocking_ard_zip_path": old_fname_06_27,
-                }
+        {
+            "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
+            "blocked_l1_zip_path": "not used",
+            "blocking_ard_zip_path": old_fname_06_27,
+        }
     ]
-    l1_zips, uuids2archive = move_blocked(blocked_scenes, current_base_path.resolve(), new_base_path.resolve())
+    l1_zips, uuids2archive = move_blocked(
+        blocked_scenes, current_base_path.resolve(), new_base_path.resolve()
+    )
 
     # Assert the dir has been moved
     assert os.path.isfile(fname_06_27) == True
     assert len(l1_zips) == 1
     assert len(uuids2archive) == 1
 
-
     # Check that trying to move a dir that is already moved
     # doesn't cause an error
     blocked_scenes = [
-                {
-                    "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
-                    "blocked_l1_zip_path": "not used",
-                    "blocking_ard_zip_path": fname_06_27,
-                }
+        {
+            "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
+            "blocked_l1_zip_path": "not used",
+            "blocking_ard_zip_path": fname_06_27,
+        }
     ]
-    l1_zips, uuids2archive = move_blocked(blocked_scenes, current_base_path.resolve(), new_base_path.resolve())
+    l1_zips, uuids2archive = move_blocked(
+        blocked_scenes, current_base_path.resolve(), new_base_path.resolve()
+    )
 
     # Assert the dir ... is still there
     assert os.path.isfile(fname_06_27) == True

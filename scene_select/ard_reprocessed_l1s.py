@@ -161,7 +161,7 @@ def move_blocked(
     blocked_scenes: list,
     current_base_path: click.Path,
     new_base_path: click.Path,
-    dry_run: bool=False
+    dry_run: bool = False,
 ):
     l1_zips = []
     uuids2archive = []
@@ -190,9 +190,7 @@ def move_blocked(
                 errs = None
             else:
                 worked, status, outs, errs = utils.scene_move(
-                    Path(current_path),
-                    current_base_path,
-                    new_base_path,
+                    Path(current_path), current_base_path, new_base_path,
                 )
             if worked:
                 l1_zips.append(scene["blocked_l1_zip_path"])
