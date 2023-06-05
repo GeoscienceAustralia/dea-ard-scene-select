@@ -6,6 +6,11 @@
 # start a local postgres
 # sudo service postgresql start
 
+# I don't like this, but it is needed to get the correct datacube env
+# for the second time db_index is used.
+export -n DATACUBE_CONFIG_PATH
+export -n DATACUBE_ENVIRONMENT
+
 ODCDB="${USER}_dev"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TEST_DATA_REL="${SCRIPT_DIR}/../test_data/ls9_reprocessing"

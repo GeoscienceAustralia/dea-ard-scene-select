@@ -8,13 +8,40 @@ from subprocess import check_output, STDOUT
 import pytest
 import os
 
-from scene_select.ard_reprocessed_l1s import ard_reprocessed_l1s, DIR_TEMPLATE
+from scene_select.ard_reprocessed_l1s import ard_reprocessed_l1s, DIR_TEMPLATE, \
+    move_blocked
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
 REPROCESS_TEST_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
 )
 SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
+
+current_base_path = REPROCESS_TEST_DIR
+
+old_dir_06_27 = current_base_path.joinpath(
+    "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
+)
+old_fname_06_27 = old_dir_06_27.joinpath(
+    "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
+)
+
+new_base_path = REPROCESS_TEST_DIR.joinpath("moved")
+
+new_dir_06_21 = REPROCESS_TEST_DIR.joinpath(
+    "moved", "ga_ls9c_ard_3", "092", "081", "2022", "06", "21"
+)
+fname_06_21 = new_dir_06_21.joinpath(
+    "ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml"
+)
+
+new_dir_06_27 = REPROCESS_TEST_DIR.joinpath(
+    "moved", "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
+)
+fname_06_27 = new_dir_06_27.joinpath(
+    "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
+)
+# tar_name_06_27 = new_dir_06_27.joinpath("LC09_L1TP_102076_20220627_20220627_02_T1.tar")
 
 # orig_arl1s = ard_reprocessed_l1s.__wrapped__
 
@@ -44,11 +71,9 @@ def set_up_dirs_and_db():
     )
 
 
-def test_scene_move(set_up_dirs_and_db):
+def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     """Test the scene move function."""
 
-    current_base_path = REPROCESS_TEST_DIR
-    new_base_path = REPROCESS_TEST_DIR.joinpath("moved")
     dry_run = False
     product = "ga_ls9c_ard_3"
     logdir = SCRATCH_DIR
@@ -90,21 +115,8 @@ def test_scene_move(set_up_dirs_and_db):
 
     # Assert a few things
     # Two dirs have been moved
-    new_dir = REPROCESS_TEST_DIR.joinpath(
-        "moved", "ga_ls9c_ard_3", "092", "081", "2022", "06", "21"
-    )
-    fname = new_dir.joinpath(
-        "ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml"
-    )
-    assert os.path.isfile(fname) == True
-
-    new_dir = REPROCESS_TEST_DIR.joinpath(
-        "moved", "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
-    )
-    fname = new_dir.joinpath(
-        "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
-    )
-    assert os.path.isfile(fname) == True
+    assert os.path.isfile(fname_06_27) == True
+    assert os.path.isfile(fname_06_21) == True
 
     # uuids have been written to an archive file
     filename = jobdir.joinpath(ARCHIVE_FILE)
@@ -130,4 +142,42 @@ def test_scene_move(set_up_dirs_and_db):
     assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(temp)
     # There is a run ard pbs file
     filename = jobdir.joinpath(PBS_ARD_FILE)
-    assert os.path.isfile(fname) is True
+    assert os.path.isfile(filename) is True
+
+
+def test_move_blocked(set_up_dirs_and_db):
+
+    #"blocked_l1_zip_path": "/home/duncan/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.tar"
+    # "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25"
+    # "blocking_ard_zip_path": "/home/duncan/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/ga_ls9c_ard_3/102/076/2022/06/27/LC09_L1TP_102076_20220627_20220627_02_T1.tar"
+    # blocking_ard_zip_path the file doesn't matter...I hope
+    blocked_scenes = [
+                {
+                    "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
+                    "blocked_l1_zip_path": "not used",
+                    "blocking_ard_zip_path": old_fname_06_27,
+                }
+    ]
+    l1_zips, uuids2archive = move_blocked(blocked_scenes, current_base_path.resolve(), new_base_path.resolve())
+
+    # Assert the dir has been moved
+    assert os.path.isfile(fname_06_27) == True
+    assert len(l1_zips) == 1
+    assert len(uuids2archive) == 1
+
+
+    # Check that trying to move a dir that is already moved
+    # doesn't cause an error
+    blocked_scenes = [
+                {
+                    "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
+                    "blocked_l1_zip_path": "not used",
+                    "blocking_ard_zip_path": fname_06_27,
+                }
+    ]
+    l1_zips, uuids2archive = move_blocked(blocked_scenes, current_base_path.resolve(), new_base_path.resolve())
+
+    # Assert the dir ... is still there
+    assert os.path.isfile(fname_06_27) == True
+    assert len(l1_zips) == 1
+    assert len(uuids2archive) == 1
