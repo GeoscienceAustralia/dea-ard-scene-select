@@ -2,14 +2,6 @@
 # If a number is passed in it is assumed to be the scene limit
 # otherwise the default is 400
 
-#PBS -P v10
-#PBS -W umask=017
-#PBS -q express
-#PBS -l walltime=02:00:00,mem=155GB,other=pernodejobfs
-#PBS -l wd
-#PBS -l storage=gdata/v10+scratch/v10+gdata/if87+gdata/xu18+scratch/xu18+scratch/u46+gdata/u46
-#PBS -l ncpus=1
-
 set -o errexit
 set -o xtrace
 
@@ -46,6 +38,16 @@ basedir="/g/data/v10/work/ls_c3_ard"
 # and generate the production script called go_reprocess.sh
 # sed '/#\/\*/,/#\*\// d' dev_go_reprocess.sh > go_reprocess.sh
 # sed '/#\/\*/,/#\*\// d' landsat_c3/dev_go_reprocess.sh > landsat_c3/go_reprocess.sh
+ODCDB="${USER}_dev"
+if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
+  echo "duncans laptop"
+  echo "conda activate /home/duncan/bin/miniconda3/envs/odc2020"
+  echo "sudo service postgresql start"
+  echo "This env does not have hd5, so do not do ARD processing"
+  ODCCONF="--config ${SCRIPT_DIR}/${USER}_local.conf"
+  ODCDB="${USER}_local"
+  #export DATACUBE_ENVIRONMENT="$ODCDB"_local
+fi
 
 echo "Do ./db_index.sh first, to initialise the dev ODC"
 project="u46"
@@ -72,9 +74,10 @@ else
    	# This will use the dev database when calling scene select
    	# and indexing the ARD.
 
-	# By commenting this out the state will be messed up
+	# By not running ard the state will be messed up
 	# Moved ARD that hasn't been indexed.
 	# run_ard="--run-ard"
+	run_ard=""
 
    	# Run the local scene select
 	# This is so indexing the ARD uses the dev database
@@ -82,7 +85,7 @@ else
 
 	# This is so scene select uses the dev database
 	export DATACUBE_CONFIG_PATH="${DIR}/datacube.conf"
-	export DATACUBE_ENVIRONMENT="${USER}_dev"
+	export DATACUBE_ENVIRONMENT="$ODCDB"
 	
 	index_arg="--index-datacube-env $dev_index_env"
 	test_data_rel="${DIR}/../test_data/ls9_reprocessing"
@@ -103,17 +106,19 @@ workdir="$basedir/workdir/${date}_reprocess"
 mkdir -p "$logdir"
 mkdir -p "$workdir"
 
+# Run the dev script
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SSPATH="$SCRIPT_DIR/../.."
 
-# ard-reprocessed-l1s module
-ard-reprocessed-l1s --walltime 10:00:00 \
+python3 $SSPATH/scene_select/ard_reprocessed_l1s.py --walltime 10:00:00 \
 --pkgdir  "$pkgdir" \
 --logdir "$logdir"  \
 --workdir "$workdir" \
 --project "$project"  \
---env "$ard_env"  \
 --current-base-path $ard_path \
 --new-base-path $new_ard_path \
 --scene-limit $scene_limit_value \
 $dry_run \
 $run_ard \
-$index_arg
+$index_arg \
+#--env "$ard_env"  \

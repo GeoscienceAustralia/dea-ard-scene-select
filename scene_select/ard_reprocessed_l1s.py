@@ -137,6 +137,7 @@ def find_blocked(dc, product, scene_limit):
             LOGGER.info(
                 "Found_blocked_l1",
                 blocked_l1_zip_path=blocked_l1_zip_path,
+                blocking_ard_zip_path=blocking_ard_zip_path,
                 archive=str(ard_id),
             )
             blocked_scenes.append(
@@ -157,27 +158,39 @@ def find_blocked(dc, product, scene_limit):
 
 
 def move_blocked(
-    blocked_scenes: dict,
+    blocked_scenes: list,
     current_base_path: click.Path,
     new_base_path: click.Path,
-    dry_run: bool,
+    dry_run: bool = False,
 ):
     l1_zips = []
     uuids2archive = []
     if len(blocked_scenes) > 0:
         # move the blocked scenes
         for scene in blocked_scenes:
+            current_path = scene["blocking_ard_zip_path"]
+            # Check if the blocked ARD is already in the new location
+            # If it is then we don't need to move it
+            # But it still needs to be archived and reprocessed
+            if str(new_base_path) in str(current_path):
+                LOGGER.warning(
+                    "blocked ARD already in new location",
+                    current_path=current_path,
+                    new_base_path=new_base_path,
+                )
+                moved = True
+            else:
+                moved = False
+
             # move the blocking ARD
-            if dry_run:
+            if dry_run or moved:
                 worked = True
                 status = None
                 outs = None
                 errs = None
             else:
                 worked, status, outs, errs = utils.scene_move(
-                    Path(scene["blocking_ard_zip_path"]),
-                    current_base_path,
-                    new_base_path,
+                    Path(current_path), current_base_path, new_base_path,
                 )
             if worked:
                 l1_zips.append(scene["blocked_l1_zip_path"])
