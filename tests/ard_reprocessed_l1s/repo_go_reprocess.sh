@@ -9,8 +9,10 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	echo If module load breaks check out a clean environment
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
+    module use /g/data/u46/users/$USER/devmodules/modulefiles
 
-	module load ard-scene-select-py3-dea/20230525
+    # module load ard-scene-select-py3-dea/dev_20230606
+	module load ard-scene-select-py3-dea/20230606
 
 fi
 
@@ -64,8 +66,8 @@ pkgdir=$basedir/pkgdir$RANDOM
 # a dev run uses the dev database for scene select
 # a prod run uses the prod database for scene select
 # run ['dev'|'prod']
-run='dev'
-#run='prod'
+#run='dev'
+run='prod'
 if [ "$run" = "prod" ]; then
    	# A dry run is necessary to avoid trying to move production ARD.
 	dry_run="--dry-run"
