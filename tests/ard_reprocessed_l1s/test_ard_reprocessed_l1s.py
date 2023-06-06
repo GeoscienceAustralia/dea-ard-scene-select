@@ -75,7 +75,7 @@ def set_up_dirs_and_db():
 
 
 def test_ard_reprocessed_l1s(set_up_dirs_and_db):
-    """Test the scene move function."""
+    """Test the ard_reprocessed_l1s function."""
 
     dry_run = False
     product = "ga_ls9c_ard_3"
