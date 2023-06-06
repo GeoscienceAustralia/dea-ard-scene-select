@@ -18,7 +18,7 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
 
-	module load ard-scene-select-py3-dea/20230525
+	module load ard-scene-select-py3-dea/20230606
 
 fi
 
@@ -70,11 +70,7 @@ if [ "$run" = "prod" ]; then
 	run_ard=""
 else
    	# This will use the dev database when calling scene select
-   	# and indexing the ARD.
-
-	# By commenting this out the state will be messed up
-	# Moved ARD that hasn't been indexed.
-	# run_ard="--run-ard"
+	# and index the ARD.
 
    	# Run the local scene select
 	# This is so indexing the ARD uses the dev database

@@ -182,6 +182,18 @@ def move_blocked(
             else:
                 moved = False
 
+            # Check if the location directory from the ODC exists
+            # It may not due to certain types of failures.
+            if not Path(current_path).parent.exists():
+                # If it is not then assume we don't need to move it
+                # But it still needs to be archived and reprocessed
+                LOGGER.warning(
+                    "blocked ARD location incorrect",
+                    current_path=current_path,
+                    new_base_path=new_base_path,
+                )
+                moved = True
+
             # move the blocking ARD
             if dry_run or moved:
                 worked = True
