@@ -166,7 +166,7 @@ def test_move_blocked(set_up_dirs_and_db):
     )
 
     # Assert the dir has been moved
-    assert os.path.isfile(fname_06_27) == True
+    assert os.path.isfile(fname_06_27)
     assert len(l1_zips) == 1
     assert len(uuids2archive) == 1
 
@@ -184,6 +184,6 @@ def test_move_blocked(set_up_dirs_and_db):
     )
 
     # Assert the dir ... is still there
-    assert os.path.isfile(fname_06_27) == True
+    assert os.path.isfile(fname_06_27)
     assert len(l1_zips) == 1
     assert len(uuids2archive) == 1
