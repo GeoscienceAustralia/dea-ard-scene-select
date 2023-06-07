@@ -8,6 +8,7 @@ from subprocess import check_output, STDOUT
 import pytest
 import os
 
+import datacube
 from scene_select.ard_reprocessed_l1s import (
     ard_reprocessed_l1s,
     DIR_TEMPLATE,
@@ -25,7 +26,7 @@ current_base_path = REPROCESS_TEST_DIR
 old_dir_06_27 = current_base_path.joinpath(
     "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
 )
-old_fname_06_27 = old_dir_06_27.joinpath(
+old_yaml_fname_06_27 = old_dir_06_27.joinpath(
     "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
 )
 
@@ -41,13 +42,15 @@ fname_06_21 = new_dir_06_21.joinpath(
 new_dir_06_27 = REPROCESS_TEST_DIR.joinpath(
     "moved", "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
 )
-fname_06_27 = new_dir_06_27.joinpath(
+yaml_fname_06_27 = new_dir_06_27.joinpath(
     "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
 )
+ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 # tar_name_06_27 = new_dir_06_27.joinpath("LC09_L1TP_102076_20220627_20220627_02_T1.tar")
 
 # orig_arl1s = ard_reprocessed_l1s.__wrapped__
 
+dc = datacube.Datacube(app="test_ard_reprocessed_l1s")
 
 @pytest.fixture
 def set_up_dirs_and_db():
@@ -118,7 +121,7 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
 
     # Assert a few things
     # Two dirs have been moved
-    assert os.path.isfile(fname_06_27) == True
+    assert os.path.isfile(yaml_fname_06_27) == True
     assert os.path.isfile(fname_06_21) == True
 
     # uuids have been written to an archive file
@@ -156,9 +159,9 @@ def test_move_blocked(set_up_dirs_and_db):
     # blocking_ard_zip_path the file doesn't matter...I hope
     blocked_scenes = [
         {
-            "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
+            "blocking_ard_id": ard_id_06_27,
             "blocked_l1_zip_path": "not used",
-            "blocking_ard_zip_path": old_fname_06_27,
+            "blocking_ard_zip_path": old_yaml_fname_06_27,
         }
     ]
     l1_zips, uuids2archive = move_blocked(
@@ -166,17 +169,25 @@ def test_move_blocked(set_up_dirs_and_db):
     )
 
     # Assert the dir has been moved
-    assert os.path.isfile(fname_06_27)
+    assert os.path.isfile(yaml_fname_06_27)
     assert len(l1_zips) == 1
     assert len(uuids2archive) == 1
+    ard_dataset = dc.index.datasets.get(ard_id_06_27)
+    local_path = Path(ard_dataset.local_path).resolve().parent
+    print("local_path")
+    print(local_path)
+    print("yaml_fname_06_27.parent")
+    print(yaml_fname_06_27.parent)
+    assert str(local_path) == str(yaml_fname_06_27.parent)
+
 
     # Check that trying to move a dir that is already moved
     # doesn't cause an error
     blocked_scenes = [
         {
-            "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25",
+            "blocking_ard_id": ard_id_06_27,
             "blocked_l1_zip_path": "not used",
-            "blocking_ard_zip_path": fname_06_27,
+            "blocking_ard_zip_path": yaml_fname_06_27,
         }
     ]
     l1_zips, uuids2archive = move_blocked(
@@ -184,6 +195,6 @@ def test_move_blocked(set_up_dirs_and_db):
     )
 
     # Assert the dir ... is still there
-    assert os.path.isfile(fname_06_27)
+    assert os.path.isfile(yaml_fname_06_27)
     assert len(l1_zips) == 1
     assert len(uuids2archive) == 1
