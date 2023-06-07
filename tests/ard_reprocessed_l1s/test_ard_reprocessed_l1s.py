@@ -48,9 +48,6 @@ yaml_fname_06_27 = new_dir_06_27.joinpath(
 ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 # tar_name_06_27 = new_dir_06_27.joinpath("LC09_L1TP_102076_20220627_20220627_02_T1.tar")
 
-# orig_arl1s = ard_reprocessed_l1s.__wrapped__
-
-dc = datacube.Datacube(app="test_ard_reprocessed_l1s")
 
 @pytest.fixture
 def set_up_dirs_and_db():
@@ -172,6 +169,9 @@ def test_move_blocked(set_up_dirs_and_db):
     assert os.path.isfile(yaml_fname_06_27)
     assert len(l1_zips) == 1
     assert len(uuids2archive) == 1
+    dc = datacube.Datacube(
+        app="test_ard_reprocessed_l1s", config=str(os.getenv("DATACUBE_CONFIG_PATH"))
+    )
     ard_dataset = dc.index.datasets.get(ard_id_06_27)
     local_path = Path(ard_dataset.local_path).resolve().parent
     print("local_path")
@@ -179,7 +179,6 @@ def test_move_blocked(set_up_dirs_and_db):
     print("yaml_fname_06_27.parent")
     print(yaml_fname_06_27.parent)
     assert str(local_path) == str(yaml_fname_06_27.parent)
-
 
     # Check that trying to move a dir that is already moved
     # doesn't cause an error
