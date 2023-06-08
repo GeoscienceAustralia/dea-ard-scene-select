@@ -66,8 +66,8 @@ pkgdir=$basedir/pkgdir$RANDOM
 # a dev run uses the dev database for scene select
 # a prod run uses the prod database for scene select
 # run ['dev'|'prod']
-#run='dev'
-run='prod'
+run='dev'
+#run='prod'
 if [ "$run" = "prod" ]; then
    	# A dry run is necessary to avoid trying to move production ARD.
 	dry_run="--dry-run"
