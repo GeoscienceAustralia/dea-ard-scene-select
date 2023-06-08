@@ -28,4 +28,4 @@ SSPATH=$DIR/../..
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 # echo $PYTHONPATH
 
-python3 -m pytest -s test_ard_reprocessed_l1s.py  -k test_ard_reprocessed_l1s
+python3 -m pytest -s test_ard_reprocessed_l1s.py # -k test_ard_reprocessed_l1s

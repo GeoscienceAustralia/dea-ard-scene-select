@@ -175,7 +175,7 @@ def test_move_blocked(set_up_dirs_and_db):
         {
             "blocking_ard_id": ard_id_06_27,
             "blocked_l1_zip_path": "not used",
-            "blocking_ard_zip_path": old_yaml_fname_06_27,
+            "blocking_ard_path": old_yaml_fname_06_27,
         }
     ]
     l1_zips, uuids2archive = move_blocked(
@@ -203,7 +203,7 @@ def test_move_blocked(set_up_dirs_and_db):
         {
             "blocking_ard_id": ard_id_06_27,
             "blocked_l1_zip_path": "not used",
-            "blocking_ard_zip_path": yaml_fname_06_27,
+            "blocking_ard_path": yaml_fname_06_27,
         }
     ]
     l1_zips, uuids2archive = move_blocked(
