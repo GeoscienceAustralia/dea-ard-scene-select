@@ -46,12 +46,6 @@ yaml_fname_06_27 = new_dir_06_27.joinpath(
     "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
 )
 ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
-# tar_name_06_27 = new_dir_06_27.joinpath("LC09_L1TP_102076_20220627_20220627_02_T1.tar")
-# example from logs
-# "blocking_ard_zip_path": "/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/ga_ls9c_ard_3/102/076/2022/06/27/LC09_L1TP_102076_20220627_20220627_02_T1.tar"
-tar_fname_06_27 = new_dir_06_27.joinpath(
-    "LC09_L1TP_102076_20220627_20220627_02_T1.tar"
-)
 
 @pytest.fixture
 def set_up_dirs_and_db():
