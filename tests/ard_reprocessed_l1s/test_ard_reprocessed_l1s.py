@@ -47,6 +47,7 @@ yaml_fname_06_27 = new_dir_06_27.joinpath(
 )
 ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 
+
 @pytest.fixture
 def set_up_dirs_and_db():
     setup_script = Path(__file__).parent.joinpath("db_index.sh")
