@@ -131,10 +131,11 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     )
     ard_dataset = dc.index.datasets.get(ard_id_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
-    print("local_path")
-    print(local_path)
-    print("yaml_fname_06_27")
-    print(yaml_fname_06_27)
+    # These look wrong. No idea why
+    # print("local_path")
+    # print(local_path)
+    # print("yaml_fname_06_27")
+    # print(yaml_fname_06_27)
     assert str(local_path) == str(yaml_fname_06_27)
 
     # uuids have been written to an archive file
