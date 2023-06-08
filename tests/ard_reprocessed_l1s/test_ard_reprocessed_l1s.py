@@ -47,7 +47,11 @@ yaml_fname_06_27 = new_dir_06_27.joinpath(
 )
 ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 # tar_name_06_27 = new_dir_06_27.joinpath("LC09_L1TP_102076_20220627_20220627_02_T1.tar")
-
+# example from logs
+# "blocking_ard_zip_path": "/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/ga_ls9c_ard_3/102/076/2022/06/27/LC09_L1TP_102076_20220627_20220627_02_T1.tar"
+tar_fname_06_27 = new_dir_06_27.joinpath(
+    "LC09_L1TP_102076_20220627_20220627_02_T1.tar"
+)
 
 @pytest.fixture
 def set_up_dirs_and_db():
@@ -120,6 +124,18 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     # Two dirs have been moved
     assert os.path.isfile(yaml_fname_06_27) == True
     assert os.path.isfile(fname_06_21) == True
+
+    # Assert the ODC location info is correct
+    dc = datacube.Datacube(
+        app="test_ard_reprocessed_l1s", config=str(os.getenv("DATACUBE_CONFIG_PATH"))
+    )
+    ard_dataset = dc.index.datasets.get(ard_id_06_27)
+    local_path = Path(ard_dataset.local_path).resolve()
+    print("local_path")
+    print(local_path)
+    print("yaml_fname_06_27")
+    print(yaml_fname_06_27)
+    assert str(local_path) == str(yaml_fname_06_27)
 
     # uuids have been written to an archive file
     filename = jobdir.joinpath(ARCHIVE_FILE)
