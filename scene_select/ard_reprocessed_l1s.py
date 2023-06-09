@@ -130,21 +130,19 @@ def find_blocked(dc, product, scene_limit):
             blocked_l1_zip_path = utils.calc_file_path(
                 blocked_l1[0], blocked_l1[0].metadata.landsat_product_id
             )
-            blocking_ard_zip_path = utils.calc_file_path(
-                ard_dataset, ard_dataset.metadata.landsat_product_id
-            )
+            blocking_ard_path = ard_dataset.local_path
             # pprint.pprint (blocked_l1[0].metadata_doc)
             LOGGER.info(
                 "Found_blocked_l1",
                 blocked_l1_zip_path=blocked_l1_zip_path,
-                blocking_ard_zip_path=blocking_ard_zip_path,
+                blocking_ard_path=blocking_ard_path,
                 archive=str(ard_id),
             )
             blocked_scenes.append(
                 {
                     "blocking_ard_id": str(ard_id),
                     "blocked_l1_zip_path": blocked_l1_zip_path,
-                    "blocking_ard_zip_path": blocking_ard_zip_path,
+                    "blocking_ard_path": blocking_ard_path,
                 }
             )
         if len(blocked_scenes) >= scene_limit:
@@ -168,7 +166,7 @@ def move_blocked(
     if len(blocked_scenes) > 0:
         # move the blocked scenes
         for scene in blocked_scenes:
-            current_path = scene["blocking_ard_zip_path"]
+            current_path = scene["blocking_ard_path"]
             # Check if the blocked ARD is already in the new location
             # If it is then we don't need to move it
             # But it still needs to be archived and reprocessed
@@ -210,7 +208,7 @@ def move_blocked(
 
                 LOGGER.info(
                     "To reprocess",
-                    blocking_ard_zip_path=scene["blocking_ard_zip_path"],
+                    blocking_ard_path=scene["blocking_ard_path"],
                     blocked_l1_zip_path=scene["blocked_l1_zip_path"],
                     blocking_ard_id=scene["blocking_ard_id"],
                 )
