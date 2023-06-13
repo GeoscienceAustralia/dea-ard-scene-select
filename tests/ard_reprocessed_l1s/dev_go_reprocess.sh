@@ -1,6 +1,7 @@
 #!/bin/bash
 # If a number is passed in it is assumed to be the scene limit
-# otherwise the default is 400
+# otherwise a default is used.
+# When using qsub a number can not be passed in.
 
 #PBS -P v10
 #PBS -W umask=017
