@@ -117,8 +117,8 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
 
     # Assert a few things
     # Two dirs have been moved
-    assert os.path.isfile(yaml_fname_06_27) == True
-    assert os.path.isfile(fname_06_21) == True
+    assert os.path.isfile(yaml_fname_06_27), "The yaml file has been moved"
+    assert os.path.isfile(fname_06_21), "The yaml file has been moved, for a different scene"
 
     # Assert the ODC location info is correct
     dc = datacube.Datacube(
@@ -126,7 +126,7 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     )
     ard_dataset = dc.index.datasets.get(ard_id_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
-    assert str(local_path) == str(yaml_fname_06_27)
+    assert str(local_path) == str(yaml_fname_06_27), "The OCD ARD path has been updated"
 
     # uuids have been written to an archive file
     filename = jobdir.joinpath(ARCHIVE_FILE)
@@ -135,7 +135,7 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
 
     assert sorted(
         ["3de6cb49-60da-4160-802b-65903dcbbac8", "d9a499d1-1abd-4ed1-8411-d584ca45de25"]
-    ) == sorted(temp)
+    ) == sorted(temp), "The correct uuids have been written to the archive file"
     filename = jobdir.joinpath(ODC_FILTERED_FILE)
     with open(filename, "r", encoding="utf-8") as f:
         temp = f.read().splitlines()
@@ -149,18 +149,18 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     b_l1_tar = base_location.joinpath(
         "102_076", "LC91020762022178", "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
     )
-    assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(temp)
-    # There is a run ard pbs file
+    assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(temp), \
+        "The correct l1 tars have been written to the scene select file"
+
     filename = jobdir.joinpath(PBS_ARD_FILE)
-    assert os.path.isfile(filename) is True
+    assert os.path.isfile(filename), "There is a run ard pbs file"
 
 
 def test_move_blocked(set_up_dirs_and_db):
+    """ Test the move_blocked function."""
 
-    # "blocked_l1_zip_path": "/home/duncan/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.tar"
-    # "blocking_ard_id": "d9a499d1-1abd-4ed1-8411-d584ca45de25"
-    # "blocking_ard_zip_path": "/home/duncan/sandbox/dea-ard-scene-select/tests/test_data/ls9_reprocessing/ga_ls9c_ard_3/102/076/2022/06/27/LC09_L1TP_102076_20220627_20220627_02_T1.tar"
-    # blocking_ard_zip_path the file doesn't matter...I hope
+    # Test the move_blocked function
+    # for a 'normal' case
     blocked_scenes = [
         {
             "blocking_ard_id": ard_id_06_27,
@@ -172,16 +172,21 @@ def test_move_blocked(set_up_dirs_and_db):
         blocked_scenes, current_base_path.resolve(), new_base_path.resolve()
     )
 
+    # Test that in the case that
+    # a move_blocked has occurred, but the
+    # ARD is still blocking
+    #  reprocessing will still occur
+    # since the l1 scene is in the l1 zip list
     # Assert the dir has been moved
-    assert os.path.isfile(yaml_fname_06_27)
-    assert len(l1_zips) == 1
-    assert len(uuids2archive) == 1
+    assert os.path.isfile(yaml_fname_06_27), "The yaml file has been moved"
+    assert len(l1_zips) == 1, "There should be one l1 zip"
+    assert len(uuids2archive) == 1, "There should be one uuid to archive"
     dc = datacube.Datacube(
         app="test_ard_reprocessed_l1s", config=str(os.getenv("DATACUBE_CONFIG_PATH"))
     )
     ard_dataset = dc.index.datasets.get(ard_id_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
-    assert str(local_path) == str(yaml_fname_06_27)
+    assert str(local_path) == str(yaml_fname_06_27), "The OCD ARD path has been updated"
 
     # Check that trying to move a dir that is already moved
     # doesn't cause an error
@@ -197,6 +202,6 @@ def test_move_blocked(set_up_dirs_and_db):
     )
 
     # Assert the dir ... is still there
-    assert os.path.isfile(yaml_fname_06_27)
-    assert len(l1_zips) == 1
-    assert len(uuids2archive) == 1
+    assert os.path.isfile(yaml_fname_06_27), "The yaml file is still there"
+    assert len(l1_zips) == 1, "There is 1 l1, so it will be reprocessed"
+    assert len(uuids2archive) == 1, "The blocking ard will be archived"
