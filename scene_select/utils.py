@@ -83,14 +83,14 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
 
     returning
         worked : bool if False then the move failed and the scene was not moved
-        status : Int From the database update call 0 is success
-        outs : str output from the database update call
-        errs  : str output from the database update call
+        cmd_results : A dict with the following keys
+            cmd : str the command that was run
+            status : Int From the database update call 0 is success
+            outs : str output from the database update call
+            errs  : str output from the database update call
     """
     worked = True
-    status = None
-    outs = None
-    errs = None
+    cmd_results = {}
 
     path_from_base = current_path.relative_to(current_base_path)
     dst = new_base_path / path_from_base
@@ -117,4 +117,5 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
             # Move the scene data back to the original location
             os.rename(dst.parent, src)
             worked = False
-    return worked, status, outs, errs
+        cmd_results ={"cmd": " ".join(cmd), "status": str(status), "outs": str(outs), "errs": str(errs)}
+    return worked, cmd_results

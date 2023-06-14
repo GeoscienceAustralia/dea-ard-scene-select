@@ -195,13 +195,13 @@ def move_blocked(
             # move the blocking ARD
             if dry_run or moved:
                 worked = True
-                status = None
-                outs = None
-                errs = None
+                cmd_results = {}
             else:
-                worked, status, outs, errs = utils.scene_move(
+                worked, cmd_results = utils.scene_move(
                     Path(current_path), current_base_path, new_base_path,
                 )
+                LOGGER.info(
+                    "scene_move",**cmd_results)
             if worked:
                 l1_zips.append(scene["blocked_l1_zip_path"])
                 uuids2archive.append(scene["blocking_ard_id"])
