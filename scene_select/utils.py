@@ -117,5 +117,10 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
             # Move the scene data back to the original location
             os.rename(dst.parent, src)
             worked = False
-        cmd_results ={"cmd": " ".join(cmd), "status": str(status), "outs": str(outs), "errs": str(errs)}
-    return worked, cmd_results
+        update_results = {
+            "cmd": " ".join(cmd),
+            "status": str(status),
+            "outs": str(outs),
+            "errs": str(errs),
+        }
+    return worked, update_results

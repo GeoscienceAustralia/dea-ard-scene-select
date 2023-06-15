@@ -118,7 +118,9 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     # Assert a few things
     # Two dirs have been moved
     assert os.path.isfile(yaml_fname_06_27), "The yaml file has been moved"
-    assert os.path.isfile(fname_06_21), "The yaml file has been moved, for a different scene"
+    assert os.path.isfile(
+        fname_06_21
+    ), "The yaml file has been moved, for a different scene"
 
     # Assert the ODC location info is correct
     dc = datacube.Datacube(
@@ -149,8 +151,9 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     b_l1_tar = base_location.joinpath(
         "102_076", "LC91020762022178", "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
     )
-    assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(temp), \
-        "The correct l1 tars have been written to the scene select file"
+    assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(
+        temp
+    ), "The correct l1 tars have been written to the scene select file"
 
     filename = jobdir.joinpath(PBS_ARD_FILE)
     assert os.path.isfile(filename), "There is a run ard pbs file"
