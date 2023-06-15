@@ -18,6 +18,17 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 LOG_CONFIG_FILE = "log_config.ini"
 LOG_CONFIG = DATA_DIR.joinpath(LOG_CONFIG_FILE)
 
+INSIGNIFICANT_DIGITS_FIX = [
+    "--allow-any",
+    "extent.lon.end",
+    "--allow-any",
+    "extent.lon.begin",
+    "--allow-any",
+    "extent.lat.end",
+    "--allow-any",
+    "extent.lat.begin",
+]
+
 
 def calc_file_path(l1_dataset, product_id):
     if l1_dataset.local_path is None:
@@ -110,6 +121,9 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
             dc.index.datasets.update(dataset)
     else:
         cmd = ["datacube", "dataset", "update", str(dst), "--location-policy", "forget"]
+        # This avoids update failures due to
+        # minor differences in the extent metadata
+        cmd += INSIGNIFICANT_DIGITS_FIX
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         outs, errs = proc.communicate()
         status = int(proc.returncode)
@@ -117,5 +131,10 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
             # Move the scene data back to the original location
             os.rename(dst.parent, src)
             worked = False
-        cmd_results ={"cmd": " ".join(cmd), "status": str(status), "outs": str(outs), "errs": str(errs)}
-    return worked, cmd_results
+        update_results = {
+            "cmd": " ".join(cmd),
+            "status": str(status),
+            "outs": str(outs),
+            "errs": str(errs),
+        }
+    return worked, update_results

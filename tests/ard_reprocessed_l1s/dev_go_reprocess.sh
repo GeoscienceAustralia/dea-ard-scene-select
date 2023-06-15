@@ -1,7 +1,5 @@
 #!/bin/bash
-# If a number is passed in it is assumed to be the scene limit
-# otherwise a default is used.
-# When using qsub a number can not be passed in.
+# Do ls9 reprocessing
 
 #PBS -P v10
 #PBS -W umask=017
@@ -19,18 +17,11 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
 
-	module load ard-scene-select-py3-dea/20230609
+	module load ard-scene-select-py3-dea/20230615
 
 fi
 
-if [ -z "$1" ]
-  then
-    echo "No argument supplied"
-	scene_limit_value=400
-else
-	scene_limit_value=$1
-fi
-
+scene_limit_value=1000
 dry_run=" "
 run_ard="--run-ard"
 ard_env="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl-ls.env"
