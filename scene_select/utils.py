@@ -18,7 +18,16 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 LOG_CONFIG_FILE = "log_config.ini"
 LOG_CONFIG = DATA_DIR.joinpath(LOG_CONFIG_FILE)
 
-INSIGNIFICANT_DIGITS_FIX = ['--allow-any', 'extent.lon.end', '--allow-any', 'extent.lon.begin', '--allow-any', 'extent.lat.end', '--allow-any', 'extent.lat.begin']
+INSIGNIFICANT_DIGITS_FIX = [
+    "--allow-any",
+    "extent.lon.end",
+    "--allow-any",
+    "extent.lon.begin",
+    "--allow-any",
+    "extent.lat.end",
+    "--allow-any",
+    "extent.lat.begin",
+]
 
 
 def calc_file_path(l1_dataset, product_id):
