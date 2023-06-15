@@ -110,6 +110,13 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
             dc.index.datasets.update(dataset)
     else:
         cmd = ["datacube", "dataset", "update", str(dst), "--location-policy", "forget"]
+        # This avoids update failures due to
+        # minor differences in the extent metadata
+        for b_key in ['lon', 'lat']:
+            for c_key in ['end', 'begin']:
+                overall_key = ".".join(['extent', b_key, c_key])
+                cmd.append("--allow-any")
+                cmd.append(overall_key)
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         outs, errs = proc.communicate()
         status = int(proc.returncode)
