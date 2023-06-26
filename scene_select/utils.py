@@ -5,8 +5,8 @@ from pathlib import Path
 
 from urllib.parse import urlparse
 from urllib.request import url2pathname
-from subprocess import STDOUT, check_output, Popen
-from subprocess import Popen, PIPE
+from subprocess import STDOUT, check_output, Popen, PIPE
+
 import yaml
 import click
 
@@ -103,14 +103,13 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
     worked = True
     cmd_results = {}
 
-    path_from_base = current_path.relative_to(current_base_path)
-    dst = new_base_path / path_from_base
-    src = current_path.parent
+    dst = new_base_path / current_path.relative_to(current_base_path)
     os.makedirs(dst.parent, exist_ok=True)
-    os.rename(src, dst.parent)
+    os.rename(current_path.parent, dst.parent)
 
-    use_api = False
-    if use_api:
+    # pylint: disable=W0105
+    """
+        # This did not work. Keeping a record of it here, for future improvement.
         from datacube.index.hl import Doc2Dataset
 
         # This produced many Warnings. Lets stick with calling the cmd.
@@ -119,22 +118,23 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
         with Datacube(app="usgs-l1-dl") as dc:
             (dataset, error_message) = Doc2Dataset(dc.index)(doc, dst.as_uri())
             dc.index.datasets.update(dataset)
-    else:
-        cmd = ["datacube", "dataset", "update", str(dst), "--location-policy", "forget"]
-        # This avoids update failures due to
-        # minor differences in the extent metadata
-        cmd += INSIGNIFICANT_DIGITS_FIX
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-        outs, errs = proc.communicate()
-        status = int(proc.returncode)
-        if status > 0:
-            # Move the scene data back to the original location
-            os.rename(dst.parent, src)
-            worked = False
-        update_results = {
-            "cmd": " ".join(cmd),
-            "status": str(status),
-            "outs": str(outs),
-            "errs": str(errs),
-        }
+    """
+
+    cmd = ["datacube", "dataset", "update", str(dst), "--location-policy", "forget"]
+    # This avoids update failures due to
+    # minor differences in the extent metadata
+    cmd += INSIGNIFICANT_DIGITS_FIX
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    outs, errs = proc.communicate()
+    status = int(proc.returncode)
+    if status > 0:
+        # Move the scene data back to the original location
+        os.rename(dst.parent, current_path.parent)
+        worked = False
+    update_results = {
+        "cmd": " ".join(cmd),
+        "status": str(status),
+        "outs": str(outs),
+        "errs": str(errs),
+    }
     return worked, update_results
