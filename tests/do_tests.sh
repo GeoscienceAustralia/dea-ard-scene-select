@@ -27,6 +27,6 @@ SSPATH=$PWD/../
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-pytest -s -v $SCRIPT_DIR/test_*
+pytest -s -v $SCRIPT_DIR/test_*.py
 
 #./timing_check_ancillary.py

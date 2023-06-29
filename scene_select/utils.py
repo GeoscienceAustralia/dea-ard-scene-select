@@ -127,7 +127,7 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     outs, errs = proc.communicate()
     status = int(proc.returncode)
-    if status > 0:
+    if status != 0:
         # Move the scene data back to the original location
         os.rename(dst.parent, current_path.parent)
         worked = False
