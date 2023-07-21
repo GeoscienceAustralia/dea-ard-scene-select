@@ -366,7 +366,7 @@ def ard_reprocessed_l1s(
     ard_click_params["logdir"] = logdir
 
     LOGGER.info("reprocessed_l1s", **locals())
-    dc = datacube.Datacube(app=THIS_TASK)
+    dc = datacube.Datacube(app=THIS_TASK, config=config)
 
     # identify the blocking ARD uuids and locations
     blocked_scenes = find_blocked(dc, product, scene_limit)

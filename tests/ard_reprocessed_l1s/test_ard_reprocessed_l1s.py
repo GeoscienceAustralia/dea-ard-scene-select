@@ -16,8 +16,6 @@ from scene_select.ard_reprocessed_l1s import (
 )
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
-from conftest import set_up_dirs_and_db
-
 REPROCESS_TEST_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
 )
@@ -49,8 +47,32 @@ yaml_fname_06_27 = new_dir_06_27.joinpath(
 )
 ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 
-# Use the 'set_up_dirs_and_db' fixture for the 'test_ard_reprocessed_l1s' function
-@pytest.mark.usefixtures("set_up_dirs_and_db")
+
+@pytest.fixture
+def set_up_dirs_and_db():
+    setup_script = Path(__file__).parent.joinpath("db_index.sh")
+    cmd = [setup_script]
+    try:
+        cmd_stdout = check_output(cmd, stderr=STDOUT, shell=True).decode()
+    except Exception as e:
+        print(e.output.decode())  # print out the stdout messages up to the exception
+        print(e)  # To print out the exception message
+    print("====================")
+    print(cmd_stdout)
+    print("====================")
+
+    # So the scene select call uses the correct DB
+    if "HOSTNAME" in os.environ and "gadi" in os.environ["HOSTNAME"]:
+        # Nobody call their system Brigadiers, ok.
+        end_tag = "_dev"
+    else:
+        end_tag = "_local"
+    os.environ["DATACUBE_ENVIRONMENT"] = f"{os.getenv('USER')}{end_tag}"
+    os.environ["DATACUBE_CONFIG_PATH"] = str(
+        Path(__file__).parent.joinpath("datacube.conf")
+    )
+
+
 def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     """Test the ard_reprocessed_l1s function."""
 
@@ -136,8 +158,7 @@ def test_ard_reprocessed_l1s(set_up_dirs_and_db):
     filename = jobdir.joinpath(PBS_ARD_FILE)
     assert os.path.isfile(filename), "There is a run ard pbs file"
 
-# Use the 'set_up_dirs_and_db' fixture for the 'test_move_blocked' function
-@pytest.mark.usefixtures("set_up_dirs_and_db")
+
 def test_move_blocked(set_up_dirs_and_db):
     """ Test the move_blocked function."""
 
