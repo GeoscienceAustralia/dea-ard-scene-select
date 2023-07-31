@@ -19,7 +19,7 @@ try:
 except (ImportError, AttributeError):
     print("Could not import Datacube")
 
-from scene_select.check_ancillary import BRDF_DIR, WV_DIR, AncillaryFiles
+from scene_select.check_ancillary import DEFAULT_MODIS_DIR, WV_DIR, AncillaryFiles
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
 from scene_select import utils
@@ -575,7 +575,7 @@ def l1_scenes_to_process(
     "--brdfdir",
     type=click.Path(file_okay=False),
     help="The home directory of BRDF data used by scene select.",
-    default=BRDF_DIR,
+    default=DEFAULT_MODIS_DIR,
 )
 @click.option(
     "--wvdir",

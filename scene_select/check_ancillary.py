@@ -12,8 +12,11 @@ import pandas
 import structlog
 
 LOG = structlog.get_logger()
-BRDF_DEFINITIVE_START_DATE = datetime.datetime(2002, 7, 1)
-BRDF_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061"
+MODIS_START_DATE = datetime.datetime(2002, 7, 1)
+DEFAULT_MODIS_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061"
+DEFAULT_VIIRS_I_PATH = "/g/data/v10/eoancillarydata-2/BRDF/VNP43IA1.001" # viirs_i_path
+DEFAULT_VIIRS_M_PATH = "/g/data/v10/eoancillarydata-2/BRDF/VNP43MA1.001" # viirs_m_path
+DEFAULT_USE_VIIRS_AFTER = datetime.datetime(2099, 9, 9)
 WV_DIR = "/g/data/v10/eoancillarydata-2/water_vapour"
 WV_FMT = "pr_wtr.eatm.{year}.h5"
 
@@ -50,9 +53,13 @@ def read_h5_table(fid, dataset_name):
 
 
 class AncillaryFiles:
-    def __init__(self, brdf_dir=BRDF_DIR, wv_dir=WV_DIR, wv_days_tolerance=1):
+    def __init__(self, brdf_dir=DEFAULT_MODIS_DIR, wv_dir=WV_DIR, viirs_i_path=DEFAULT_VIIRS_I_PATH, 
+                 viirs_m_path=DEFAULT_VIIRS_M_PATH, use_viirs_after=DEFAULT_USE_VIIRS_AFTER, wv_days_tolerance=1):
         self.brdf_path = Path(brdf_dir)
         self.wv_path = Path(wv_dir)  # water_vapour_dir
+        self.viirs_i_path = Path(viirs_i_path)
+        self.viirs_m_path = Path(viirs_m_path)
+        self.use_viirs_after = use_viirs_after
         self.max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
 
     @lru_cache(maxsize=32)
@@ -68,9 +75,22 @@ class AncillaryFiles:
         return index
 
     @lru_cache(maxsize=20000)
-    def brdf_day_exists(self, ymd):
-        brdf_day_of_interest = self.brdf_path.joinpath(ymd)
-        return brdf_day_of_interest.exists()
+    def brdf_day_exists(self, ymd, base_path):
+        brdf_day_of_interest = base_path.joinpath(ymd)
+        return brdf_day_of_interest.is_dir()
+    
+    def check_modis(self, ymd):
+        if self.brdf_day_exists(ymd, self.brdf_path):
+            return True, ""
+        else:
+            return False, f"BRDF data for {ymd} does not exist."
+
+    def check_viirs(self, ymd):
+        if self.brdf_day_exists(ymd, self.viirs_i_path) and self.brdf_day_exists(ymd, self.viirs_m_path):
+            return True, ""
+        else:
+            return False, f"BRDF data for {ymd} does not exist."
+
 
     def ancillary_files(self, acquisition_datetime):
 
@@ -96,14 +116,15 @@ class AncillaryFiles:
                 "Water vapour data for {} does not exist.".format(acquisition_datetime),
             )
         else:
-            if acquisition_datetime < BRDF_DEFINITIVE_START_DATE:
+            ymd = acquisition_datetime.strftime("%Y.%m.%d")
+            if acquisition_datetime < MODIS_START_DATE:
                 return True, ""
+            elif acquisition_datetime < self.use_viirs_after:
+                return self.check_modis(ymd)
             else:
-                ymd = acquisition_datetime.strftime("%Y.%m.%d")
-                if self.brdf_day_exists(ymd):
-                    return True, ""
-                else:
-                    return False, f"BRDF data for {ymd} does not exist."
+                # use viirs
+                return self.check_viirs(ymd)
+                
 
 
 if __name__ == "__main__":
