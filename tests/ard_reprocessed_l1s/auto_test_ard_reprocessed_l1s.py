@@ -71,10 +71,7 @@ DATASETS = [
     "../data/datasets/ls9_reprocessing/ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml",
 ]
 
-
 pytestmark = pytest.mark.usefixtures("auto_odc_db", "setup_all_fixtures",)
-
-
 
 @pytest.fixture
 def setup_config_file():

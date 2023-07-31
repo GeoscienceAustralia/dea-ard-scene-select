@@ -313,7 +313,6 @@ Does not work for multigranule zip files.",
 @click.option("--jobfs", help="The jobfs memory in GB to request per node.")
 @LogMainFunction()
 def ard_reprocessed_l1s(
-    config: Path,
     current_base_path: Path,
     new_base_path: Path,
     product: list,
@@ -366,7 +365,7 @@ def ard_reprocessed_l1s(
     ard_click_params["logdir"] = logdir
 
     LOGGER.info("reprocessed_l1s", **locals())
-    dc = datacube.Datacube(app=THIS_TASK, config=config)
+    dc = datacube.Datacube(app=THIS_TASK)
 
     # identify the blocking ARD uuids and locations
     blocked_scenes = find_blocked(dc, product, scene_limit)
@@ -375,6 +374,8 @@ def ard_reprocessed_l1s(
         blocked_scenes, current_base_path, new_base_path, dry_run
     )
     l1_count = len(l1_zips)
+
+    print(f"Gordon - in side the move, ARD click params: {ard_click_params}")
     usgs_level1_files = None
     do_ard(
         ard_click_params,
