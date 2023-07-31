@@ -19,8 +19,14 @@ try:
 except (ImportError, AttributeError):
     print("Could not import Datacube")
 
-from scene_select.check_ancillary import DEFAULT_MODIS_DIR, WV_DIR, AncillaryFiles, \
-    DEFAULT_VIIRS_I_PATH, DEFAULT_VIIRS_M_PATH, DEFAULT_USE_VIIRS_AFTER
+from scene_select.check_ancillary import (
+    DEFAULT_MODIS_DIR,
+    WV_DIR,
+    AncillaryFiles,
+    DEFAULT_VIIRS_I_PATH,
+    DEFAULT_VIIRS_M_PATH,
+    DEFAULT_USE_VIIRS_AFTER,
+)
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
 from scene_select import utils
@@ -365,6 +371,8 @@ def l1_filter(
     dc,
     l1_product,
     brdfdir: Path,
+    iviirsdir: Path,
+    mviirsdir: Path,
     wvdir: Path,
     region_codes: Dict,
     interim_days_wait: int,
@@ -396,7 +404,9 @@ def l1_filter(
         msg = " not known to scene select processing filtering. Disabling processing filtering."
         LOGGER.warn(l1_product + msg)
 
-    ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
+    ancillary_ob = AncillaryFiles(
+        brdf_dir=brdfdir, viirs_i_path=iviirsdir, viirs_m_path=mviirsdir, wv_dir=wvdir
+    )
     files2process = set({})
     duplicates = 0
     uuids2archive = []
@@ -497,6 +507,8 @@ def l1_scenes_to_process(
     outfile: Path,
     products: List[str],
     brdfdir: Path,
+    iviirsdir: Path,
+    mviirsdir: Path,
     wvdir: Path,
     region_codes: Dict,
     scene_limit: int,
@@ -506,6 +518,8 @@ def l1_scenes_to_process(
     config: Optional[Path] = None,
 ) -> Tuple[int, List[str]]:
     """Writes all the files returned from datacube for level1 to a file."""
+    # pylint: disable=R0913
+    # R0913: Too many arguments
     # pylint: disable=R0914
     # R0914: Too many local variables
     dc = datacube.Datacube(app="gen-list", config=config)
@@ -517,6 +531,8 @@ def l1_scenes_to_process(
                 dc,
                 product,
                 brdfdir=brdfdir,
+                iviirsdir=iviirsdir,
+                mviirsdir=mviirsdir,
                 wvdir=wvdir,
                 region_codes=region_codes,
                 interim_days_wait=interim_days_wait,
@@ -699,6 +715,8 @@ def scene_select(
     logdir: click.Path,
     jobdir: click.Path,
     brdfdir: click.Path,
+    iviirsdir: click.Path,
+    mviirsdir: click.Path,
     wvdir: click.Path,
     stop_logging: bool,
     log_config: click.Path,
@@ -758,6 +776,8 @@ def scene_select(
             usgs_level1_files,
             products=products,
             brdfdir=Path(brdfdir).resolve(),
+            iviirsdir=Path(iviirsdir).resolve(),
+            mviirsdir=Path(mviirsdir).resolve(),
             wvdir=Path(wvdir).resolve(),
             region_codes=load_aoi(allowed_codes),
             config=config,
