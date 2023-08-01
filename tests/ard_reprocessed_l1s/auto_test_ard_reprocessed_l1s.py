@@ -181,15 +181,14 @@ def setup_and_test_datacube_scenarios(odc_test_db: Datacube):
             assert True == True, f" Archival of dataset id {id_to_archive} has failed: error_string"
 
         assert True == True, f" Archival of dataset id {id_to_archive} has failed"
-##
+
     yield odc_test_db  # Yield the datacube instance for use in the tests
 
-    # TODO - temporarily muting these off as there's an issue with the datasets being revived
-##    # defined tear down
-##    for id_to_restore in archive_ids:
-##        print(f"Teardown - restoring dataset of id, {id_to_restore}")        
-##        odc_test_db.index.datasets.restore(id_to_restore)
-##
+    # tear down
+    for id_to_restore in archive_ids:
+        print(f"Teardown - restoring dataset of id, {id_to_restore}")        
+        odc_test_db.index.datasets.restore(id_to_restore)
+
 
 # muck
 # Make setup_and_test_datacube_scenarios an automatic fixture by using autouse=True
