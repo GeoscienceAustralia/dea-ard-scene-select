@@ -24,7 +24,7 @@ SSPATH=$DIR/../..
 # echo $PYTHONPATH
 
 
-gadi_user="gy5636"
+gadi_user="gy5636" #TODO - Gordon - this is just a workaround. Once it works , replace gadi_user with USER
 export ODC_TEST_DB_URL="postgresql://$gadi_user@deadev.nci.org.au/${gadi_user}_automated_testing"
 echo "Exported ODC_TEST_DB_URL=$ODC_TEST_DB_URL..."
 
