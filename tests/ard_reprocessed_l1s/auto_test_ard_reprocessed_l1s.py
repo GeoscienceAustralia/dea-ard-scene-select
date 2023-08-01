@@ -180,8 +180,6 @@ def setup_and_test_datacube_scenarios(odc_test_db: Datacube):
         except Exception as error_string:
             assert True == True, f" Archival of dataset id {id_to_archive} has failed: error_string"
 
-        assert True == True, f" Archival of dataset id {id_to_archive} has failed"
-
     yield odc_test_db  # Yield the datacube instance for use in the tests
 
     # tear down
