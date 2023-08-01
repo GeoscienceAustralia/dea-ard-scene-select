@@ -23,4 +23,11 @@ SSPATH=$DIR/../..
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 # echo $PYTHONPATH
 
+
+gadi_user="gy5636"
+export ODC_TEST_DB_URL="postgresql://$gadi_user@deadev.nci.org.au/${gadi_user}_automated_testing"
+echo "Exported ODC_TEST_DB_URL=$ODC_TEST_DB_URL..."
+
+
+
 python3 -m pytest -v -s auto_test_ard_reprocessed_l1s.py  # -k test_ard_reprocessed_l1s

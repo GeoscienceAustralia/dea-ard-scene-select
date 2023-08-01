@@ -71,7 +71,17 @@ DATASETS = [
     "../data/datasets/ls9_reprocessing/ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml",
 ]
 
-pytestmark = pytest.mark.usefixtures("auto_odc_db", "setup_all_fixtures",)
+pytestmark = pytest.mark.usefixtures("setup_environment", "auto_odc_db", "setup_all_fixtures",)
+
+
+@pytest.fixture
+def setup_environment():
+    os.environ['ODC_TEST_DB_URL'] = f"postgresql://gy5636@deadev.nci.org.au/{user_id}_automated_testing"
+    #f"{user_id}_automated_testing.deadev.nci.org.au"
+    dd = f"{user_id}_automated_testing.deadev.nci.org.au"
+    print(f"Just setup the ODC_TEST_DB_URL as {dd}")
+    # This gets set in DATACUBE_DB_URL in the backend package
+
 
 @pytest.fixture
 def setup_config_file():
@@ -182,12 +192,6 @@ def setup_and_test_datacube_scenarios(odc_test_db: Datacube):
 ##
 
 # muck
-###@pytest.fixture
-###def setup_all_fixtures(
-###    setup_local_directories_and_files,
-###    setup_config_file,
-###    setup_and_test_datacube_scenarios,
-###):
 # Make setup_and_test_datacube_scenarios an automatic fixture by using autouse=True
 @pytest.fixture(autouse=True)
 def setup_all_fixtures(
