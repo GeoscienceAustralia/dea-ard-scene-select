@@ -86,13 +86,10 @@ def test_is_dc_ready(odc_test_db: Datacube):
 
 @pytest.fixture()
 def setup_ard_reprocessed_l1s(tmp_path):
-    REPROCESS_TEST_DIR = (
-        Path(__file__).parent.parent.joinpath("test_data/ls9_reprocessing").resolve()
-    )
 
-    SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
+    scratch_dir = Path(__file__).parent.joinpath("scratch")
 
-    current_base_path = REPROCESS_TEST_DIR
+    current_base_path = Path(__file__).parent.parent.joinpath("test_data/ls9_reprocessing").resolve()
 
     old_dir_06_27 = current_base_path.joinpath(
         "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
@@ -105,6 +102,19 @@ def setup_ard_reprocessed_l1s(tmp_path):
     import shutil
     shutil.copytree(current_base_path, new_base_path)
 
+
+    return dict(current_base_path=current_base_path, 
+                scratch_dir=scratch_dir,
+                new_base_path=new_base_path,)
+
+def test_ard_reprocessed_l1s(odc_db, setup_ard_reprocessed_l1s):
+    """Test the ard_reprocessed_l1s function."""
+    dry_run = False
+    product = "ga_ls9c_ard_3"
+    logdir = setup_ard_reprocessed_l1s['scratch_dir']
+    current_base_path = setup_ard_reprocessed_l1s['current_base_path']
+    new_base_path = setup_ard_reprocessed_l1s['new_base_path']
+
     new_dir_06_21 = new_base_path.joinpath( "ga_ls9c_ard_3/092/081/2022/06/21")
     fname_06_21 = new_dir_06_21.joinpath( "ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml")
 
@@ -112,11 +122,6 @@ def setup_ard_reprocessed_l1s(tmp_path):
     yaml_fname_06_27 = new_dir_06_27.joinpath( "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml")
     ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 
-def test_ard_reprocessed_l1s(odc_db):
-    """Test the ard_reprocessed_l1s function."""
-    dry_run = False
-    product = "ga_ls9c_ard_3"
-    logdir = SCRATCH_DIR
     scene_limit = 2
     run_ard = False
 
@@ -133,11 +138,11 @@ def test_ard_reprocessed_l1s(odc_db):
         "--scene-limit",
         scene_limit,
         "--logdir",
-        SCRATCH_DIR,
+        logdir,
         "--jobdir",
         str(jobdir),
         "--workdir",
-        SCRATCH_DIR,
+        logdir,
     ]
     if run_ard:
         cmd_params.append("--run-ard")
@@ -145,7 +150,7 @@ def test_ard_reprocessed_l1s(odc_db):
         cmd_params.append("--dry-run")
     runner = CliRunner()
     result = runner.invoke(ard_reprocessed_l1s, cmd_params)
-    print(f"RUNNING ARD SCENE SELECT with scratch dir, '{SCRATCH_DIR}'....")
+    print(f"RUNNING ARD SCENE SELECT with scratch dir, '{logdir}'....")
     print("***** results output ******")
     print(result.output)
     print("***** results exception ******")
@@ -178,10 +183,7 @@ def test_ard_reprocessed_l1s(odc_db):
     with open(filename, "r", encoding="utf-8") as f:
         temp = f.read().splitlines()
 
-    if "HOSTNAME" in os.environ and "gadi" in os.environ["HOSTNAME"]:
-        base_location = Path("/g/data/da82/AODH/USGS/L1/Landsat/C2/")
-    else:
-        base_location = REPROCESS_TEST_DIR.joinpath("l1_Landsat_C2")
+    base_location = current_base_path.joinpath("l1_Landsat_C2")
 
     a_l1_tar = base_location.joinpath(
         "092_081",
