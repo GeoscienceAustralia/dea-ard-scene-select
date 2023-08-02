@@ -19,36 +19,6 @@ from scene_select.ard_reprocessed_l1s import (
 )
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
-REPROCESS_TEST_DIR = (
-    Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
-)
-SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
-
-current_base_path = REPROCESS_TEST_DIR
-
-old_dir_06_27 = current_base_path.joinpath(
-    "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
-)
-old_yaml_fname_06_27 = old_dir_06_27.joinpath(
-    "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
-)
-
-new_base_path = REPROCESS_TEST_DIR.joinpath("moved")
-
-new_dir_06_21 = REPROCESS_TEST_DIR.joinpath(
-    "moved", "ga_ls9c_ard_3", "092", "081", "2022", "06", "21"
-)
-fname_06_21 = new_dir_06_21.joinpath(
-    "ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml"
-)
-
-new_dir_06_27 = REPROCESS_TEST_DIR.joinpath(
-    "moved", "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
-)
-yaml_fname_06_27 = new_dir_06_27.joinpath(
-    "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
-)
-ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 # yaml files
 # ensure these are sequence
 METADATA_TYPES = [
@@ -71,84 +41,10 @@ DATASETS = [
     "../data/datasets/ls9_reprocessing/ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml",
 ]
 
-pytestmark = pytest.mark.usefixtures("setup_environment", "auto_odc_db", "setup_all_fixtures",)
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-@pytest.fixture
-def setup_environment():
-    os.environ['ODC_TEST_DB_URL'] = f"postgresql://gy5636@deadev.nci.org.au/{user_id}_automated_testing"
-    #f"{user_id}_automated_testing.deadev.nci.org.au"
-    dd = f"{user_id}_automated_testing.deadev.nci.org.au"
-    print(f"Just setup the ODC_TEST_DB_URL as {dd}")
-    # This gets set in DATACUBE_DB_URL in the backend package
-
-
-@pytest.fixture
-def setup_config_file():
-    """
-    Create the temporary config file so that ard scene select
-    processes that get runned in this script as subprocesses
-    will be able to access the same datacube instance"""
-    user_id = os.getenv("USER")  # Fetch the current user ID
-    yaml_content = f"""
-[datacube]
-db_hostname: deadev.nci.org.au
-db_port: 6432
-db_database: {user_id}_automated_testing
-"""
-    print(f"The yaml config content is {yaml_content}")
-    temp_file_path = None
-    try:
-        # Create the temporary file without delete=False
-        temp_file = tempfile.NamedTemporaryFile(mode="w",delete="False")
-        temp_file_path = temp_file.name
-
-        # Write the YAML content to the file
-        temp_file.write(yaml_content)
-        temp_file.flush()
-        print(f"Temp config file path is '{temp_file_path}'...")
-
-        # Copy the config file for checking
-#        import shutil
-#        shutil.copyfile(temp_file.name, "/g/data/u46/users/gy5636/dea-ard-scene-select/tests/ard_reprocessed_l1s/myconf.conf")
-
-        # Return the path to the temporary file
-        yield temp_file_path
-    finally:
-        # Close the file explicitly (since delete=False was not used)
-        if temp_file_path is not None:
-            temp_file.close()
-
-
-@pytest.fixture
-def setup_environment_variables(setup_config_file):
-    # Set environment variables for the test
-    # Set the DATACUBE_ENVIRONMENT and DATACUBE_CONFIG_PATH
-    os.environ["DATACUBE_CONFIG_PATH"] = setup_config_file
-    os.environ["DATACUBE_ENVIRONMENT"] = "datacube"
-
-    yield  # Nothing to return, but the setup is done before running the test
-
-    # Clean up: Remove the environment variables after the test
-    del os.environ["DATACUBE_CONFIG_PATH"]
-    del os.environ["DATACUBE_ENVIRONMENT"]
-
-
-@pytest.fixture
-def setup_local_directories_and_files():
-    setup_script = Path(__file__).parent.joinpath("setup_file_paths.sh")
-    cmd = [setup_script]
-    try:
-        cmd_stdout = check_output(cmd, stderr=STDOUT, shell=True).decode()
-    except Exception as e:
-        print(e.output.decode())  # print out the stdout messages up to the exception
-        print(e)  # To print out the exception message
-    print("======setup_local_directories_and_files (START)==============")
-    print(cmd_stdout)
-    print("======setup_local_directories_and_files (END)==============")
-
-
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def setup_and_test_datacube_scenarios(odc_test_db: Datacube):
     """
     Introduce blocking by archiving
@@ -163,100 +59,66 @@ def setup_and_test_datacube_scenarios(odc_test_db: Datacube):
 
     print("Setting up datacube scenarios...")
 
-    archive_ids = [
+    ids_to_archive = [
         'd530018e-5dad-58c2-8471-15f17d506604',
         '4c68b81a-23a0-5e57-b983-96439fc4518c',        
     ]
 
-    # TODO - temporarily muting these off as there's an issue with the datasets being revived
-    for id_to_archive in archive_ids:
-        l1_blocking_1_datasets = odc_test_db.index.datasets.get(id_to_archive)
-
-        assert l1_blocking_1_datasets is not None, f"L1 dataset (id={id_to_archive}) for blocking ARD cannot be retrieved: {l1_blocking_1_datasets}"
-
-        print(f"Archiving {id_to_archive} now...")
-        try:
-            odc_test_db.index.archive(id_to_archive)            
-        except Exception as error_string:
-            assert True == True, f" Archival of dataset id {id_to_archive} has failed: error_string"
+    odc_test_db.index.datasets.archive(ids_to_archive)            
 
     yield odc_test_db  # Yield the datacube instance for use in the tests
 
-    # tear down
-    for id_to_restore in archive_ids:
-        print(f"Teardown - restoring dataset of id, {id_to_restore}")        
-        odc_test_db.index.datasets.restore(id_to_restore)
+    odc_test_db.index.datasets.restore(ids_to_archive)
 
 
-# muck
-# Make setup_and_test_datacube_scenarios an automatic fixture by using autouse=True
-@pytest.fixture(autouse=True)
-def setup_all_fixtures(
-    setup_config_file,
-    setup_environment_variables,
-    setup_local_directories_and_files,
-    setup_and_test_datacube_scenarios,
-):
 
-
-    # Since we're only using this fixture to group other fixtures, we don't need to do anything here.
-    # All the other fixtures will be executed automatically before running the test.
-
-    # The order in which the fixtures are listed above determines their execution order.
-    # 'auto_odc_db' will be executed first, followed by the other fixtures.
-
-    # We don't need to yield anything here, as this fixture doesn't return any data.
-    # If you need to pass data from this fixture to the test function, you can yield the necessary data here.
-    print("Running setup_all_fixtures...")
+def test_is_dc_ready(odc_test_db: Datacube):
     
+    assert odc_test_db is not None, "odc_test_db is not ok"
 
-    odc_db = setup_and_test_datacube_scenarios
-
-    # We need to yield the 'odc_db' instance so that it becomes available to other fixtures and tests.
-    yield odc_db
-
-    
-def test_datacube_requirements(setup_config_file, setup_environment_variables):
-    temp_file_name = setup_config_file
-    """
-        Ensure the datacube is ready to go
-    """
-    assert os.path.isfile(temp_file_name), "Config file does not exist"
-    assert (
-        os.environ["DATACUBE_CONFIG_PATH"] == setup_config_file
-    ), "Config file is not the one we expect"
-    assert os.environ["DATACUBE_ENVIRONMENT"] == "datacube", "Environment is wrong"
-    user_id = os.getenv("USER")
-    expected_url = f"postgresql://gy5636@deadev.nci.org.au/{user_id}_automated_testing"
-    assert (
-        os.environ["ODC_TEST_DB_URL"] == expected_url
-    ), f"ODC_TEST_DB_URL env variable not set to {expected_url}"
-
-
-def test_is_dc_ready(setup_all_fixtures: Datacube):
-    
-    assert setup_all_fixtures is not None, "auto_odc_db is ok"
-
-    my_dc = setup_all_fixtures.find_datasets(product="usgs_ls9c_level1_2")
+    datasets = odc_test_db.find_datasets(product="usgs_ls9c_level1_2")
 
     # Check if the dataset list is not empty (i.e., dataset exists)
-    assert my_dc, "Dataset not found. Test failed."
-    assert my_dc is not None, f"DC retrieval test-{my_dc}, "
+    assert datasets, "Dataset not found. Test failed."
+    assert datasets is not None, f"DC retrieval test-{datasets}, "
 
     # do all the checks for adds here
 
+@pytest.fixture()
+def setup_ard_reprocessed_l1s(tmp_path):
+    REPROCESS_TEST_DIR = (
+        Path(__file__).parent.parent.joinpath("test_data/ls9_reprocessing").resolve()
+    )
 
-def test_ard_reprocessed_l1s(setup_config_file, setup_environment_variables):
+    SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
+
+    current_base_path = REPROCESS_TEST_DIR
+
+    old_dir_06_27 = current_base_path.joinpath(
+        "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
+    )
+    old_yaml_fname_06_27 = old_dir_06_27.joinpath(
+        "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
+    )
+
+    new_base_path = tmp_path / "moved"
+    import shutil
+    shutil.copytree(current_base_path, new_base_path)
+
+    new_dir_06_21 = new_base_path.joinpath( "ga_ls9c_ard_3/092/081/2022/06/21")
+    fname_06_21 = new_dir_06_21.joinpath( "ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml")
+
+    new_dir_06_27 = new_base_path.joinpath( "ga_ls9c_ard_3/102/076/2022/06/27")
+    yaml_fname_06_27 = new_dir_06_27.joinpath( "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml")
+    ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
+
+def test_ard_reprocessed_l1s(odc_db):
     """Test the ard_reprocessed_l1s function."""
-    pass
     dry_run = False
     product = "ga_ls9c_ard_3"
     logdir = SCRATCH_DIR
     scene_limit = 2
     run_ard = False
-    temp_file_name = setup_config_file
-
-    assert os.path.isfile(temp_file_name), "Config file does not exist"
 
     jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
@@ -300,7 +162,7 @@ def test_ard_reprocessed_l1s(setup_config_file, setup_environment_variables):
         yaml_fname_06_27
     ), f"The yaml file, '{yaml_fname_06_27}' has been moved"
 
-    ard_dataset = dc.index.datasets.get(ard_id_06_27)
+    ard_dataset = odc_db.index.datasets.get(ard_id_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
     assert str(local_path) == str(yaml_fname_06_27), "The OCD ARD path has been updated"
 
@@ -315,10 +177,12 @@ def test_ard_reprocessed_l1s(setup_config_file, setup_environment_variables):
     filename = jobdir.joinpath(ODC_FILTERED_FILE)
     with open(filename, "r", encoding="utf-8") as f:
         temp = f.read().splitlines()
+
     if "HOSTNAME" in os.environ and "gadi" in os.environ["HOSTNAME"]:
         base_location = Path("/g/data/da82/AODH/USGS/L1/Landsat/C2/")
     else:
         base_location = REPROCESS_TEST_DIR.joinpath("l1_Landsat_C2")
+
     a_l1_tar = base_location.joinpath(
         "092_081",
         "LC90920812022172",
