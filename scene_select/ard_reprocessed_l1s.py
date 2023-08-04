@@ -313,7 +313,6 @@ Does not work for multigranule zip files.",
 @click.option("--jobfs", help="The jobfs memory in GB to request per node.")
 @LogMainFunction()
 def ard_reprocessed_l1s(
-    config: Path,
     current_base_path: Path,
     new_base_path: Path,
     product: list,
