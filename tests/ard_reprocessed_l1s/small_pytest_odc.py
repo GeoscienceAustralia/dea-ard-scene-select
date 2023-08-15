@@ -38,7 +38,6 @@ else:
 def test_add_dataset(odc_test_db):
     odc_test_db.index.datasets.get("1234", include_sources=True)
 
-    # TEST_DATA_REL="${SCRIPT_DIR}/../test_data/ls9_reprocessing"
     TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
     print(TEST_DIR)
 
