@@ -36,9 +36,7 @@ else:
 
 
 def test_add_dataset(odc_test_db):
-    odc_test_db.index.datasets.get("1234", include_sources=True)
+    odc_test_db.index.datasets.get("b49869c4-a65d-4f1f-b673-0f6a4bb8e090", include_sources=True)
 
     TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
     print(TEST_DIR)
-
-
