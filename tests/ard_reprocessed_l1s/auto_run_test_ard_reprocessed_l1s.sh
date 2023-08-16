@@ -23,6 +23,4 @@ SSPATH=$DIR/../..
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 # echo $PYTHONPATH
 
-# -v removed
 python3 -m pytest -s auto_test_ard_reprocessed_l1s.py
-# -k test_is_dc_ready
