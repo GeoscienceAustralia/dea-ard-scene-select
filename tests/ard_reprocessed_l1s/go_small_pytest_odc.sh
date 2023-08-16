@@ -12,6 +12,8 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   # module load ard-scene-select-py3-dea/20230615
 
   echo "loaded the necessary packages as we run on nci gadi"
+
+  export ODC_TEST_DB_URL=postgresql://$USER"@deadev.nci.org.au/"$USER"_automated_testing"
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -23,4 +25,5 @@ SSPATH=$DIR/../..
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 # echo $PYTHONPATH
 
-python3 -m pytest -v -s small_pytest_odc.py
+# -v
+python3 -m pytest -s small_pytest_odc.py

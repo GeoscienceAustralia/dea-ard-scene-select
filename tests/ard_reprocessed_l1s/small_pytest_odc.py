@@ -27,7 +27,7 @@ from scene_select.ard_reprocessed_l1s import (
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
 
-if True:
+if False:
     user_id = os.environ["USER"]
     os.environ[
         "ODC_TEST_DB_URL"
@@ -51,6 +51,17 @@ group1 =    [
     ]
 
 DATASETS = group1
+
+def setup_local_directories_and_files():
+    setup_script = Path(__file__).parent.joinpath("setup_file_paths.sh")
+
+    cmd = [setup_script]
+    cmd_stdout = check_output(cmd, stderr=STDOUT, shell=True).decode()
+
+# Have a clean directory structure
+setup_local_directories_and_files()
+
+
 # This needs to be here
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
@@ -64,38 +75,16 @@ if False:
     user_id = os.environ["USER"]
     os.environ["DATACUBE_ENVIRONMENT"] = f"{user_id}_automated_testing"    
 
+
+
+
 @pytest.fixture
 def archive(odc_test_db):
     group1_id_2_archive = "4c68b81a-23a0-5e57-b983-96439fc4518c"
     odc_test_db.index.datasets.archive([group1_id_2_archive])
 
-def test_add_dataset():
-    id_archive = "4c68b81a-23a0-5e57-b983-96439fc4518c" #  l1 that shoudld be ardchived
-    id = "91e7489e-f05a-5b7e-a96c-f0f0549bdd34" # blocked l1
-    
-    my_datasets = odc_test_db.find_datasets(product='usgs_ls9c_level1_2')
-    assert len(my_datasets) == 2 # Check the test DB is 'clean'
 
-    odc_test_db.index.datasets.archive([id_archive])
-    scene = odc_test_db.index.datasets.get(id)
-    print(scene)
-    my_datasets = odc_test_db.find_datasets(product='usgs_ls9c_level1_2')
-    assert len(my_datasets) == 1 # Check the archiving worked
-
-
-def test_add_dataset2(odc_test_db):
-    id_archive = "4c68b81a-23a0-5e57-b983-96439fc4518c" #  l1 that shoudld be ardchived
-    id = "91e7489e-f05a-5b7e-a96c-f0f0549bdd34" # blocked l1
-
-    # Test to show the ODC DB isn't reset between tests
-    # id_archive has already been archived, so there 
-    # is only one dataset in the DB
-    # Since the scope of odc_test_db is module this makes sense
-    my_datasets = odc_test_db.find_datasets(product='usgs_ls9c_level1_2')
-    assert len(my_datasets) == 1
-
-
-def test_ard_reprocessed_l1s():
+def test_ard_reprocessed_l1s(archive):
     """Test the ard_reprocessed_l1s function."""
 
     if False:
