@@ -4,10 +4,38 @@
 Testing connecting to a ODC database using
 pytest-odc
 
-Note,
-The docker package has been removed
-and a try statement has been put around import docker in
-database.py
+This should currently pass, with logs showing ard_reprocessed_l1s
+is using the test DB.
+
+What it is missing
+All the scenes that are used in the master test
+Checking of the results in test_ard_reprocessed_l1s
+Constants used in testing the results
+test_move_blocked
+
+Recomendations
+Use constants, not functions for holding values
+used to test the results. for test_ard_reprocessed_l1s
+what is used in master
+should just work. Though they could be improved by
+writing all the names in capitals. Plus changing
+the names to be more descriptive / adding comments.
+
+Refactor the fixture setup_local_directories_and_files
+to use python.
+
+Notes
+The metadata and product definitions have been copied into a
+single dir, in the test_data dir.
+
+Setting the ODC DB has been moved into the calling bash script. This
+module can just assume there will be a DB.
+There are a few 'if False' sections of code taht I used
+to work out what was happening. If it is all working smoothly
+they can be removed.
+
+I haven't checked if using pytst-odc to set the location breaks
+ things. It looked ok in the logs though.
 """
 
 from pathlib import Path

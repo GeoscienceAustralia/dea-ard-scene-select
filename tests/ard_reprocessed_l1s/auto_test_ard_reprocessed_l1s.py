@@ -24,6 +24,8 @@ from scene_select.ard_reprocessed_l1s import (
 )
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
+# I had to do this to point to the
+# test DB.
 if True:
     user_id = os.environ["USER"]
     os.environ[
@@ -298,7 +300,7 @@ def setup_all_fixtures(
     yield odc_db, dynamic_config_file
 
 
-def X_test_datacube_requirements(setup_config_file):
+def test_datacube_requirements(setup_config_file):
     """
     Ensure the datacube is ready to go
     """
