@@ -507,7 +507,6 @@ def l1_scenes_to_process(
     """Writes all the files returned from datacube for level1 to a file."""
     # pylint: disable=R0914
     # R0914: Too many local variables
-
     dc = datacube.Datacube(app="gen-list", config=config)
     l1_count = 0
     with open(outfile, "w") as fid:
@@ -541,8 +540,8 @@ def l1_scenes_to_process(
 @click.option(
     "--usgs-level1-files",
     type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to a text files containing all "
-    "the level-1 USGS/ESA list to be filtered",
+    help="full path to a text file containing all "
+    "the level-1 USGS/ESA entries to be filtered",
 )
 @click.option(
     "--allowed-codes",
@@ -642,6 +641,11 @@ Does not work for multigranule zip files.",
     help="The base logging and scripts output directory.",
 )
 @click.option(
+    "--jobdir",
+    type=click.Path(file_okay=False, writable=True),
+    help="The start ard processing directory. Will be made if it does not exist.",
+)
+@click.option(
     "--pkgdir",
     type=click.Path(file_okay=False, writable=True),
     help="The base output packaged directory.",
@@ -680,6 +684,7 @@ def scene_select(
     config: click.Path,
     products: list,
     logdir: click.Path,
+    jobdir: click.Path,
     brdfdir: click.Path,
     wvdir: click.Path,
     stop_logging: bool,
@@ -705,7 +710,7 @@ def scene_select(
         walltime: str,
         email: str
 
-    :return: list of scenes to ARD process
+    :return: Nothing
     """
     # pylint: disable=R0913, R0914
     # R0913: Too many arguments
@@ -714,7 +719,11 @@ def scene_select(
     logdir = Path(logdir).resolve()
     # If we write a file we write it in the job dir
     # set up the scene select job dir in the log dir
-    jobdir = logdir.joinpath(FMT2.format(jobid=uuid.uuid4().hex[0:6]))
+    if jobdir is None:
+        logdir = Path(logdir).resolve()
+        jobdir = logdir.joinpath(FMT2.format(jobid=uuid.uuid4().hex[0:6]))
+    else:
+        jobdir = Path(jobdir).resolve()
     jobdir.mkdir(exist_ok=True)
 
     if not stop_logging:
@@ -753,7 +762,6 @@ def scene_select(
     )
 
     LOGGER.info("info", jobdir=str(jobdir))
-    print("Job directory: " + str(jobdir))
 
 
 if __name__ == "__main__":
