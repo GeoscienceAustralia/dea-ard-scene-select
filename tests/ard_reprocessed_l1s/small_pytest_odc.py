@@ -166,7 +166,8 @@ def test_ard_reprocessed_l1s(archive):
 
     # pytest-odc has set
     # DATACUBE_DB_URL, based on the ODC_TEST_DB_URL
-    # such that the correct ODC DB is used
+    # Datacube calls will use DATACUBE_DB_URL
+    # So the correct ODC DB is used
     if run_ard: 
         cmd_params.append("--run-ard")
     if dry_run:
