@@ -34,7 +34,7 @@ There are a few 'if False' sections of code taht I used
 to work out what was happening. If it is all working smoothly
 they can be removed.
 
-I haven't checked if using pytst-odc to set the location breaks
+I haven't checked if using pytest-odc to set the location breaks
  things. It looked ok in the logs though.
 """
 
@@ -164,7 +164,7 @@ def test_ard_reprocessed_l1s(archive):
         SCRATCH_DIR,
     ]
 
-    # pytset-odc has set
+    # pytest-odc has set
     # DATACUBE_DB_URL, based on the ODC_TEST_DB_URL
     # such that the correct ODC DB is used
     if run_ard: 
