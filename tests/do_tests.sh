@@ -30,6 +30,3 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 pytest -s -v $SCRIPT_DIR/test_*.py
 
 #./timing_check_ancillary.py
-
-# Clean up for test_ard_scene_select.py
-rm -rf temp_jobdir_testing_* temp_logdir_testing_*

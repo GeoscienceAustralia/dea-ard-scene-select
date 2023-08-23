@@ -37,6 +37,3 @@ else
   echo "Running all python test files"
   python3 -m pytest -v -s test*.py
 fi
-
-# Clean up
-rm -rf testing_jobdir* testing_logdir*
