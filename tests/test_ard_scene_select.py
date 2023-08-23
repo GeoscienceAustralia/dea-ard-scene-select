@@ -202,6 +202,7 @@ def test_scene_select_with_explicit_jobdir_no_db():
         pytest.fail(f"Unexpected exception: {exception_message}")
     # clean up
     shutil.rmtree(temp_dir)
+    shutil.rmtree(custom_jobdir)
 
 
 def test_scene_select_no_explicit_jobdir_no_db():
@@ -262,3 +263,5 @@ def test_scene_select_no_explicit_jobdir_no_db():
         # such as bad parameter types or NoneType when the argument
         # is expected to be non-None
         pytest.fail(f"Unexpected exception: {exception_message}")
+    # clean up
+    shutil.rmtree(temp_dir)
