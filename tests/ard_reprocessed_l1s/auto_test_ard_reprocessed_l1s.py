@@ -45,11 +45,11 @@ from scene_select.ard_reprocessed_l1s import (
 )
 from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ODC_YAML_DIR = Path(__file__).parent.joinpath("..", "test_data", "odc_setup").resolve()
-SCENES_DIR = (
-    Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
-)
+TEST_DATA_DIR = Path(__file__).parent.joinpath("..", "test_data").resolve()
+ODC_YAML_DIR = TEST_DATA_DIR.joinpath("odc_setup").resolve()
+SCENES_DIR = TEST_DATA_DIR.joinpath( "ls9_reprocessing").resolve()
+
+NEW_BASE_PATH = SCENES_DIR.joinpath("moved")
 
 METADATA_TYPES = [
     ODC_YAML_DIR / "eo3_landsat_l1.odc-type.yaml",
@@ -60,70 +60,39 @@ PRODUCTS = [
     ODC_YAML_DIR / "ga_ls9c_ard_3.odc-product.yaml",
 ]
 
-REPROCESS_TEST_DIR = (
-    Path(__file__).parent.joinpath("..", "test_data", "ls9_reprocessing").resolve()
-)
-
 # two l1 scenes and one ard scene
 # the first l1 to be archived in the fixture
 DATASETS = [
-    REPROCESS_TEST_DIR
+    SCENES_DIR
     / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220621_02_T1.odc-metadata.yaml",
-    REPROCESS_TEST_DIR
+    SCENES_DIR
     / "ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml",
     "/g/data/da82/AODH/USGS/L1/Landsat/C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml",
     "/g/data/da82/AODH/USGS/L1/Landsat/C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml",
-    REPROCESS_TEST_DIR
+    SCENES_DIR
     / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220627_02_T1.odc-metadata.yaml",
-    REPROCESS_TEST_DIR
+    SCENES_DIR
     / "ga_ls9c_ard_3/102/076/2022/06/27/ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml",
-    REPROCESS_TEST_DIR
+    SCENES_DIR
     / "ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml",
-    REPROCESS_TEST_DIR
+    SCENES_DIR
     / "l1_Landsat_C2/095_074/LC90950742022177/LC09_L1TP_095074_20220626_20220802_02_T1.odc-metadata.yaml",
-    REPROCESS_TEST_DIR
+    SCENES_DIR
     / "ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml",
 ]
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_local_directories_and_files():
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    test_data_rel = os.path.join(script_dir, "..", "test_data", "ls9_reprocessing")
-    test_data = os.path.realpath(test_data_rel)
 
-    if "gadi" in os.environ.get("HOSTNAME", ""):
-        print("gadi - NCI")
-        module_paths = [
-            "/g/data/v10/public/modules/modulefiles",
-            "/g/data/v10/private/modules/modulefiles",
-        ]
-        for module_path in module_paths:
-            os.environ["MODULEPATH"] = os.pathsep.join(
-                [module_path, os.environ.get("MODULEPATH", "")]
-            )
-
-        # Load the required module
-        os.system("module load dea/20221025")
-    else:
-        print("Not on NCI")
-
-    ss_path = os.path.abspath(os.path.join(script_dir, "..", ".."))
-
- 
     # Delete and recreate the file structure
-    test_data_moved = os.path.join(test_data, "moved", "ga_ls9c_ard_3")
-    test_data_ga = os.path.join(test_data, "ga_ls9c_ard_3")
-    test_data_raw = os.path.join(test_data, "a_ga_ls9c_ard_3_raw")
+    test_data_moved = os.path.join(SCENES_DIR, "moved", "ga_ls9c_ard_3")
+    test_data_ga = os.path.join(SCENES_DIR, "ga_ls9c_ard_3")
+    test_data_raw = os.path.join(SCENES_DIR, "a_ga_ls9c_ard_3_raw")
     shutil.rmtree(test_data_moved, ignore_errors=True)
     shutil.rmtree(test_data_ga, ignore_errors=True)
     shutil.copytree(test_data_raw, test_data_ga)
-    os.makedirs(os.path.join(test_data, "moved"), exist_ok=True)
-
-    script_dir_scratch = os.path.join(script_dir, "scratch")
-    os.makedirs(script_dir_scratch, exist_ok=True)
-
-    yield  # Let the tests begin ;)
+    os.makedirs(os.path.join(SCENES_DIR, "moved"), exist_ok=True)
 
 
 @pytest.fixture
@@ -145,8 +114,8 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube):
     # of the scene select run will be displayed
     SCENE_SELECT_PROCESS_RUN_VERBOSE = False
 
-    new_base_path = REPROCESS_TEST_DIR.joinpath("moved")
-    current_base_path = REPROCESS_TEST_DIR
+    new_base_path = SCENES_DIR.joinpath("moved")
+    current_base_path = SCENES_DIR
     SCRATCH_DIR = Path(__file__).parent.joinpath("scratch")
 
     # in bash
@@ -154,7 +123,6 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube):
     jobdir = SCRATCH_DIR.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
     jobdir.mkdir(exist_ok=True)
 
-    dry_run = False
     product = "ga_ls9c_ard_3"
 
     scene_limit = 2
@@ -191,7 +159,7 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube):
         # Two dirs have been moved.  These are the previous datasets
         # that we sent in for reprocessing.
 
-        new_dir_06_21 = REPROCESS_TEST_DIR.joinpath(
+        new_dir_06_21 = SCENES_DIR.joinpath(
             "moved", "ga_ls9c_ard_3", "092", "081", "2022", "06", "21"
         )
         fname_06_21 = new_dir_06_21.joinpath(
@@ -202,7 +170,7 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube):
             fname_06_21
         ), f"The yaml file, '{fname_06_21}' has been moved, for a different scene"
 
-        new_dir_06_27 = REPROCESS_TEST_DIR.joinpath(
+        new_dir_06_27 = SCENES_DIR.joinpath(
             "moved", "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
         )
         yaml_fname_06_27 = new_dir_06_27.joinpath(
@@ -244,7 +212,7 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube):
         if "HOSTNAME" in os.environ and "gadi" in os.environ["HOSTNAME"]:
             base_location = Path("/g/data/da82/AODH/USGS/L1/Landsat/C2/")
         else:
-            base_location = REPROCESS_TEST_DIR.joinpath("l1_Landsat_C2")
+            base_location = SCENES_DIR.joinpath("l1_Landsat_C2")
 
         a_l1_tar = base_location.joinpath(
             "092_081",
@@ -286,7 +254,7 @@ def get_blocked_scene_ard() -> str:
 
 def get_file_paths_for_test_move_blocked() -> Dict:
     return {
-        "old_yaml_fname_06_27": REPROCESS_TEST_DIR.joinpath(
+        "old_yaml_fname_06_27": SCENES_DIR.joinpath(
             "ga_ls9c_ard_3",
             "102",
             "076",
@@ -295,9 +263,9 @@ def get_file_paths_for_test_move_blocked() -> Dict:
             "27",
             "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml",
         ),
-        "current_base_path": REPROCESS_TEST_DIR,
-        "new_base_path": REPROCESS_TEST_DIR.joinpath("moved"),
-        "yaml_fname_06_27": REPROCESS_TEST_DIR.joinpath(
+        "current_base_path": SCENES_DIR,
+        "new_base_path": SCENES_DIR.joinpath("moved"),
+        "yaml_fname_06_27": SCENES_DIR.joinpath(
             "moved",
             "ga_ls9c_ard_3",
             "102",
