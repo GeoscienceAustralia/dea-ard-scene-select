@@ -103,6 +103,7 @@ def clean_up():
     shutil.copytree(test_data_raw, test_data_ga)
     os.makedirs(MOVED_PATH, exist_ok=True)
 
+
 clean_up()
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
@@ -110,6 +111,7 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 @pytest.fixture(scope="function", autouse=True)
 def setup_local_directories_and_files():
     clean_up()
+
 
 @pytest.fixture
 def archive(odc_test_db):
