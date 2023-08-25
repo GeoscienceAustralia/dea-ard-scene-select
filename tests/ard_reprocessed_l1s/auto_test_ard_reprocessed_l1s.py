@@ -93,12 +93,8 @@ GROUP_6_26 = [
 
 DATASETS = GROUP_6_21 + GROUP_6_27 + GROUP_6_26
 
-pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_local_directories_and_files():
-
+def clean_up():
     # Delete and recreate the file structure
     test_data_ga = os.path.join(SCENES_DIR, "ga_ls9c_ard_3")
     test_data_raw = os.path.join(SCENES_DIR, "a_ga_ls9c_ard_3_raw")
@@ -107,6 +103,13 @@ def setup_local_directories_and_files():
     shutil.copytree(test_data_raw, test_data_ga)
     os.makedirs(MOVED_PATH, exist_ok=True)
 
+clean_up()
+pytestmark = pytest.mark.usefixtures("auto_odc_db")
+
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_local_directories_and_files():
+    clean_up()
 
 @pytest.fixture
 def archive(odc_test_db):
@@ -256,7 +259,7 @@ def get_file_paths_for_test_move_blocked() -> Dict:
     }
 
 
-def test_move_blocked(archive, odc_test_db: datacube.Datacube):
+def test_move_blocked(odc_test_db: datacube.Datacube):
     """
     Test the move_blocked function.
     This one does not involve running the
@@ -264,6 +267,12 @@ def test_move_blocked(archive, odc_test_db: datacube.Datacube):
     """
 
     file_paths = get_file_paths_for_test_move_blocked()
+
+    # Check the yaml file initial position
+    assert os.path.isfile(
+        file_paths["old_yaml_fname_06_27"]
+    ), "The old ARD yaml file is not found in the expected location"
+
     # Test the move_blocked function
     # for a 'normal' case
     blocked_scenes = [
