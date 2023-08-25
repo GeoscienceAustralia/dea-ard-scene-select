@@ -46,7 +46,7 @@ from scene_select.do_ard import ARCHIVE_FILE, ODC_FILTERED_FILE, PBS_ARD_FILE
 
 TEST_DATA_DIR = Path(__file__).parent.joinpath("..", "test_data").resolve()
 ODC_YAML_DIR = TEST_DATA_DIR.joinpath("odc_setup").resolve()
-SCENES_DIR = TEST_DATA_DIR.joinpath( "ls9_reprocessing").resolve()
+SCENES_DIR = TEST_DATA_DIR.joinpath("ls9_reprocessing").resolve()
 
 MOVED_PATH = SCENES_DIR.joinpath("moved")
 
@@ -59,33 +59,42 @@ PRODUCTS = [
     ODC_YAML_DIR / "ga_ls9c_ard_3.odc-product.yaml",
 ]
 
-# Add a blocking l1, a blocked l1 and the old ARD 
+# Add a blocking l1, a blocked l1 and the old ARD
 GROUP_6_21 = [
-    SCENES_DIR / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220621_02_T1.odc-metadata.yaml",
-    SCENES_DIR / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml",
-    SCENES_DIR / "ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml"
-    ]
+    SCENES_DIR
+    / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220621_02_T1.odc-metadata.yaml",
+    SCENES_DIR
+    / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml",
+    SCENES_DIR
+    / "ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml",
+]
 ARD_ID_06_21 = "3de6cb49-60da-4160-802b-65903dcbbac8"
 BLOCKING_L1_ID_06_21 = "4c68b81a-23a0-5e57-b983-96439fc4518c"
 
 # Add a blocking l1, a blocked l1 and the old ARD
 GROUP_6_27 = [
-    SCENES_DIR / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220627_02_T1.odc-metadata.yaml",
-    SCENES_DIR / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml",
-    SCENES_DIR / "ga_ls9c_ard_3/102/076/2022/06/27/ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
-    ]
+    SCENES_DIR
+    / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220627_02_T1.odc-metadata.yaml",
+    SCENES_DIR
+    / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml",
+    SCENES_DIR
+    / "ga_ls9c_ard_3/102/076/2022/06/27/ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml",
+]
 ARD_ID_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 BLOCKING_L1_ID_06_27 = "d530018e-5dad-58c2-8471-15f17d506604"
 
 # Add an l1 and its ARD
 GROUP_6_26 = [
-    SCENES_DIR / "l1_Landsat_C2/095_074/LC90950742022177/LC09_L1TP_095074_20220626_20220802_02_T1.odc-metadata.yaml",
-    SCENES_DIR / "ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml"
-    ]
+    SCENES_DIR
+    / "l1_Landsat_C2/095_074/LC90950742022177/LC09_L1TP_095074_20220626_20220802_02_T1.odc-metadata.yaml",
+    SCENES_DIR
+    / "ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml",
+]
 
 DATASETS = GROUP_6_21 + GROUP_6_27 + GROUP_6_26
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_local_directories_and_files():
@@ -119,7 +128,7 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
 
     SCRATCH_DIR = Path(tmpdir)
 
-    jobdir = SCRATCH_DIR.joinpath('jobdir')
+    jobdir = SCRATCH_DIR.joinpath("jobdir")
     jobdir.mkdir(exist_ok=True)
 
     cmd_params = [
@@ -182,9 +191,7 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
     # uuids have been written to an archive file
     filename = jobdir.joinpath(ARCHIVE_FILE)
 
-    assert os.path.isfile(
-        filename
-    ), f"There is no UUIDs archive list file, {filename}"
+    assert os.path.isfile(filename), f"There is no UUIDs archive list file, {filename}"
     with open(filename, "r", encoding="utf-8") as f:
         temp = f.read().splitlines()
 
