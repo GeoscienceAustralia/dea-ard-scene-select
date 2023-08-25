@@ -59,26 +59,31 @@ PRODUCTS = [
     ODC_YAML_DIR / "ga_ls9c_ard_3.odc-product.yaml",
 ]
 
-# two l1 scenes and one ard scene
-# the first l1 to be archived in the fixture
-DATASETS = [
-    SCENES_DIR
-    / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220621_02_T1.odc-metadata.yaml",
-    SCENES_DIR
-    / "ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml",
-    "/g/data/da82/AODH/USGS/L1/Landsat/C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml",
-    "/g/data/da82/AODH/USGS/L1/Landsat/C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml",
-    SCENES_DIR
-    / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220627_02_T1.odc-metadata.yaml",
-    SCENES_DIR
-    / "ga_ls9c_ard_3/102/076/2022/06/27/ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml",
-    SCENES_DIR
-    / "ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml",
-    SCENES_DIR
-    / "l1_Landsat_C2/095_074/LC90950742022177/LC09_L1TP_095074_20220626_20220802_02_T1.odc-metadata.yaml",
-    SCENES_DIR
-    / "ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml",
-]
+# Add a blocking l1, a blocked l1 and the old ARD 
+GROUP_6_21 = [
+    SCENES_DIR / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220621_02_T1.odc-metadata.yaml",
+    SCENES_DIR / "l1_Landsat_C2/092_081/LC90920812022172/LC09_L1TP_092081_20220621_20220802_02_T1.odc-metadata.yaml",
+    SCENES_DIR / "ga_ls9c_ard_3/092/081/2022/06/21/ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml"
+    ]
+ARD_ID_06_21 = "3de6cb49-60da-4160-802b-65903dcbbac8"
+BLOCKING_L1_ID_06_21 = "4c68b81a-23a0-5e57-b983-96439fc4518c"
+
+# Add a blocking l1, a blocked l1 and the old ARD
+GROUP_6_27 = [
+    SCENES_DIR / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220627_02_T1.odc-metadata.yaml",
+    SCENES_DIR / "l1_Landsat_C2/102_076/LC91020762022178/LC09_L1TP_102076_20220627_20220802_02_T1.odc-metadata.yaml",
+    SCENES_DIR / "ga_ls9c_ard_3/102/076/2022/06/27/ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
+    ]
+ARD_ID_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
+BLOCKING_L1_ID_06_27 = "d530018e-5dad-58c2-8471-15f17d506604"
+
+# Add an l1 and its ARD
+GROUP_6_26 = [
+    SCENES_DIR / "l1_Landsat_C2/095_074/LC90950742022177/LC09_L1TP_095074_20220626_20220802_02_T1.odc-metadata.yaml",
+    SCENES_DIR / "ga_ls9c_ard_3/095/074/2022/06/26/ga_ls9c_ard_3-2-1_095074_2022-06-26_final.odc-metadata.yaml"
+    ]
+
+DATASETS = GROUP_6_21 + GROUP_6_27 + GROUP_6_26
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
@@ -96,9 +101,11 @@ def setup_local_directories_and_files():
 
 @pytest.fixture
 def archive(odc_test_db):
+    # Block the older l1s sinced that is what
+    # happens in production
     for entry in [
-        "4c68b81a-23a0-5e57-b983-96439fc4518c",
-        "d530018e-5dad-58c2-8471-15f17d506604",
+        BLOCKING_L1_ID_06_21,
+        BLOCKING_L1_ID_06_27,
     ]:
         odc_test_db.index.datasets.archive([entry])
 
@@ -166,8 +173,7 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
         yaml_fname_06_27
     ), f"The yaml file, '{yaml_fname_06_27}' has been moved"
 
-    ard_id_06_27 = "d9a499d1-1abd-4ed1-8411-d584ca45de25"
-    ard_dataset = odc_test_db.index.datasets.get(ard_id_06_27)
+    ard_dataset = odc_test_db.index.datasets.get(ARD_ID_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
     assert str(local_path) == str(
         yaml_fname_06_27
@@ -184,8 +190,8 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
 
     assert sorted(
         [
-            "3de6cb49-60da-4160-802b-65903dcbbac8",
-            "d9a499d1-1abd-4ed1-8411-d584ca45de25",
+            ARD_ID_06_21,
+            ARD_ID_06_27,
         ]
     ) == sorted(temp), "The correct uuids have been written to the archive file"
 
@@ -194,10 +200,7 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
     with open(odc_filename, "r", encoding="utf-8") as f:
         temp = f.read().splitlines()
 
-    if "HOSTNAME" in os.environ and "gadi" in os.environ["HOSTNAME"]:
-        base_location = Path("/g/data/da82/AODH/USGS/L1/Landsat/C2/")
-    else:
-        base_location = SCENES_DIR.joinpath("l1_Landsat_C2")
+    base_location = SCENES_DIR.joinpath("l1_Landsat_C2")
 
     a_l1_tar = base_location.joinpath(
         "092_081",
@@ -213,21 +216,14 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
     assert os.path.isfile(
         filename
     ), f"ard to be processed reference file {filename} does not exist"
-    assert os.path.isfile(a_l1_tar), f"{a_l1_tar} file does not exist"
-    assert os.path.isfile(b_l1_tar), f"{b_l1_tar} file does not exist"
-    left = sorted([str(a_l1_tar), str(b_l1_tar)])
-    right = sorted(temp)
+
+    # Note, these tars do not exixt in the test data
     assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(temp), (
         "The correct l1 tars have been written to the scene select"
         " file, scenes_to_ARD_process.txt"
     )
     filename = jobdir.joinpath(PBS_ARD_FILE)
     assert os.path.isfile(filename), "There is a run ard pbs file"
-
-
-def get_blocked_scene_ard() -> str:
-    # ard_id_06_27
-    return "d9a499d1-1abd-4ed1-8411-d584ca45de25"
 
 
 def get_file_paths_for_test_move_blocked() -> Dict:
@@ -265,7 +261,7 @@ def test_move_blocked(archive, odc_test_db: datacube.Datacube):
     # for a 'normal' case
     blocked_scenes = [
         {
-            "blocking_ard_id": get_blocked_scene_ard(),
+            "blocking_ard_id": ARD_ID_06_27,
             "blocked_l1_zip_path": "not used",
             "blocking_ard_path": file_paths["old_yaml_fname_06_27"],
         }
@@ -294,7 +290,7 @@ def test_move_blocked(archive, odc_test_db: datacube.Datacube):
     # There should be one uuid to archive
     assert len(uuids2archive) == 1, "Wrong number of UUID to archive detected"
 
-    ard_dataset = odc_test_db.index.datasets.get(get_blocked_scene_ard())
+    ard_dataset = odc_test_db.index.datasets.get(ARD_ID_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
 
     assert str(local_path) == str(
@@ -305,7 +301,7 @@ def test_move_blocked(archive, odc_test_db: datacube.Datacube):
     # doesn't cause an error
     blocked_scenes = [
         {
-            "blocking_ard_id": get_blocked_scene_ard(),
+            "blocking_ard_id": ARD_ID_06_27,
             "blocked_l1_zip_path": "not used",
             "blocking_ard_path": file_paths["yaml_fname_06_27"],
         }
