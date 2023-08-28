@@ -373,6 +373,7 @@ def l1_filter(
     brdfdir: Path,
     iviirsdir: Path,
     mviirsdir: Path,
+    use_viirs_after: datetime.datetime,
     wvdir: Path,
     region_codes: Dict,
     interim_days_wait: int,
@@ -405,7 +406,7 @@ def l1_filter(
         LOGGER.warn(l1_product + msg)
 
     ancillary_ob = AncillaryFiles(
-        brdf_dir=brdfdir, viirs_i_path=iviirsdir, viirs_m_path=mviirsdir, wv_dir=wvdir
+        brdf_dir=brdfdir, viirs_i_path=iviirsdir, viirs_m_path=mviirsdir, wv_dir=wvdir, use_viirs_after=use_viirs_after
     )
     files2process = set({})
     duplicates = 0
@@ -510,6 +511,7 @@ def l1_scenes_to_process(
     iviirsdir: Path,
     mviirsdir: Path,
     wvdir: Path,
+    use_viirs_after: datetime.datetime,
     region_codes: Dict,
     scene_limit: int,
     interim_days_wait: int,
@@ -533,6 +535,7 @@ def l1_scenes_to_process(
                 brdfdir=brdfdir,
                 iviirsdir=iviirsdir,
                 mviirsdir=mviirsdir,
+                use_viirs_after=use_viirs_after,
                 wvdir=wvdir,
                 region_codes=region_codes,
                 interim_days_wait=interim_days_wait,
@@ -606,6 +609,12 @@ def l1_scenes_to_process(
     help="The home directory of VIIRS data, band M.",
     default=DEFAULT_VIIRS_M_PATH,
 )
+@click.option(
+    '--use-viirs-after',
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(DEFAULT_USE_VIIRS_AFTER.strftime("%Y-%m-%d")),
+    help="Use VIIRS data, not MODIS, for BRDF calcs's after this date."
+    " Format: YYYY-MM-DD",)
 @click.option(
     "--wvdir",
     type=click.Path(file_okay=False),
@@ -717,6 +726,7 @@ def scene_select(
     brdfdir: click.Path,
     iviirsdir: click.Path,
     mviirsdir: click.Path,
+    use_viirs_after: datetime.datetime,
     wvdir: click.Path,
     stop_logging: bool,
     log_config: click.Path,
@@ -778,6 +788,7 @@ def scene_select(
             brdfdir=Path(brdfdir).resolve(),
             iviirsdir=Path(iviirsdir).resolve(),
             mviirsdir=Path(mviirsdir).resolve(),
+            use_viirs_after=use_viirs_after,
             wvdir=Path(wvdir).resolve(),
             region_codes=load_aoi(allowed_codes),
             config=config,
