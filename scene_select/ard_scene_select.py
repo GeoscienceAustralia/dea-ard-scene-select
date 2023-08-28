@@ -406,7 +406,11 @@ def l1_filter(
         LOGGER.warn(l1_product + msg)
 
     ancillary_ob = AncillaryFiles(
-        brdf_dir=brdfdir, viirs_i_path=iviirsdir, viirs_m_path=mviirsdir, wv_dir=wvdir, use_viirs_after=use_viirs_after
+        brdf_dir=brdfdir,
+        viirs_i_path=iviirsdir,
+        viirs_m_path=mviirsdir,
+        wv_dir=wvdir,
+        use_viirs_after=use_viirs_after,
     )
     files2process = set({})
     duplicates = 0
@@ -610,11 +614,12 @@ def l1_scenes_to_process(
     default=DEFAULT_VIIRS_M_PATH,
 )
 @click.option(
-    '--use-viirs-after',
+    "--use-viirs-after",
     type=click.DateTime(formats=["%Y-%m-%d"]),
     default=str(DEFAULT_USE_VIIRS_AFTER.strftime("%Y-%m-%d")),
     help="Use VIIRS data, not MODIS, for BRDF calcs's after this date."
-    " Format: YYYY-MM-DD",)
+    " Format: YYYY-MM-DD",
+)
 @click.option(
     "--wvdir",
     type=click.Path(file_okay=False),
