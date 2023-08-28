@@ -392,7 +392,8 @@ def l1_filter(
     @param find_blocked:
     @return: a list of file paths to ARD process
     """
-    # pylint: disable=R0914
+    # pylint: disable=R0913, R0914
+    # R0913: Too many arguments
     # R0914: Too many local variables
 
     sat_key = get_aoi_sat_key(region_codes, l1_product)
