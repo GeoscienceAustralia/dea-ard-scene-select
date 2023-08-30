@@ -72,13 +72,13 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
 TEST_DATA="$script_directory/test_data/integration_tests"
 
-datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml
+#datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml
 
 # ls9 - The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239
-datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
+#datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
 
 # A ls8 that has been used in BRDF testing
-datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80970752022215/LC08_L1TP_097075_20220803_20220805_02_T1.odc-metadata.yaml
+#datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80970752022215/LC08_L1TP_097075_20220803_20220805_02_T1.odc-metadata.yaml
 
 # Filter Outcome - ls_go_select
 # $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.tar
