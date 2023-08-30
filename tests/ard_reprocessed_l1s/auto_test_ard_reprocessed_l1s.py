@@ -94,7 +94,7 @@ GROUP_6_26 = [
 DATASETS = GROUP_6_21 + GROUP_6_27 + GROUP_6_26
 
 
-def clean_up():
+def prepare_filestructure():
     # Delete and recreate the file structure
     test_data_ga = os.path.join(SCENES_DIR, "ga_ls9c_ard_3")
     test_data_raw = os.path.join(SCENES_DIR, "a_ga_ls9c_ard_3_raw")
@@ -103,14 +103,16 @@ def clean_up():
     shutil.copytree(test_data_raw, test_data_ga)
     os.makedirs(MOVED_PATH, exist_ok=True)
 
-
-clean_up()
+# We are calling prepare_filestructure explicitly
+# so that the test db will have access to the right
+# files it needs to setup.
+prepare_filestructure()
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_local_directories_and_files():
-    clean_up()
+    prepare_filestructure()
 
 
 @pytest.fixture
