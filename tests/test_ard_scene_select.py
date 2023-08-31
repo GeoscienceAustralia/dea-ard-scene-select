@@ -265,5 +265,5 @@ def test_scene_select_no_explicit_jobdir_no_db():
         # is expected to be non-None
         pytest.fail(f"Unexpected exception: {exception_message}")
     finally:
-    # clean up
+        # clean up
         shutil.rmtree(temp_dir)

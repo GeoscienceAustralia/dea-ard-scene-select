@@ -100,7 +100,8 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
     # Two or more blocked l1s is a problem
     if len(blocked_l1s) > 1:
         LOGGER.error(
-            "multiple blocked l1s. Ignore this group of l1s", dataset_id=dataset.id,
+            "multiple blocked l1s. Ignore this group of l1s",
+            dataset_id=dataset.id,
         )
         blocked_l1s = []
     return blocked_l1s
@@ -198,7 +199,9 @@ def move_blocked(
                 odc_update_results = {}
             else:
                 worked, odc_update_results = utils.scene_move(
-                    Path(current_path), current_base_path, new_base_path,
+                    Path(current_path),
+                    current_base_path,
+                    new_base_path,
                 )
                 LOGGER.info("scene_move", **odc_update_results)
             if worked:
