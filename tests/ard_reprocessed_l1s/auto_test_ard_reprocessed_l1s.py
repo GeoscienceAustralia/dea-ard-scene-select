@@ -103,6 +103,7 @@ def prepare_filestructure():
     shutil.copytree(test_data_raw, test_data_ga)
     os.makedirs(MOVED_PATH, exist_ok=True)
 
+
 # We are calling prepare_filestructure explicitly
 # so that the test db will have access to the right
 # files it needs to setup.
