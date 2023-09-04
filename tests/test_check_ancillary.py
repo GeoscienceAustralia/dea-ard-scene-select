@@ -28,8 +28,9 @@ def test_viirs():
     ymd = a_dt.strftime("%Y.%m.%d")
     ancill_there, msg = af_ob.check_viirs(ymd)
     assert ancill_there
+    assert msg == "", "Unexpectedly, there is a returned message"
 
-    # I only for this date
+    # I_viirs only for this date
     af_ob = AncillaryFiles(
         viirs_m_path=VIIRS_M_TEST_DIR,
         viirs_i_path=VIIRS_I_TEST_DIR,
@@ -39,7 +40,8 @@ def test_viirs():
     a_dt = datetime.datetime(2020, 8, 2, tzinfo=pytz.UTC)
     ymd = a_dt.strftime("%Y.%m.%d")
     ancill_there, msg = af_ob.check_viirs(ymd)
-    assert not ancill_there
+    assert not ancill_there, "Unexpectedly, there is brdf vii I data"
+    assert msg != "", "Unexpectedly, there is no returned message"
 
     # M only for this date
     af_ob = AncillaryFiles(
@@ -52,6 +54,7 @@ def test_viirs():
     ymd = a_dt.strftime("%Y.%m.%d")
     ancill_there, msg = af_ob.check_viirs(ymd)
     assert not ancill_there
+    assert not ancill_there, "Unexpectedly, there is brdf vii I data"
 
 
 def test_ancillaryfiles_local():
