@@ -63,7 +63,7 @@ DATASETS = [
 
 
 def get_expected_file_paths() -> List:
-    return [x.replace(".odc-metadata.yaml", ".tar") for x in DATASETS]
+    return [dataset_file_path.replace(".odc-metadata.yaml", ".tar") for dataset_file_path in DATASETS]
 
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
