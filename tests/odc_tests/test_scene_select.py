@@ -177,3 +177,26 @@ def test_scene_select_without_explicit_jobdir_with_db():
         pytest.fail(f"Unexpected exception: {exception_message}")
     finally:
         shutil.rmtree(logdir)
+
+
+def test_scene_select_viirs(tmpdir):
+    """Checking the parameters for viirs"""
+    cmd_params = [
+        "--logdir",
+        tmpdir,
+        "--i-viirsdir",
+        ".",
+        "--m-viirsdir",
+        ".",
+        "--use-viirs-after",
+        "2099-12-20",
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(
+        scene_select,
+        cmd_params,
+    )
+
+    if result.exception is not None:
+        pytest.fail(f"Unexpected exception: {result.exception} \n {result.output}")

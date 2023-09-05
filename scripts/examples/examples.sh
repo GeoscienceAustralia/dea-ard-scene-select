@@ -25,7 +25,7 @@ ARD_ENV="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/p
 
 # Scene select in this repo
 time python3 ../../scene_select/ard_scene_select.py --workdir scratch/  --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 10:00:00  \
---env $ARD_ENV  --products $PRODUCTS --scene-limit 999999 #--find-blocked
+--env $ARD_ENV  --products $PRODUCTS --scene-limit 999999 #--use-viirs-after 2023-07-03 #--find-blocked
 
 # using a wrt list
 #python3 ../../scene_select/ard_scene_select.py  --usgs-level1-files ../../tests/test_data/All_Landsat_Level1_Nci_Files.txt  --workdir scratch/ --allowed-codes ../../tests/test_data/standard_wrs_list.txt  --logdir scratch/

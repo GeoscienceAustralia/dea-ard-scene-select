@@ -11,7 +11,50 @@ from scene_select.check_ancillary import AncillaryFiles
 __all__ = ("H5CompressionFilter",)  # Stop flake8 F401's
 
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("test_data", "BRDF")
+VIIRS_I_TEST_DIR = Path(__file__).parent.joinpath("test_data", "VNP43IA1.001")
+VIIRS_M_TEST_DIR = Path(__file__).parent.joinpath("test_data", "VNP43MA1.001")
 WV_TEST_DIR = Path(__file__).parent.joinpath("test_data", "water_vapour")
+
+
+def test_viirs():
+    # I and M for this date
+    af_ob = AncillaryFiles(
+        viirs_m_path=VIIRS_M_TEST_DIR,
+        viirs_i_path=VIIRS_I_TEST_DIR,
+        brdf_dir=BRDF_TEST_DIR,
+        wv_dir=WV_TEST_DIR,
+    )
+    a_dt = datetime.datetime(2020, 8, 1, tzinfo=pytz.UTC)
+    ymd = a_dt.strftime("%Y.%m.%d")
+    ancill_there, msg = af_ob.check_viirs(ymd)
+    assert ancill_there
+    assert msg == "", "Unexpectedly, there is a returned message"
+
+    # I_viirs only for this date
+    af_ob = AncillaryFiles(
+        viirs_m_path=VIIRS_M_TEST_DIR,
+        viirs_i_path=VIIRS_I_TEST_DIR,
+        brdf_dir=BRDF_TEST_DIR,
+        wv_dir=WV_TEST_DIR,
+    )
+    a_dt = datetime.datetime(2020, 8, 2, tzinfo=pytz.UTC)
+    ymd = a_dt.strftime("%Y.%m.%d")
+    ancill_there, msg = af_ob.check_viirs(ymd)
+    assert not ancill_there, "Unexpectedly, there is brdf vii I data"
+    assert msg != "", "Unexpectedly, there is no returned message"
+
+    # M only for this date
+    af_ob = AncillaryFiles(
+        viirs_m_path=VIIRS_M_TEST_DIR,
+        viirs_i_path=VIIRS_I_TEST_DIR,
+        brdf_dir=BRDF_TEST_DIR,
+        wv_dir=WV_TEST_DIR,
+    )
+    a_dt = datetime.datetime(2020, 8, 3, tzinfo=pytz.UTC)
+    ymd = a_dt.strftime("%Y.%m.%d")
+    ancill_there, msg = af_ob.check_viirs(ymd)
+    assert not ancill_there
+    assert not ancill_there, "Unexpectedly, there is brdf vii I data"
 
 
 def test_ancillaryfiles_local():
