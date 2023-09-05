@@ -1,7 +1,7 @@
 """
-    DSNS-241
-    R1.1 for ls: Unfiltered scenes are ARD processed
-    The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C1/092_085/LC80920852020223
+    DSNS-232
+    R2.2 for landsat - Filter out scenes that do not match the product pattern
+    
 """
 from collections import Counter
 from pathlib import Path
@@ -15,7 +15,7 @@ from scene_select.ard_scene_select import (
 
 from util import (
     get_list_from_file,
-)
+)  # TODO - Speak with Duncan. 'lib/' is in the .gitignore. Do we want to make an exception?
 
 
 METADATA_DIR = (
@@ -30,11 +30,9 @@ PRODUCTS_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "eo3").resolve()
 )
 PRODUCTS = [
-    os.path.join(PRODUCTS_DIR, "l1_ls8.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "l1_ls8_c2.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "l1_ls9.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "ard_ls8.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "ard_ls9.odc-product.yaml"),
+    os.path.join(PRODUCTS_DIR, "l1_ls7.odc-product.yaml"),
 ]
 
 DATASETS_DIR = (
@@ -49,31 +47,26 @@ DATASETS_DIR = (
 DATASETS = [
     os.path.join(
         DATASETS_DIR,
-        "c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml",
-    ),
-    os.path.join(
-        DATASETS_DIR,
-        "c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml",
-    ),
-    os.path.join(
-        DATASETS_DIR,
-        "c3/LC80970752022215/LC08_L1TP_097075_20220803_20220805_02_T1.odc-metadata.yaml",
+        "c3/LE71080732020343_level_too_low/LE07_L1GT_108073_20201208_20210103_01_T2.odc-metadata.yaml",
     ),
 ]
 
 
 def get_expected_file_paths() -> List:
-    return [dataset_file_path.replace(".odc-metadata.yaml", ".tar") for dataset_file_path in DATASETS]
+    return [
+        dataset_file_path.replace(".odc-metadata.yaml", ".tar")
+        for dataset_file_path in DATASETS
+    ]
 
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
+def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmpdir):
 
     cmd_params = [
         "--products",
-        '["usgs_ls8c_level1_1", "usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
+        '["usgs_ls9c_level1_2"]',
         "--logdir",
         tmpdir,
     ]
@@ -86,7 +79,8 @@ def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
 
     assert result.exit_code == 0, "The scene_select process failed to execute"
 
-    # Use glob to search for the file within filter-jobid-* directories
+    # Use glob to search for the scenes_to_ARD_process.txt file
+    # within filter-jobid-* directories
     matching_files = list(Path(tmpdir).glob("filter-jobid-*/scenes_to_ARD_process.txt"))
 
     # There's only ever 1 copy of scenes_to_ARD_process.txt after
@@ -96,7 +90,9 @@ def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
     ), f"Scene select failed. List of entries to process is not available - {matching_files}"
     ards_to_process = get_list_from_file(matching_files[0])
 
-    expected_files = get_expected_file_paths()
-    assert Counter(ards_to_process) == Counter(
-        expected_files
-    ), "Lists do not have the same contents."
+    # Given that the run should have no ards to process, we expect
+    # an empty scenes_to_ARD_process.txt file.
+
+    assert (
+        len(ards_to_process) == 0
+    ), f"Ard entries to process exist when we are not expecting anything to be"
