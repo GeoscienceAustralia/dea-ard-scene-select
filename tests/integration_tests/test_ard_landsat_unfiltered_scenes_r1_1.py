@@ -30,12 +30,10 @@ PRODUCTS_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "eo3").resolve()
 )
 PRODUCTS = [
-    os.path.join(PRODUCTS_DIR, "l1_ls7.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "l1_ls8.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "l1_ls8_c2.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "l1_ls9.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "ard_ls8.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "ard_ls7.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "ard_ls9.odc-product.yaml"),
 ]
 
@@ -65,58 +63,19 @@ DATASETS = [
 
 
 def get_expected_file_paths() -> List:
-    TEST_DATA_DIR = (
-        Path(__file__)
-        .parent.joinpath(
-            "..",
-            "test_data",
-            "integration_tests",
-        )
-        .resolve()
-    )
-    return [
-        os.path.join(
-            TEST_DATA_DIR,
-            "c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.tar",
-        ),
-        os.path.join(
-            TEST_DATA_DIR,
-            "c3/LC80970752022215/LC08_L1TP_097075_20220803_20220805_02_T1.tar",
-        ),
-        os.path.join(
-            TEST_DATA_DIR,
-            "c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.tar",
-        ),
-    ]
+    return [x.replace(".odc-metadata.yaml", ".tar") for x in DATASETS]
 
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_ard_landsat_unfiltered_scenes_r1_1(setup_local_directories_and_files):
-    (scratch_dir, package_dir) = setup_local_directories_and_files
+def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
 
     cmd_params = [
         "--products",
-        '["usgs_ls7e_level1_1", "usgs_ls8c_level1_1", "usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
-        "--workdir",
-        scratch_dir,
-        "--pkgdir",
-        package_dir,
+        '["usgs_ls8c_level1_1", "usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
         "--logdir",
-        scratch_dir,
-        "--project",
-        "u46",
-        "--walltime",
-        "02:30:00",
-        "--interim-days-wait",
-        5,
-        "--days-to-exclude",
-        '["2009-01-03:2009-01-05"]',
-        "--index-datacube-env",
-        "index-test-odc.env",
-        # Uncomment the line below for '--run-ard' argument
-        # "--run-ard",
+        tmpdir,
     ]
 
     runner = CliRunner()
@@ -125,18 +84,10 @@ def test_ard_landsat_unfiltered_scenes_r1_1(setup_local_directories_and_files):
         args=cmd_params,
     )
 
-    print("***** results output ******")
-    print(result.output)
-    print("***** results exception ******")
-    print(result.exception)
-    print("***** results end ******")
-
     assert result.exit_code == 0, "The scene_select process failed to execute"
 
     # Use glob to search for the file within filter-jobid-* directories
-    matching_files = list(
-        Path(scratch_dir).glob("filter-jobid-*/scenes_to_ARD_process.txt")
-    )
+    matching_files = list(Path(tmpdir).glob("filter-jobid-*/scenes_to_ARD_process.txt"))
 
     # There's only ever 1 copy of scenes_to_ARD_process.txt after
     # successfully processing
