@@ -9,10 +9,7 @@ from click.testing import CliRunner
 import pytest
 import os
 import json
-from scene_select.ard_scene_select import (
-    scene_select,
-    GEN_LOG_FILE
-)
+from scene_select.ard_scene_select import scene_select, GEN_LOG_FILE
 
 from scene_select.do_ard import (
     ODC_FILTERED_FILE,
@@ -85,7 +82,7 @@ def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
     # Use glob to search for the scenes_to_ARD_process.txt file
     # within filter-jobid-* directories
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + ODC_FILTERED_FILE))
-    
+
     # There's only ever 1 copy of scenes_to_ARD_process.txt after
     # successfully processing
     assert (
@@ -100,21 +97,21 @@ def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
         len(ards_to_process) == 0
     ), f"Ard entries to process exist when we are not expecting anything to be"
 
-    # Use glob to search for the scenes_to_ARD_process.txt file
+    # Use glob to search for the log file
     # within filter-jobid-* directories
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
-    
+
     # There's only ever 1 copy of this file
     assert (
         matching_files and matching_files[0] is not None
     ), f"Scene select failed. Log is not available - {matching_files}"
     ard_logs = get_list_from_file(matching_files[0])
-    
-    found = False
+
+    found_log_line = False
     with open(matching_files[0]) as f:
         for line in f:
             jline = json.loads(line)
-            if 'reason' in jline and jline['reason'] == 'Processing level too low':
-                found = True
+            if "reason" in jline and jline["reason"] == "Processing level too low":
+                found_log_line = True
                 break
-    assert found, "Processing level too low not found in log file"
+    assert found_log_line, "Processing level too low not found in log file"
