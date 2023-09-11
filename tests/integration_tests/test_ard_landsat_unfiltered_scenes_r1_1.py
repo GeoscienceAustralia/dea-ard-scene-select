@@ -15,7 +15,7 @@ from scene_select.ard_scene_select import (
 
 from util import (
     get_list_from_file,
-)  # TODO - Speak with Duncan. 'lib/' is in the .gitignore. Do we want to make an exception?
+)
 
 
 METADATA_DIR = (
@@ -63,7 +63,7 @@ DATASETS = [
 
 
 def get_expected_file_paths() -> List:
-    return [dataset_file_path.replace(".odc-metadata.yaml", ".tar") for dataset_file_path in DATASETS]
+    return [file_path.replace(".odc-metadata.yaml", ".tar") for file_path in DATASETS]
 
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
