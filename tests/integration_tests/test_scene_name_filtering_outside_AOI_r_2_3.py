@@ -1,21 +1,20 @@
 """
-    DSNS-232
-    R2.2 for landsat - Filter out scenes that do not match the product pattern
+    DSNS-233
+    R2.3 Filter out if outside the AOI
     
 """
 from pathlib import Path
 from typing import List
-from click.testing import CliRunner
-import pytest
 import os
 import json
+from click.testing import CliRunner
+import pytest
 from scene_select.ard_scene_select import scene_select, GEN_LOG_FILE
 from scene_select.do_ard import ODC_FILTERED_FILE
 
 from util import (
     get_list_from_file,
 )
-
 
 METADATA_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "metadata").resolve()
@@ -28,9 +27,11 @@ METADATA_TYPES = [
 PRODUCTS_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "eo3").resolve()
 )
+
 PRODUCTS = [
-    os.path.join(PRODUCTS_DIR, "l1_ls7.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "ard_ls7.odc-product.yaml"),
+    os.path.join(PRODUCTS_DIR, "l1_ls8.odc-product.yaml"),
+    os.path.join(PRODUCTS_DIR, "l1_ls8_c2.odc-product.yaml"),
+    os.path.join(PRODUCTS_DIR, "ard_ls8.odc-product.yaml"),
 ]
 
 DATASETS_DIR = (
@@ -45,23 +46,20 @@ DATASETS_DIR = (
 DATASETS = [
     os.path.join(
         DATASETS_DIR,
-        "c3/LE71080732020343_level_too_low/LE07_L1GT_108073_20201208_20210103_01_T2.odc-metadata.yaml",
+        "c3/LC80920852020223_OUTAOI/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml",
     ),
 ]
-
 
 def get_expected_file_paths() -> List:
     return [file_path.replace(".odc-metadata.yaml", ".tar") for file_path in DATASETS]
 
-
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-
-def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
+def test_ard_landsat_scenes_outside_AOI_r2_3(tmp_path):
 
     cmd_params = [
         "--products",
-        '["usgs_ls7e_level1_1"]',
+        '[ "usgs_ls8c_level1_1" ]',
         "--logdir",
         tmp_path,
     ]
@@ -90,7 +88,7 @@ def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
 
     assert (
         len(ards_to_process) == 0
-    ), f"Ard entries to process exist when we are not expecting anything to be"
+    ), "Ard entries to process exist when we are not expecting anything to be there"
 
     # Use glob to search for the log file
     # within filter-jobid-* directories
@@ -100,13 +98,12 @@ def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
     assert (
         matching_files and matching_files[0] is not None
     ), f"Scene select failed. Log is not available - {matching_files}"
-    ard_logs = get_list_from_file(matching_files[0])
 
     found_log_line = False
-    with open(matching_files[0]) as f:
-        for line in f:
+    with open(matching_files[0], encoding="utf-8") as ard_log_file:
+        for line in ard_log_file:
             jline = json.loads(line)
-            if "reason" in jline and jline["reason"] == "Processing level too low":
+            if "reason" in jline and jline["reason"] == "Region not in AOI":
                 found_log_line = True
                 break
-    assert found_log_line, "Processing level too low not found in log file"
+    assert found_log_line, "landsat scene still selected despite not being in the AOI"
