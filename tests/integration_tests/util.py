@@ -16,7 +16,6 @@ def get_list_from_file(list_file: str) -> List:
     Returns:
     - List: A list of strings, each string representing line content
         of the input file
-
     """
     with open(list_file, "r", encoding="utf-8") as file:
         file_list = [line.strip() for line in file]
