@@ -17,7 +17,6 @@ from util import (
     get_list_from_file,
 )
 
-
 METADATA_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "metadata").resolve()
 )

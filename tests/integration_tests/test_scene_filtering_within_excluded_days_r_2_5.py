@@ -1,10 +1,8 @@
 """
-    DSNS-234
-    2.4 Filter out if no ancillary
-    
+    DSNS-235
+    R2.5 Filter within the excluded days
 """
 from pathlib import Path
-from typing import List
 import os
 import json
 from click.testing import CliRunner
@@ -46,19 +44,27 @@ DATASETS_DIR = (
 DATASETS = [
     os.path.join(
         DATASETS_DIR,
-        "c3/LC80920852020223_no_ancillary/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml",
+        "c3/LC80920852020223_excluded_day/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml",
     ),
 ]
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-def test_ard_landsat_scenes_no_acillary_r2_4(tmp_path):
+def test_scene_filtering_within_excluded_days_r_2_5(tmp_path):
+    """
+        This is the collective test that implements the requirement as
+        defined at the top of this test suite. 
+    """
 
+    # Observe that there is a date exclusion filter passed
+    # into the process
     cmd_params = [
         "--products",
         '[ "usgs_ls8c_level1_1" ]',
         "--logdir",
         tmp_path,
+        "--days-to-exclude",
+        '["2009-01-03:2009-01-05"]',
     ]
 
     runner = CliRunner()
@@ -75,17 +81,19 @@ def test_ard_landsat_scenes_no_acillary_r2_4(tmp_path):
 
     # There's only ever 1 copy of scenes_to_ARD_process.txt after
     # successfully processing
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. List of entries to process is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        "Scene select failed. List of entries to process is not available "
+        f"- {matching_files}"
+    )
     ards_to_process = get_list_from_file(matching_files[0])
 
     # Given that the run should have no ards to process, we expect
     # an empty scenes_to_ARD_process.txt file.
 
-    assert (
-        len(ards_to_process) == 0
-    ), "Ard entries to process exist when we are not expecting anything to be there"
+    assert len(ards_to_process) == 0, (
+        "Ard entries to process exist when we are not expecting "
+        f"anything to be there, {ards_to_process}"
+    )
 
     # Use glob to search for the log file
     # within filter-jobid-* directories
@@ -99,8 +107,13 @@ def test_ard_landsat_scenes_no_acillary_r2_4(tmp_path):
     found_log_line = False
     with open(matching_files[0], encoding="utf-8") as ard_log_file:
         for line in ard_log_file:
-            jline = json.loads(line)
-            if "reason" in jline and jline["reason"] == "ancillary files not ready":
-                found_log_line = True
-                break
-    assert found_log_line, "Ancillary files are found when they are not supposed to be"
+            try:
+                jline = json.loads(line)
+                if "reason" in jline and jline["reason"] == "This day is excluded.":
+                    found_log_line = True
+                    break
+            except json.JSONDecodeError as error_string:
+                print(f"Error decoding JSON: {error_string}")
+    assert (
+        found_log_line
+    ), "Landsat scene still selected despite its date is being excluded"
