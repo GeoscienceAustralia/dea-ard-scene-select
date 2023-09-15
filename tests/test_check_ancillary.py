@@ -3,7 +3,11 @@
 import datetime
 from pathlib import Path
 
-from wagl.hdf5 import H5CompressionFilter  # don't delete, needed 4 plugins
+try:
+    from wagl.hdf5 import H5CompressionFilter  # don't delete, needed 4 plugins
+except ModuleNotFoundError:
+    # for non-NCI setup
+    import tables
 import pytz
 
 from scene_select.check_ancillary import AncillaryFiles
