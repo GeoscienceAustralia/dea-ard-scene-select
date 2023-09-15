@@ -10,6 +10,8 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "Loaded the necessary packages as we run on nci gadi"
 
   export ODC_TEST_DB_URL=postgresql://$USER"@deadev.nci.org.au/"$USER"_automated_testing"
+else
+  export ODC_TEST_DB_URL=postgresql://$USER"@localhost/"$USER"_automated_testing"
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
