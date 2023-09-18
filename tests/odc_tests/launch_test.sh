@@ -2,7 +2,7 @@
 
 # This is a test launcher whereby we can give it any test 
 # or *.py to run on pytest
-
+host=local
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
  
@@ -15,9 +15,10 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   # module load ard-scene-select-py3-dea/20230615
  
   echo "loaded the necessary packages as we run on nci gadi"
- 
-  export ODC_TEST_DB_URL=postgresql://$USER"@deadev.nci.org.au/"$USER"_automated_testing"
+  host=deadev.nci.org.au
 fi
+
+  export ODC_TEST_DB_URL=postgresql://$USER"@"$host"/"$USER"_automated_testing"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SSPATH=$DIR/../../
