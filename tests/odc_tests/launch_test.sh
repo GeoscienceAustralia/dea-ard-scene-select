@@ -17,15 +17,14 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "loaded the necessary packages as we run on nci gadi"
  
   export ODC_TEST_DB_URL=postgresql://$USER"@deadev.nci.org.au/"$USER"_automated_testing"
-else
-  echo "This test needs to run on gadi (nci)"
-  exit 1
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-SSPATH=$DIR/../..
- 
+SSPATH=$DIR/../../
+
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+#echo $PYTHONPATH
+export PYTHONPATH=$PYTHONPATH
 
 if [ -e "$1" ] && [ -n "$1" ]; then
   # Run the specific file if it exists in the args
