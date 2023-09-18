@@ -2,6 +2,7 @@
 
 # This is a test launcher whereby we can give it any test 
 # or *.py to run on pytest
+
 host=localhost
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
