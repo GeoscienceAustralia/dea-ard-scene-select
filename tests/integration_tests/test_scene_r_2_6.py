@@ -103,12 +103,20 @@ def test_scene_filtering_r_2_6(tmp_path):
     found_log_line = False
     with open(matching_files[0], encoding="utf-8") as ard_log_file:
         for line in ard_log_file:
-            jline = json.loads(line)
-            # print(f"Current jline: {jline}")
-            if "reason" in jline and jline["reason"] == "The scene has been processed":
-                found_log_line = True
-                break
-    assert found_log_line, "Landsat scene with ARD selected for ARD processing"
+            try:
+                jline = json.loads(line)
+                print(f"Current jline: {jline}")
+                if (
+                    "reason" in jline
+                    and jline["reason"] == "The scene has been processed"
+                ):
+                    found_log_line = True
+                    break
+            except json.JSONDecodeError as error_string:
+                print(f"Error decoding JSON: {error_string}")
+    assert (
+        found_log_line
+    ), "Landsat scene still selected despite its date is being excluded"
 
     # Use glob to search for the scenes_to_ARD_process.txt file
     # within filter-jobid-* directories
