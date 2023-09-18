@@ -5,16 +5,16 @@
 """
 from collections import Counter
 from pathlib import Path
-from typing import List
+import os
 from click.testing import CliRunner
 import pytest
-import os
 from scene_select.ard_scene_select import (
     scene_select,
 )
 
 from util import (
     get_list_from_file,
+    get_expected_file_paths,
 )
 
 METADATA_DIR = (
@@ -60,11 +60,6 @@ DATASETS = [
     ),
 ]
 
-
-def get_expected_file_paths() -> List:
-    return [file_path.replace(".odc-metadata.yaml", ".tar") for file_path in DATASETS]
-
-
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
@@ -95,7 +90,7 @@ def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
     ), f"Scene select failed. List of entries to process is not available - {matching_files}"
     ards_to_process = get_list_from_file(matching_files[0])
 
-    expected_files = get_expected_file_paths()
+    expected_files = get_expected_file_paths(DATASETS)
     assert Counter(ards_to_process) == Counter(
         expected_files
     ), "Lists do not have the same contents."
