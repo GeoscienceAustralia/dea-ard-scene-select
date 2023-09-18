@@ -22,7 +22,7 @@ fi
 export ODC_TEST_DB_URL=postgresql://$USER"@"$host"/"$USER"_automated_testing"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-SSPATH=$DIR/../../
+SSPATH=$DIR/../..
 
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 #echo $PYTHONPATH
