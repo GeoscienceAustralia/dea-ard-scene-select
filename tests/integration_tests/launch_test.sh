@@ -3,6 +3,7 @@
 # This is a test launcher whereby we can give it any test 
 # or *.py to run on pytest
 
+host=localhost
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
@@ -14,15 +15,29 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   # module load ard-scene-select-py3-dea/dev_20230522
   module load ard-scene-select-py3-dea/20230616  # This is from ls_go_select.sh
+  host=deadev.nci.org.au
 
-else
-  echo "This test needs to run on gadi (nci)"
-  exit 1
 fi
+
+export ODC_TEST_DB_URL=postgresql://$USER"@"$host"/"$USER"_automated_testing"
+
+if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
+  echo "duncans laptop"
+  echo "conda activate /home/duncan/bin/miniconda3/envs/odc2020"
+  echo "note the conda env is broken"
+  echo "sudo service postgresql start"
+
+fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SSPATH=$DIR/../../
+
+[[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+#echo $PYTHONPATH
+export PYTHONPATH=$PYTHONPATH
 
 cd "$(dirname "$0")"
 
-export ODC_TEST_DB_URL=postgresql://$USER"@deadev.nci.org.au/"$USER"_automated_testing"
 
 if [ -e $1 ]; then
   echo " Going to run $1"
