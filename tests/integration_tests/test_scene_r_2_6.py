@@ -105,10 +105,11 @@ def test_scene_filtering_r_2_6(tmp_path):
         for line in ard_log_file:
             try:
                 jline = json.loads(line)
-                print(f"Current jline: {jline}")
                 if (
-                    "reason" in jline
+                    all(key in jline for key in ("reason", "dataset_id", "event"))
                     and jline["reason"] == "The scene has been processed"
+                    and jline["dataset_id"] == "91f2fbd8-8ad5-550b-a62c-d819e1a4baaa"
+                    and jline["event"] == "scene removed"
                 ):
                     found_log_line = True
                     break
