@@ -3,6 +3,7 @@
 # This is a test launcher whereby we can give it any test 
 # or *.py to run on pytest
 
+host=localhost
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
@@ -14,10 +15,11 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   # module load ard-scene-select-py3-dea/dev_20230522
   module load ard-scene-select-py3-dea/20230616  # This is from ls_go_select.sh
+  host=deadev.nci.org.au
 
-
-  export ODC_TEST_DB_URL=postgresql://$USER"@deadev.nci.org.au/"$USER"_automated_testing"
 fi
+
+export ODC_TEST_DB_URL=postgresql://$USER"@"$host"/"$USER"_automated_testing"
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "duncans laptop"
@@ -25,8 +27,14 @@ if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "note the conda env is broken"
   echo "sudo service postgresql start"
 
-  export ODC_TEST_DB_URL=postgresql://$USER"@local/"$USER"_local"
 fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SSPATH=$DIR/../../
+
+[[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+#echo $PYTHONPATH
+export PYTHONPATH=$PYTHONPATH
 
 cd "$(dirname "$0")"
 
