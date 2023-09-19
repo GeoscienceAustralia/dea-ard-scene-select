@@ -4,7 +4,6 @@
     
 """
 from pathlib import Path
-from typing import List
 import os
 import json
 from click.testing import CliRunner
@@ -50,10 +49,8 @@ DATASETS = [
     ),
 ]
 
-def get_expected_file_paths() -> List:
-    return [file_path.replace(".odc-metadata.yaml", ".tar") for file_path in DATASETS]
-
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
+
 
 def test_ard_landsat_scenes_outside_AOI_r2_3(tmp_path):
 

@@ -4,7 +4,6 @@
     
 """
 from pathlib import Path
-from typing import List
 import os
 import json
 from click.testing import CliRunner
@@ -51,6 +50,7 @@ DATASETS = [
 ]
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
+
 
 def test_ard_landsat_scenes_no_acillary_r2_4(tmp_path):
 
