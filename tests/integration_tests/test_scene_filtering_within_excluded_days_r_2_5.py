@@ -60,6 +60,8 @@ def test_scene_filtering_within_excluded_days_r_2_5(tmp_path):
     # Observe that there is a date exclusion filter passed
     # into the process
     cmd_params = [
+        "--config",
+        os.environ.get("AUTOMATED_TEST_CONFIG_FILE"),
         "--products",
         '[ "usgs_ls8c_level1_1" ]',
         "--logdir",

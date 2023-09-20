@@ -56,6 +56,8 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
 
     cmd_params = [
+        "--config",
+        os.environ.get("AUTOMATED_TEST_CONFIG_FILE"),
         "--products",
         '["usgs_ls7e_level1_1"]',
         "--logdir",
