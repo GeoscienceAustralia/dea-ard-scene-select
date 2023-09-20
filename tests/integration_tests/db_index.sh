@@ -24,7 +24,8 @@ if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
     echo "duncans laptop"
     echo "conda activate odc2020"
 fi
-
+script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
+TEST_DATA="$script_directory/test_data/integration_tests"
 
 # Defining S2 l1's
 datacube $ODCCONF metadata add https://raw.githubusercontent.com/GeoscienceAustralia/dea-config/master/product_metadata/eo3_sentinel.odc-type.yaml
@@ -69,8 +70,7 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 # R1.1 for ls: Unfiltered scenes are ARD processed
 # The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C1/092_085/LC80920852020223
 
-script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
-TEST_DATA="$script_directory/test_data/integration_tests"
+
 
 #datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC80920852020223_good/LC08_L1TP_092085_20200810_20200821_01_T1.odc-metadata.yaml
 
@@ -250,7 +250,7 @@ datacube $ODCCONF dataset archive 760315b3-e147-5db2-bb7f-0e52efd4453d
 # The scene is filtered out since there is alread a child.
 
 # ---------------------
-
+datacube $ODCCONF dataset add   $TEST_DATA/s2/autogen/yaml/2022/2022-01/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.odc-metadata.yaml
 
 datacube  $ODCCONF product list # 
 ./check_db.sh
