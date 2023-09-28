@@ -89,7 +89,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 	if [[ $2 == "--prod" ]]; then
 		installrepo ard-scene-select module-prod https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
 	else
-		installrepo ard-scene-select  dsg_dev    https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+		echo "Non prod..."
+		installrepo ard-scene-select  master    https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+		echo "Installing pytest-odc..."
+		installrepo  pytest-odc  main https://github.com/opendatacube/pytest-odc
 	fi
 	
 	echo

@@ -12,6 +12,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   if [ -d /g/data/u46/users/$USER/devmodules/modulefiles ]; then
     module use /g/data/u46/users/$USER/devmodules/modulefiles   # This is from ls_go_select.sh
   fi
+  module load /g/data/u46/users/gy5636/devmodules/modulefiles/ard-scene-select-py3-dea/dev_20230928
   module load dea/20221025
 
   # module load ard-scene-select-py3-dea/dev_20230522
