@@ -4,7 +4,6 @@
 # or *.py to run on pytest
 
 host=localhost
-port=5432
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
@@ -22,27 +21,9 @@ fi
 
 #export the following so that the s2 tests can directly manipulate the
 # local datacube with regards to dataset
-export ODC_TEST_DB_URL=postgresql://$USER"@"$host":"$port"/"$USER"_automated_testing"
+export ODC_DB=$USER"_automated_testing"
+export ODC_TEST_DB_URL=postgresql://$USER"@"$host":"$port"/"$ODC_DB
 export ODC_HOST=$host
-
-# Create a temporary configuration file
-temp_config_file=$(mktemp)
-
-# Define the contents of the configuration file
-config_file_contents="[datacube]
-db_hostname: deadev.nci.org.au
-db_port: 5432
-db_database: ${USER}_automated_testing
-"
-
-# Write the contents to the temporary configuration file
-echo -e "$config_file_contents" > "$temp_config_file"
-
-# Export the path of the temporary configuration file as an environment variable
-export AUTOMATED_TEST_CONFIG_FILE="$temp_config_file"
-
-# Print the path of the temporary configuration file
-echo "The temp config file path is $temp_config_file"
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "duncans laptop"
