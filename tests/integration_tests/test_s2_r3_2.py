@@ -3,7 +3,7 @@
         R3.2 Process a scene if the child is interim and ancill data is there
 """
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 import os
 import subprocess
 from click.testing import CliRunner
@@ -61,7 +61,7 @@ dataset_paths = [
 ]
 
 
-def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> str:
+def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> Tuple[str, str]:
     """
     Generate a group of shell commands that adds datasets to
     the current datacube we are using to test.
@@ -75,12 +75,16 @@ def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> str:
         str: a long string comprising of multiple
         shell commands as described above
         str: the path to the config file
+
+        Note: the reason why this function is here
+        and not in utils.py is because some
+        dataset add commands in different upcoming
+        tests may not require "--confirm-ignore-lineage"
+        to be added
+
     """
 
     config_file_contents = get_config_file_contents()
-
-    automated_test_config_file = os.environ.get("AUTOMATED_TEST_CONFIG_FILE")
-
     test_config_file = os.path.abspath(tmp_path / "config_file.conf")
 
     with open(test_config_file, "w") as text_file:
