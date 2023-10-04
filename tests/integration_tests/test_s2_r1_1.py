@@ -76,7 +76,7 @@ def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> Tuple[
     config_file_contents = get_config_file_contents()
     test_config_file = os.path.abspath(tmp_path / "config_file.conf")
 
-    with open(test_config_file, "w") as text_file:
+    with open(test_config_file, "w", encoding="utf-8") as text_file:
         text_file.write(config_file_contents)
 
     datacube_add_command = ""
@@ -97,7 +97,7 @@ def test_s2_normal_operation_r1_1(tmp_path):
     """
     datacube_add_commands, config_file_path = generate_commands_and_config_file_path(
         dataset_paths, tmp_path
-    )    
+    )
 
     # Run the command and capture its output
     result = subprocess.run(
