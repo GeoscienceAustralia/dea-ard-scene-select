@@ -69,39 +69,3 @@ db_port: 5432
 db_database: {user_id}_automated_testing
 """
 
-
-def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> str:
-    """
-    Generate a group of shell commands that adds datasets to
-    the current datacube we are using to test.
-    This involves including environment variable settings
-    and dataset addition commands for each dataset path.
-    The reason this is done is because the s2 datasets
-    are not supported properly in pytest-odc at the
-    time this test is written.
-
-    Returns:
-        str: a long string comprising of multiple
-        shell commands as described above
-        str: the path to the config file. Note: not currently used.
-          Keeping it here for potential future use.
-    """
-
-    config_file_contents = get_config_file_contents()
-
-    automated_test_config_file = os.environ.get("AUTOMATED_TEST_CONFIG_FILE")
-
-    test_config_file = os.path.abspath(tmp_path / "config_file.conf")
-
-    with open(test_config_file, "w") as text_file:
-        text_file.write(config_file_contents)
-
-    datacube_add_command = ""
-    for dpath in paths:
-        datacube_add_command = (
-            datacube_add_command
-            + f"  datacube --config {test_config_file} "
-            + f" dataset add --confirm-ignore-lineage {dpath}; "
-        )
-
-    return datacube_add_command, test_config_file
