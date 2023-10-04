@@ -71,8 +71,14 @@ def generate_commands_and_config_file_path(
 
     Returns:
         str: a long string comprising of multiple
-        shell commands as described above
+           shell commands as described above
         str: the path to the config file
+
+        Note: the reason why this function is here
+        and not in utils.py is because some
+        dataset add commands in different upcoming
+        tests may not require "--confirm-ignore-lineage"
+        to be added
     """
 
     config_file_contents = get_config_file_contents()
