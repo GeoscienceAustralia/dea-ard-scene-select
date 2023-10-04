@@ -2,7 +2,7 @@
     DSNS-229 - R1.1 for s2: Unfiltered scenes are ARD processed
 """
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 import os
 import subprocess
 from click.testing import CliRunner
@@ -57,7 +57,7 @@ dataset_paths = [
 ]
 
 
-def generate_add_datacubes_command(paths: List[str]) -> str:
+def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> Tuple[str, str]:
     """
     Generate a group of shell commands that adds datasets to
     the current datacube we are using to test.
@@ -70,32 +70,24 @@ def generate_add_datacubes_command(paths: List[str]) -> str:
     Returns:
         str: a long string comprising of multiple
         shell commands as described above
+        str: the path to the config file
     """
 
     config_file_contents = get_config_file_contents()
+    test_config_file = os.path.abspath(tmp_path / "config_file.conf")
 
-    # Get these environment values
-    odc_test_db_url = os.environ.get("ODC_TEST_DB_URL")
-    odc_host = os.environ.get("ODC_HOST")
-    automated_test_config_file = os.environ.get("AUTOMATED_TEST_CONFIG_FILE")
-
-    add_dataset_command = f"""
-        export AUTOMATED_TEST_CONFIG_FILE={automated_test_config_file}
-        export ODC_TEST_DB_URL={odc_test_db_url};
-        export ODC_HOST={odc_host};
-        temp_config_file=$(mktemp)
-        echo '{config_file_contents}' > "$temp_config_file";
-        """
+    with open(test_config_file, "w") as text_file:
+        text_file.write(config_file_contents)
 
     datacube_add_command = ""
     for dpath in paths:
         datacube_add_command = (
             datacube_add_command
-            + '  datacube --config "$AUTOMATED_TEST_CONFIG_FILE" '
+            + f"  datacube --config {test_config_file} "
             + f" dataset add --confirm-ignore-lineage {dpath}; "
         )
 
-    return add_dataset_command + datacube_add_command
+    return datacube_add_command, test_config_file
 
 
 def test_s2_normal_operation_r1_1(tmp_path):
@@ -103,10 +95,13 @@ def test_s2_normal_operation_r1_1(tmp_path):
     This is the collective test that implements the requirement as
     defined at the top of this test suite.
     """
+    datacube_add_commands, config_file_path = generate_commands_and_config_file_path(
+        dataset_paths, tmp_path
+    )    
 
     # Run the command and capture its output
     result = subprocess.run(
-        [generate_add_datacubes_command(dataset_paths)],
+        [datacube_add_commands],
         shell=True,
         stdout=subprocess.PIPE,
         text=True,
@@ -120,7 +115,7 @@ def test_s2_normal_operation_r1_1(tmp_path):
 
     cmd_params = [
         "--config",
-        os.environ.get("AUTOMATED_TEST_CONFIG_FILE"),
+        config_file_path,
         "--products",
         '[ "esa_s2am_level1_0" ]',
         "--yamls-dir",
