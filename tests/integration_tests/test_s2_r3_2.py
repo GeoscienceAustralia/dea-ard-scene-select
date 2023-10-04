@@ -23,7 +23,6 @@ METADATA_DIR = (
 METADATA_TYPES = [
     os.path.join(METADATA_DIR, "eo3_sentinel.odc-type.yaml"),
     os.path.join(METADATA_DIR, "eo3_sentinel_ard.odc-type.yaml"),
-    os.path.join(METADATA_DIR, "eo3_landsat_ard.odc-type.yaml"),
 ]
 
 PRODUCTS_DIR = (
@@ -32,10 +31,7 @@ PRODUCTS_DIR = (
 
 PRODUCTS = [
     os.path.join(PRODUCTS_DIR, "esa_s2am_level1_0.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "esa_s2bm_level1_0.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "ga_s2am_ard_3.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "ga_s2bm_ard_3.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "ard_ls8.odc-product.yaml"),
 ]
 
 DATASETS_DIR = (
@@ -53,11 +49,6 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 dataset_paths = [
     os.path.join(
         DATASETS_DIR,
-        "c3/LC81070692020200/"
-        + "LC08_L1GT_107069_20200718_20200722_01_T2.odc-metadata.yaml",
-    ),
-    os.path.join(
-        DATASETS_DIR,
         "s2/autogen/yaml/2022/2022-11/30S130E-35S135E/"
         + "S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932."
         + "odc-metadata.yaml",
@@ -70,7 +61,7 @@ dataset_paths = [
 ]
 
 
-def generate_add_datacubes_command(paths: List[str]) -> str:
+def generate_commands(paths: List[str], tmp_path) -> str:
     """
     Generate a group of shell commands that adds datasets to
     the current datacube we are using to test.
@@ -83,32 +74,30 @@ def generate_add_datacubes_command(paths: List[str]) -> str:
     Returns:
         str: a long string comprising of multiple
         shell commands as described above
+        Path: the path to the config file. note, not currently used.
+          Keeping it here for potential future use.
     """
 
     config_file_contents = get_config_file_contents()
 
     # Get these environment values
-    odc_test_db_url = os.environ.get("ODC_TEST_DB_URL")
-    odc_host = os.environ.get("ODC_HOST")
+
     automated_test_config_file = os.environ.get("AUTOMATED_TEST_CONFIG_FILE")
 
-    add_dataset_command = f"""
-        export AUTOMATED_TEST_CONFIG_FILE={automated_test_config_file}
-        export ODC_TEST_DB_URL={odc_test_db_url};
-        export ODC_HOST={odc_host};
-        temp_config_file=$(mktemp)
-        echo '{config_file_contents}' > "$temp_config_file";
-        """
+    test_config_file = tmp_path / "config_file.conf"
+
+    with open(test_config_file, "w") as text_file:
+        text_file.write(config_file_contents)
 
     datacube_add_command = ""
     for dpath in paths:
         datacube_add_command = (
             datacube_add_command
-            + '  datacube --config "$AUTOMATED_TEST_CONFIG_FILE" '
+            + f"  datacube --config {test_config_file} "
             + f" dataset add --confirm-ignore-lineage {dpath}; "
         )
 
-    return add_dataset_command + datacube_add_command
+    return datacube_add_command, test_config_file
 
 
 def test_s2_normal_operation_r3_2(tmp_path):
@@ -117,9 +106,11 @@ def test_s2_normal_operation_r3_2(tmp_path):
     defined at the top of this test suite.
     """
 
+    the_cmds, _ = generate_commands(dataset_paths, tmp_path)
+
     # Run the command and capture its output
     result = subprocess.run(
-        [generate_add_datacubes_command(dataset_paths)],
+        [the_cmds],
         shell=True,
         stdout=subprocess.PIPE,
         text=True,
@@ -134,8 +125,6 @@ def test_s2_normal_operation_r3_2(tmp_path):
     yamldir = generate_yamldir_value()
 
     cmd_params = [
-        "--config",
-        os.environ.get("AUTOMATED_TEST_CONFIG_FILE"),
         "--products",
         '[ "esa_s2am_level1_0" ]',
         "--yamls-dir",

@@ -66,8 +66,6 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
 
     cmd_params = [
-        "--config",
-        os.environ.get("AUTOMATED_TEST_CONFIG_FILE"),
         "--products",
         '["usgs_ls8c_level1_1", "usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
         "--logdir",
