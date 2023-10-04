@@ -74,8 +74,7 @@ def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> str:
     Returns:
         str: a long string comprising of multiple
         shell commands as described above
-        str: the path to the config file. Note: not currently used.
-          Keeping it here for potential future use.
+        str: the path to the config file
     """
 
     config_file_contents = get_config_file_contents()
