@@ -61,7 +61,9 @@ dataset_paths = [
 ]
 
 
-def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> Tuple[str, str]:
+def generate_commands_and_config_file_path(
+    paths: List[str], tmp_path
+) -> Tuple[str, str]:
     """
     Generate a group of shell commands that adds datasets to
     the current datacube we are using to test.

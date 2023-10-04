@@ -68,4 +68,3 @@ db_hostname: deadev.nci.org.au
 db_port: 5432
 db_database: {user_id}_automated_testing
 """
-
