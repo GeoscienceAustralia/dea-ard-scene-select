@@ -89,8 +89,9 @@ def generate_commands_and_config_file_path(
     config_file_contents = get_config_file_contents()
     test_config_file = os.path.abspath(tmp_path / "config_file.conf")
 
-    with open(test_config_file, "w") as text_file:
-        text_file.write(config_file_contents)
+    with open(test_config_file, "w", encoding="utf-8") as config_file_handler:
+        config_file_handler.write(config_file_contents)
+    config_file_handler.close()
 
     datacube_add_command = ""
     for dpath in paths:
