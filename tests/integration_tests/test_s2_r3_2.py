@@ -14,7 +14,7 @@ from scene_select.do_ard import ODC_FILTERED_FILE
 from util import (
     get_list_from_file,
     generate_yamldir_value,
-    get_config_file_contents,
+    generate_commands_and_config_file_path,
 )
 
 METADATA_DIR = (
@@ -61,56 +61,19 @@ dataset_paths = [
 ]
 
 
-def generate_commands(paths: List[str], tmp_path) -> str:
-    """
-    Generate a group of shell commands that adds datasets to
-    the current datacube we are using to test.
-    This involves including environment variable settings
-    and dataset addition commands for each dataset path.
-    The reason this is done is because the s2 datasets
-    are not supported properly in pytest-odc at the
-    time this test is written.
-
-    Returns:
-        str: a long string comprising of multiple
-        shell commands as described above
-        Path: the path to the config file. note, not currently used.
-          Keeping it here for potential future use.
-    """
-
-    config_file_contents = get_config_file_contents()
-
-    # Get these environment values
-
-    automated_test_config_file = os.environ.get("AUTOMATED_TEST_CONFIG_FILE")
-
-    test_config_file = tmp_path / "config_file.conf"
-
-    with open(test_config_file, "w") as text_file:
-        text_file.write(config_file_contents)
-
-    datacube_add_command = ""
-    for dpath in paths:
-        datacube_add_command = (
-            datacube_add_command
-            + f"  datacube --config {test_config_file} "
-            + f" dataset add --confirm-ignore-lineage {dpath}; "
-        )
-
-    return datacube_add_command, test_config_file
-
-
 def test_s2_normal_operation_r3_2(tmp_path):
     """
     This is the collective test that implements the requirement as
     defined at the top of this test suite.
     """
 
-    the_cmds, _ = generate_commands(dataset_paths, tmp_path)
+    datacube_add_commands, config_file_path = generate_commands_and_config_file_path(
+        dataset_paths, tmp_path
+    )
 
     # Run the command and capture its output
     result = subprocess.run(
-        [the_cmds],
+        [datacube_add_commands],
         shell=True,
         stdout=subprocess.PIPE,
         text=True,
@@ -120,11 +83,10 @@ def test_s2_normal_operation_r3_2(tmp_path):
         result.returncode == 0
     ), f"The manual dataset addition failed: {result.stderr}"
 
-    # These are for working out yamldir
-
     yamldir = generate_yamldir_value()
-
     cmd_params = [
+        "--config",
+        config_file_path,
         "--products",
         '[ "esa_s2am_level1_0" ]',
         "--yamls-dir",

@@ -24,10 +24,7 @@ def get_list_from_file(list_file: str) -> List:
     return file_list
 
 
-def get_expected_file_paths(
-    datasets: List, dataset_type: Optional[str] = "landsat"
-) -> List:
-    """
+"""
     Generate a list of expected file paths by replacing
     '.odc-metadata.yaml' with '.tar'
     for each file path in a given list.
@@ -39,14 +36,11 @@ def get_expected_file_paths(
     - List: A list of file paths with '.tar' extensions, corresponding
         to the input DATASETS.
 
-    """
-    output_file_extension = ".tar"
-    if dataset_type == "s2":
-        output_file_extension = ".zip"
-    return [
-        file_path.replace(".odc-metadata.yaml", output_file_extension)
-        for file_path in datasets
-    ]
+"""
+
+
+def get_expected_file_paths(DATASETS: List) -> List:
+    return [file_path.replace(".odc-metadata.yaml", ".tar") for file_path in DATASETS]
 
 
 def generate_yamldir_value():
@@ -67,11 +61,47 @@ def get_config_file_contents():
     processes that get runned in this script as subprocesses
     will be able to access the same datacube instance"""
 
-    odc_db = os.getenv("ODC_DB")
-    odc_host = os.getenv("ODC_HOST")
+    user_id = os.getenv("USER")
     return f"""
 [datacube]
-db_hostname: {odc_host}
+db_hostname: deadev.nci.org.au
 db_port: 5432
-db_database: {odc_db}
+db_database: {user_id}_automated_testing
 """
+
+
+def generate_commands_and_config_file_path(paths: List[str], tmp_path) -> str:
+    """
+    Generate a group of shell commands that adds datasets to
+    the current datacube we are using to test.
+    This involves including environment variable settings
+    and dataset addition commands for each dataset path.
+    The reason this is done is because the s2 datasets
+    are not supported properly in pytest-odc at the
+    time this test is written.
+
+    Returns:
+        str: a long string comprising of multiple
+        shell commands as described above
+        str: the path to the config file. Note: not currently used.
+          Keeping it here for potential future use.
+    """
+
+    config_file_contents = get_config_file_contents()
+
+    automated_test_config_file = os.environ.get("AUTOMATED_TEST_CONFIG_FILE")
+
+    test_config_file = os.path.abspath(tmp_path / "config_file.conf")
+
+    with open(test_config_file, "w") as text_file:
+        text_file.write(config_file_contents)
+
+    datacube_add_command = ""
+    for dpath in paths:
+        datacube_add_command = (
+            datacube_add_command
+            + f"  datacube --config {test_config_file} "
+            + f" dataset add --confirm-ignore-lineage {dpath}; "
+        )
+
+    return datacube_add_command, test_config_file
