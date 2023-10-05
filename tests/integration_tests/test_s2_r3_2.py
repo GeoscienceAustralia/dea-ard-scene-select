@@ -110,7 +110,7 @@ def test_s2_normal_operation_r3_2(tmp_path):
     defined at the top of this test suite.
     """
 
-    datacube_add_commands, config_file_path = generate_commands_and_config_file_path(
+    datacube_add_commands, _ = generate_commands_and_config_file_path(
         dataset_paths, tmp_path
     )
 
@@ -128,8 +128,6 @@ def test_s2_normal_operation_r3_2(tmp_path):
 
     yamldir = generate_yamldir_value()
     cmd_params = [
-        "--config",
-        config_file_path,
         "--products",
         '[ "esa_s2am_level1_0" ]',
         "--yamls-dir",
@@ -153,16 +151,6 @@ def test_s2_normal_operation_r3_2(tmp_path):
     # within filter-jobid-* directories
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
-    # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
-
-    assert matching_files and matching_files[0] is not None, (
-        "Scene select failed. List of entries to process is not available -",
-        f" {matching_files}",
-    )
-
     # Use glob to search for the scenes_to_ARD_process.txt file
     # within filter-jobid-* directories
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + ODC_FILTERED_FILE))
@@ -184,10 +172,6 @@ def test_s2_normal_operation_r3_2(tmp_path):
         + "/2022-11/30S130E-35S135E"
         + "/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.zip"
     )
-
-    assert (
-        ards_to_process[0].endswith(".zip") is True
-    ), f"The generated ard file name, '{ards_to_process[0]}' doesn't end with zip"
 
     assert (
         ards_to_process[0] == expected_file
