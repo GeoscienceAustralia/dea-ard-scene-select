@@ -147,10 +147,6 @@ def test_s2_normal_operation_r3_2(tmp_path):
     ), f"The scene_select process failed to execute: {result.output}"
     assert result.output != "", f" the result output is {result.output}"
 
-    # Use glob to search for the log file
-    # within filter-jobid-* directories
-    matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
-
     # Use glob to search for the scenes_to_ARD_process.txt file
     # within filter-jobid-* directories
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + ODC_FILTERED_FILE))
