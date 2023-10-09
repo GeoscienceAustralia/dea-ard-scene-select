@@ -1,8 +1,11 @@
 """
-    DSNS-238
-    R2.8 Filter out S2 l1 scenes if the dataset has a child,
-    the child is interim and there is no ancillary
+    DSNS-240
+        R2.8.2 Filter out S2 l1 scenes if the dataset has a child,
+        the child is interim and there is no ancillary
 """
+
+# TODO - Still failing
+
 from pathlib import Path
 from typing import List, Tuple
 import os
@@ -114,7 +117,7 @@ def generate_commands_and_config_file_path(
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_scene_filtering_r_2_6(tmp_path):
+def test_scene_filtering_r2_8_2(tmp_path):
     """
     This is the collective test that implements the requirement as
     defined at the top of this test suite.

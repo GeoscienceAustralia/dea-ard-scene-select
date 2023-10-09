@@ -119,7 +119,7 @@ datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC809208520
 
 # ---------------------
 # ---------------------
-#R2.6 Filter out l1 scenes if the dataset has a child and the child is not archived 
+#R2.6.1 Filter out l1 scenes if the dataset has a child and the child is not archived DSNS 236
 #
 # Add an L1 scene
 # id: 91f2fbd8-8ad5-550b-a62c-d819e1a4baaa
@@ -136,7 +136,8 @@ datacube $ODCCONF dataset add --confirm-ignore-lineage  $TEST_DATA/c3/ARD_LC8090
 
 # ---------------------
 # ---------------------
-#R2.6 Filter out ls8 l1 scenes if the dataset has a child, the child is interim and there is no ancillary 
+#R2.8.1 Filter out ls8 l1 scenes if the dataset has a child,
+# the child is interim and there is no ancillary - DSNS 237
 #
 # Add an L1 scene
 # id: 768675cd-0c2b-5a17-871a-1f35eabac78e
@@ -150,7 +151,7 @@ datacube $ODCCONF dataset add --confirm-ignore-lineage  $TEST_DATA/c3/LC80960702
 # Filter Outcome- scene not selected to process - ls_go_select
 # ---------------------
 # ---------------------
-#R2.6 Filter out S2 l1 scenes if the dataset has a child, the child is interim and there is no ancillary 
+#R2.8.2 Filter out S2 l1 scenes if the dataset has a child,   -DSNS 240
 #
 # Add an L1 scene
 # id: 6a446ae9-7b10-544f-837b-c55b65ec7d68
