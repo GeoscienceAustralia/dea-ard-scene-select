@@ -31,6 +31,10 @@ INSIGNIFICANT_DIGITS_FIX = [
 
 
 def calc_file_path(l1_dataset, product_id):
+    print ("*** calc_file_path ***")
+    print (f"l1_dataset.local_path: {l1_dataset.local_path}")
+    print (f"product_id: {product_id}")
+    print (f"l1_dataset.uris: {l1_dataset.uris}")
     if l1_dataset.local_path is None:
         # The s2 way
         file_path = calc_local_path(l1_dataset)
@@ -41,6 +45,12 @@ def calc_file_path(l1_dataset, product_id):
         # Metadata assumptions
         a_path = local_path.parent.joinpath(product_id)
         file_path = a_path.with_suffix(".tar").as_posix()
+
+    # Another way
+    new_file_path = calc_local_path(l1_dataset)
+    # For Landsat
+    new_file_path = new_file_path.replace(".odc-metadata.yaml", ".tar")
+    assert new_file_path == file_path, f"{new_file_path} != {file_path}"
     return file_path
 
 

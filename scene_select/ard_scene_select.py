@@ -522,6 +522,7 @@ def l1_scenes_to_process(
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
+    uri_l1s: bool,
     config: Optional[Path] = None,
 ) -> Tuple[int, List[str]]:
     """Writes all the files returned from datacube for level1 to a file."""
@@ -721,6 +722,12 @@ Does not work for multigranule zip files.",
     is_flag=True,
     help="Find l1 scenes with no children that are not getting processed.",
 )
+@click.option(
+    "--uri-l1s",
+    default=False,
+    is_flag=True,
+    help="Write selected l1's to process as URI's.",
+)
 @LogMainFunction()
 def scene_select(
     usgs_level1_files: click.Path,
@@ -741,6 +748,7 @@ def scene_select(
     days_to_exclude: list,
     run_ard: bool,
     find_blocked: bool,
+    uri_l1s: bool,
     **ard_click_params: dict,
 ):
     """
@@ -802,6 +810,7 @@ def scene_select(
             interim_days_wait=interim_days_wait,
             days_to_exclude=days_to_exclude,
             find_blocked=find_blocked,
+            uri_l1s=uri_l1s,
         )
     else:
         uuids2archive = []
