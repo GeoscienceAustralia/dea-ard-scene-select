@@ -4,8 +4,6 @@
         the child is interim and there is no ancillary
 """
 
-# TODO - Still failing
-
 from pathlib import Path
 from typing import List, Tuple
 import os
