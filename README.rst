@@ -34,7 +34,7 @@ Modules are built off the module-prod branch. Create an annotated tag to tag a m
 
 1. make sure the latest changes in the master branch are brought/sync-ed to the module-prod branch. To do this, create a PR from the master to the module-prod branch
 2. once the PR is approved, merge it to the module-prod 
-3. login or sudo as lpgs in a terminal. This is because production modules can must be built as the lpgs user
+3. login or sudo as lpgs in a terminal since production modules must be built as the lpgs user
 4. head to the path, "/home/547/lpgs/sandbox/dea-ard-scene-select/module". Run "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
 5. checkout the "module-prod" branch. Run "git checkout module-prod"
 6. tag the new version. Here's what I ran for the most recent build:
