@@ -1,5 +1,6 @@
 """
-    DSNS-229 - R1.1 for s2: Unfiltered scenes are ARD processed
+    DSNS-229
+        R1.1 for s2: Unfiltered scenes are ARD processed
 """
 from pathlib import Path
 from typing import List, Tuple
