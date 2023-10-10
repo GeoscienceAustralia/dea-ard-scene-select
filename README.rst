@@ -43,7 +43,7 @@ Modules are built off the module-prod branch. Create an annotated tag to tag a m
 
 7. build the new version of the package. Run "./go.sh --prod"
 8. If there are no errors in the terminal, the package build should be have been successful and the
-final line which resembles the example below will disclose where the newly built dea-ard-scene-select package as been built and written to.
+final line  is where the newly built dea-ard-scene-select package has been written to. For example,
 
 "Wrote modulefile to /g/data/v10/private/modules/modulefiles/ard-scene-select-py3-dea/20231010"
 
