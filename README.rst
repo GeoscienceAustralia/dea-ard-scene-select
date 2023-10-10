@@ -37,7 +37,7 @@ Modules are built off the module-prod branch. Create an annotated tag to tag a m
 3. login or sudo as lpgs in a terminal since production modules must be built as the lpgs user
 4. head to the path, "/home/547/lpgs/sandbox/dea-ard-scene-select/module". Run "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
 5. checkout the "module-prod" branch. Run "git checkout module-prod"
-6. tag the new version. Here's what I ran for the most recent build:
+6. tag the new version. This does not have to be done as lpgs. For example:
 
       git tag -a "ard-scene-select-py3-dea/20231010" -m "DSNS 262-baked pytest into scene select so that the new integration tests are supported"
 
