@@ -36,16 +36,16 @@ Modules are built off the module-prod branch. Create an annotated tag to tag a m
 2. once the PR is approved, merge it to the module-prod 
 3. login or sudo as lpgs in a terminal since production modules must be built as the lpgs user
 4. head to the path, "/home/547/lpgs/sandbox/dea-ard-scene-select/module". Run "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
-5. checkout the "module-prod" branch. Run "git checkout module-prod"
+5. checkout the master branch as it will have the latest revisions of the build source codes. Run "git checkout master"
 6. tag the new version. This does not have to be done as lpgs. For example:
 
       git tag -a "ard-scene-select-py3-dea/20231010" -m "DSNS 262-baked pytest into scene select so that the new integration tests are supported"
 
 7. build the new version of the package. Run "./go.sh --prod"
-8. If there are no errors in the terminal, the package build should be have been successful and the
-final line  is where the newly built dea-ard-scene-select package has been written to. For example,
-
-"Wrote modulefile to /g/data/v10/private/modules/modulefiles/ard-scene-select-py3-dea/20231010"
+8. If there are no errors in the terminal, the package build should have been successful and the
+final line will reflect where the newly built dea-ard-scene-select package has been written to.
+    For example,
+        "Wrote modulefile to /g/data/v10/private/modules/modulefiles/ard-scene-select-py3-dea/20231010"
 
 
 Updating the ard_pipeline Modules
