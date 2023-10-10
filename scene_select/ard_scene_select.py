@@ -19,7 +19,14 @@ try:
 except (ImportError, AttributeError):
     print("Could not import Datacube")
 
-from scene_select.check_ancillary import BRDF_DIR, WV_DIR, AncillaryFiles
+from scene_select.check_ancillary import (
+    DEFAULT_MODIS_DIR,
+    WV_DIR,
+    AncillaryFiles,
+    DEFAULT_VIIRS_I_PATH,
+    DEFAULT_VIIRS_M_PATH,
+    DEFAULT_USE_VIIRS_AFTER,
+)
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
 from scene_select import utils
@@ -364,6 +371,9 @@ def l1_filter(
     dc,
     l1_product,
     brdfdir: Path,
+    i_viirsdir: Path,
+    m_viirsdir: Path,
+    use_viirs_after: datetime.datetime,
     wvdir: Path,
     region_codes: Dict,
     interim_days_wait: int,
@@ -382,7 +392,8 @@ def l1_filter(
     @param find_blocked:
     @return: a list of file paths to ARD process
     """
-    # pylint: disable=R0914
+    # pylint: disable=R0913, R0914
+    # R0913: Too many arguments
     # R0914: Too many local variables
 
     sat_key = get_aoi_sat_key(region_codes, l1_product)
@@ -395,7 +406,13 @@ def l1_filter(
         msg = " not known to scene select processing filtering. Disabling processing filtering."
         LOGGER.warn(l1_product + msg)
 
-    ancillary_ob = AncillaryFiles(brdf_dir=brdfdir, wv_dir=wvdir)
+    ancillary_ob = AncillaryFiles(
+        brdf_dir=brdfdir,
+        viirs_i_path=i_viirsdir,
+        viirs_m_path=m_viirsdir,
+        wv_dir=wvdir,
+        use_viirs_after=use_viirs_after,
+    )
     files2process = set({})
     duplicates = 0
     uuids2archive = []
@@ -496,7 +513,10 @@ def l1_scenes_to_process(
     outfile: Path,
     products: List[str],
     brdfdir: Path,
+    i_viirsdir: Path,
+    m_viirsdir: Path,
     wvdir: Path,
+    use_viirs_after: datetime.datetime,
     region_codes: Dict,
     scene_limit: int,
     interim_days_wait: int,
@@ -505,9 +525,10 @@ def l1_scenes_to_process(
     config: Optional[Path] = None,
 ) -> Tuple[int, List[str]]:
     """Writes all the files returned from datacube for level1 to a file."""
+    # pylint: disable=R0913
+    # R0913: Too many arguments
     # pylint: disable=R0914
     # R0914: Too many local variables
-
     dc = datacube.Datacube(app="gen-list", config=config)
     l1_count = 0
     with open(outfile, "w") as fid:
@@ -517,6 +538,9 @@ def l1_scenes_to_process(
                 dc,
                 product,
                 brdfdir=brdfdir,
+                i_viirsdir=i_viirsdir,
+                m_viirsdir=m_viirsdir,
+                use_viirs_after=use_viirs_after,
                 wvdir=wvdir,
                 region_codes=region_codes,
                 interim_days_wait=interim_days_wait,
@@ -541,8 +565,8 @@ def l1_scenes_to_process(
 @click.option(
     "--usgs-level1-files",
     type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to a text files containing all "
-    "the level-1 USGS/ESA list to be filtered",
+    help="full path to a text file containing all "
+    "the level-1 USGS/ESA entries to be filtered",
 )
 @click.option(
     "--allowed-codes",
@@ -576,7 +600,26 @@ def l1_scenes_to_process(
     "--brdfdir",
     type=click.Path(file_okay=False),
     help="The home directory of BRDF data used by scene select.",
-    default=BRDF_DIR,
+    default=DEFAULT_MODIS_DIR,
+)
+@click.option(
+    "--i-viirsdir",
+    type=click.Path(file_okay=False),
+    help="The home directory of VIIRS data, band I.",
+    default=DEFAULT_VIIRS_I_PATH,
+)
+@click.option(
+    "--m-viirsdir",
+    type=click.Path(file_okay=False),
+    help="The home directory of VIIRS data, band M.",
+    default=DEFAULT_VIIRS_M_PATH,
+)
+@click.option(
+    "--use-viirs-after",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(DEFAULT_USE_VIIRS_AFTER.strftime("%Y-%m-%d")),
+    help="Use VIIRS data, not MODIS, for BRDF calcs's after this date."
+    " Format: YYYY-MM-DD",
 )
 @click.option(
     "--wvdir",
@@ -642,6 +685,11 @@ Does not work for multigranule zip files.",
     help="The base logging and scripts output directory.",
 )
 @click.option(
+    "--jobdir",
+    type=click.Path(file_okay=False, writable=True),
+    help="The start ard processing directory. Will be made if it does not exist.",
+)
+@click.option(
     "--pkgdir",
     type=click.Path(file_okay=False, writable=True),
     help="The base output packaged directory.",
@@ -680,7 +728,11 @@ def scene_select(
     config: click.Path,
     products: list,
     logdir: click.Path,
+    jobdir: click.Path,
     brdfdir: click.Path,
+    i_viirsdir: click.Path,
+    m_viirsdir: click.Path,
+    use_viirs_after: datetime.datetime,
     wvdir: click.Path,
     stop_logging: bool,
     log_config: click.Path,
@@ -705,7 +757,7 @@ def scene_select(
         walltime: str,
         email: str
 
-    :return: list of scenes to ARD process
+    :return: Nothing
     """
     # pylint: disable=R0913, R0914
     # R0913: Too many arguments
@@ -714,7 +766,11 @@ def scene_select(
     logdir = Path(logdir).resolve()
     # If we write a file we write it in the job dir
     # set up the scene select job dir in the log dir
-    jobdir = logdir.joinpath(FMT2.format(jobid=uuid.uuid4().hex[0:6]))
+    if jobdir is None:
+        logdir = Path(logdir).resolve()
+        jobdir = logdir.joinpath(FMT2.format(jobid=uuid.uuid4().hex[0:6]))
+    else:
+        jobdir = Path(jobdir).resolve()
     jobdir.mkdir(exist_ok=True)
 
     if not stop_logging:
@@ -736,6 +792,9 @@ def scene_select(
             usgs_level1_files,
             products=products,
             brdfdir=Path(brdfdir).resolve(),
+            i_viirsdir=Path(i_viirsdir).resolve(),
+            m_viirsdir=Path(m_viirsdir).resolve(),
+            use_viirs_after=use_viirs_after,
             wvdir=Path(wvdir).resolve(),
             region_codes=load_aoi(allowed_codes),
             config=config,
@@ -753,7 +812,6 @@ def scene_select(
     )
 
     LOGGER.info("info", jobdir=str(jobdir))
-    print("Job directory: " + str(jobdir))
 
 
 if __name__ == "__main__":

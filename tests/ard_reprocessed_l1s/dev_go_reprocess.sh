@@ -17,7 +17,7 @@ if [[ "$HOSTNAME" == *"gadi"* ]]; then
 	module use /g/data/v10/public/modules/modulefiles
 	module use /g/data/v10/private/modules/modulefiles
 
-	module load ard-scene-select-py3-dea/20230615
+	module load ard-scene-select-py3-dea/20230616
 
 fi
 
@@ -28,6 +28,7 @@ ard_env="/g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/p
 index_arg="--index-datacube-env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/index-datacube.env"
 ard_path="/g/data/xu18/ga/"
 new_ard_path="/g/data/xu18/ga/reprocessing_staged_for_removal"
+product="ga_ls9c_ard_3"
 
 project="v10"
 pkgdir="/g/data/xu18/ga"
@@ -60,6 +61,9 @@ if [ "$run" = "prod" ]; then
    	# A dry run is necessary to avoid trying to move production ARD.
 	dry_run="--dry-run"
 	run_ard=""
+	scene_limit_value=1000000
+	index_arg=""
+	product="ga_ls8c_ard_3"
 else
    	# This will use the dev database when calling scene select
 	# and index the ARD.
@@ -97,6 +101,7 @@ ard-reprocessed-l1s --walltime 10:00:00 \
 --workdir "$workdir" \
 --project "$project"  \
 --env "$ard_env"  \
+--product "$product" \
 --current-base-path $ard_path \
 --new-base-path $new_ard_path \
 --scene-limit $scene_limit_value \

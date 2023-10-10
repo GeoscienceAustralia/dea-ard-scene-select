@@ -7,7 +7,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
     module use /g/data/u46/users/$USER/devmodules/modulefiles
 
     # module load ard-scene-select-py3-dea/dev_20230522
-    module load ard-scene-select-py3-dea/20230609
+    module load ard-scene-select-py3-dea/20230616
     
     SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     SSPATH="$SCRIPT_DIR/../.."
@@ -36,5 +36,16 @@ mkdir -p $pkgdir
 # ard processing
 # test DB index
 
-python3 $SSPATH/scene_select/ard_scene_select.py  --config ${USER}_dev.conf --products '["esa_s2am_level1_0"]' $yamdir  --workdir $scratch/  --pkgdir  $pkgdir --logdir $scratch/ --env $PWD/s2_interim_prod_wagl.env --project u46 --walltime 02:30:00  --interim-days-wait 5  --index-datacube-env index-test-odc.env # --run-ard
-
+python3 $SSPATH/scene_select/ard_scene_select.py \
+    --config ${USER}_dev.conf \
+    --products '["esa_s2am_level1_0"]' \
+    $yamdir \
+    --workdir $scratch/ \
+    --pkgdir $pkgdir \
+    --logdir $scratch/ \
+    --env $PWD/s2_interim_prod_wagl.env \
+    --project u46 \
+    --walltime 02:30:00 \
+    --interim-days-wait 5 \
+    --index-datacube-env index-test-odc.env \
+    # --run-ard

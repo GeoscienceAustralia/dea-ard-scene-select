@@ -12,7 +12,7 @@ import os
 
 
 def load_aoi_oz(allowed_codes: Path) -> List:
-    """ Convert a file of allowed codes to a list of region codes. """
+    """Convert a file of allowed codes to a list of region codes."""
     with open(allowed_codes, "r") as fid:
         path_row_list = [line.rstrip() for line in fid.readlines()]
     path_row_list = [

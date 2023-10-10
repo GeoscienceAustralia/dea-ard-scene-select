@@ -25,8 +25,8 @@ SSPATH=$PWD/../
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 #echo $PYTHONPATH
 
-pytest -s test_ard_scene_select.py
-pytest -s test_check_ancillary.py #-k 'test_ancillaryfiles_actual'
-pytest -s test_do_ard.py
-pytest -s test_utils.py
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+pytest -s -v $SCRIPT_DIR/test_*.py
+
 #./timing_check_ancillary.py
