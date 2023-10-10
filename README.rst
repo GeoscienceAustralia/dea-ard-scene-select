@@ -32,20 +32,21 @@ Scene Select Module creation
 ----------------------------
 Modules are built off the module-prod branch. Create an annotated tag to tag a module build.
 
-e.g.
+1. make sure the latest changes in the master branch are brought/sync-ed to the module-prod branch. To do this, create a PR from the master to the module-prod branch
+2. once the PR is approved, merge it to the module-prod 
+3. login or sudo as lpgs in a terminal. This is because production modules can must be built as the lpgs user
+4. head to the path, "/home/547/lpgs/sandbox/dea-ard-scene-select/module". Run "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
+5. checkout the "module-prod" branch. Run "git checkout module-prod"
+6. tag the new version. Here's what I ran for the most recent build:
 
-    git tag -a "ard-scene-select-py3-dea/20201126" -m "my version 20201126"
+      git tag -a "ard-scene-select-py3-dea/20231010" -m "DSNS 262-baked pytest into scene select so that the new integration tests are supported"
 
-Production modules can must be built as the lpgs user. This can be done using this sandbox;
+7. build the new version of the package. Run "./go.sh --prod"
+8. If there are no errors in the terminal, the package build should be have been successful and the
+final line which resembles the example below will disclose where the newly built dea-ard-scene-select package as been built and written to.
 
+"Wrote modulefile to /g/data/v10/private/modules/modulefiles/ard-scene-select-py3-dea/20231010"
 
-    /home/547/lpgs/sandbox/dea-ard-scene-select
-
-To produce the module run this script;
-
-    dea-ard-scene-select/modules/go.sh
-
-Change `echo "dea_module_dir = ${dea_module_dir:=/g/data/v10/public/modules}"` to change the destination location of the module.
 
 Updating the ard_pipeline Modules
 ---------------------------------
