@@ -29,14 +29,10 @@ PRODUCTS_DIR = (
 )
 
 PRODUCTS = [
-    os.path.join(PRODUCTS_DIR, "l1_ls7.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "l1_ls8.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "l1_ls8_c2.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "ard_ls8.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "l1_ls9.odc-product.yaml"),
     os.path.join(PRODUCTS_DIR, "ard_ls8.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "ard_ls7.odc-product.yaml"),
-    os.path.join(PRODUCTS_DIR, "ard_ls9.odc-product.yaml"),
 ]
 
 DATASETS_DIR = (
