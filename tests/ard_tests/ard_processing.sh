@@ -12,7 +12,8 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
    module use /g/data/v10/public/modules/modulefiles
    module use /g/data/v10/private/modules/modulefiles
 
-   module load ard-scene-select-py3-dea/20230330
+   #module load ard-scene-select-py3-dea/20230330
+   module load ard-scene-select-py3-dea/20231010
 
   TEST_DATA="/g/data/u46/users/dsg547/test_data"
   YAML_DIR=$TEST_DATA"/s2/autogen/yaml"

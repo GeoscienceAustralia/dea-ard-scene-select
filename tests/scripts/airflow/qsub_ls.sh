@@ -17,5 +17,5 @@ qsub -N qsub_ls \
               -- /bin/bash -l -c \
                   "module use /g/data/v10/public/modules/modulefiles/; \
                   module use /g/data/v10/private/modules/modulefiles/; \
-                  module load ard-scene-select-py3-dea/20200814; \
+                  module load ard-scene-select-py3-dea/20231010; \
                   ard-scene-select --help"

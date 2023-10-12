@@ -50,8 +50,7 @@ DATASETS = [
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-
-def test_scene_filtering_within_excluded_days_r_2_5(tmp_path):
+def test_scene_filtering_within_excluded_days_r2_5(tmp_path):
     """
     This is the collective test that implements the requirement as
     defined at the top of this test suite.

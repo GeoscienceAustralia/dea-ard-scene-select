@@ -14,7 +14,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   module load dea/20221025
 
   # module load ard-scene-select-py3-dea/dev_20230522
-  module load ard-scene-select-py3-dea/20230616  # This is from ls_go_select.sh
+  module load ard-scene-select-py3-dea/20231010  # This is from ls_go_select.sh
   host=deadev.nci.org.au
 
 fi
