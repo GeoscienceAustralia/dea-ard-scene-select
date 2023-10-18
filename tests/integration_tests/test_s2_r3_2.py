@@ -7,6 +7,7 @@ from typing import List, Tuple
 import os
 import subprocess
 from click.testing import CliRunner
+import json
 import pytest
 from scene_select.ard_scene_select import scene_select, GEN_LOG_FILE
 from scene_select.do_ard import ODC_FILTERED_FILE
@@ -16,7 +17,7 @@ from util import (
     generate_yamldir_value,
     get_config_file_contents,
 )
-
+BRDF_TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "BRDF")
 METADATA_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "metadata").resolve()
 )
@@ -141,6 +142,36 @@ def test_s2_normal_operation_r3_2(tmp_path):
         scene_select,
         args=cmd_params,
     )
+
+    # Use glob to search for the log file
+    # within filter-jobid-* directories
+    matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
+
+    # There's only ever 1 copy of this file
+    assert (
+        matching_files and matching_files[0] is not None
+    ), f"Scene select failed. Log is not available - {matching_files}"
+
+
+    found_log_line = False
+    with open(matching_files[0], encoding="utf-8") as ard_log_file:
+        for line in ard_log_file:
+            try:
+                jline = json.loads(line)
+                if (
+                    all(key in jline for key in ("reason", "dataset_id", "event"))
+                    and jline["reason"] == "The scene has been processed"
+                    and jline["dataset_id"] == "6a446ae9-7b10-544f-837b-c55b65ec7d68"
+                    and jline["event"] == "scene removed"
+                ):
+                    found_log_line = True
+                    break
+            except json.JSONDecodeError as error_string:
+                print(f"Error decoding JSON: {error_string}")
+    assert (
+        found_log_line
+    ), "Landsat scene still selected despite its date is being excluded"
+
 
     assert (
         result.exit_code == 0
