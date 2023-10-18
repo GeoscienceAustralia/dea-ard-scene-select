@@ -18,8 +18,8 @@ from scene_select.ard_scene_select import (
 
 ODC_FILES_DIR = Path(__file__).parent.joinpath("..", "test_data", "odc_setup").resolve()
 METADATA_TYPES = [
-    ODC_FILES_DIR / "metadata/eo3_landsat_l1.odc-type.yaml",
-    ODC_FILES_DIR / "metadata/eo3_landsat_ard.odc-type.yaml",
+    ODC_FILES_DIR / "metadata/eo3/eo3_landsat_l1.odc-type.yaml",
+    ODC_FILES_DIR / "metadata/eo3/eo3_landsat_ard.odc-type.yaml",
 ]
 PRODUCTS = [
     ODC_FILES_DIR / "eo3/l1_ls7.odc-product.yaml",
