@@ -18,6 +18,7 @@ from util import (
     get_config_file_contents,
 )
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "BRDF")
+WV_TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "water_vapour")
 METADATA_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "metadata").resolve()
 )
@@ -135,6 +136,10 @@ def test_s2_normal_operation_r3_2(tmp_path):
         yamldir,
         "--logdir",
         tmp_path,
+        "--brdfdir",
+        BRDF_TEST_DIR,
+        "--wvdir",
+        WV_TEST_DIR,
     ]
 
     runner = CliRunner()
@@ -171,7 +176,7 @@ def test_s2_normal_operation_r3_2(tmp_path):
                 print(f"Error decoding JSON: {error_string}")
     assert (
         found_log_line
-    ), "Landsat scene still selected despite its date is being excluded"
+    ), "Interim scene not processed to final as expected"
 
 
     assert (
