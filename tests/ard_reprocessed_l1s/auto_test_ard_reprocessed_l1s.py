@@ -51,12 +51,12 @@ SCENES_DIR = TEST_DATA_DIR.joinpath("ls9_reprocessing").resolve()
 MOVED_PATH = SCENES_DIR.joinpath("moved")
 
 METADATA_TYPES = [
-    ODC_YAML_DIR / "eo3_landsat_l1.odc-type.yaml",
-    ODC_YAML_DIR / "eo3_landsat_ard.odc-type.yaml",
+    ODC_YAML_DIR / "metadata/eo3_landsat_l1.odc-type.yaml",
+    ODC_YAML_DIR / "metadata/eo3_landsat_ard.odc-type.yaml",
 ]
 PRODUCTS = [
-    ODC_YAML_DIR / "l1_ls9.odc-product.yaml",
-    ODC_YAML_DIR / "ga_ls9c_ard_3.odc-product.yaml",
+    ODC_YAML_DIR / "eo3/l1_ls9.odc-product.yaml",
+    ODC_YAML_DIR / "eo3/ga_ls9c_ard_3.odc-product.yaml",
 ]
 
 # Add a blocking l1, a blocked l1 and the old ARD
