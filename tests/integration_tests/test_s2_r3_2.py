@@ -50,14 +50,14 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 dataset_paths = [
     os.path.join(
         DATASETS_DIR,
-        "s2/autogen/yaml/2022/2022-11/30S130E-35S135E/"
-        + "S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932."
+        "s2/autogen/yaml/2020/2020-08/30S130E-35S135E/"
+        + "S2A_MSIL1C_20200801T011731_N0209_R088_T52JFL_20200801T081631."
         + "odc-metadata.yaml",
     ),
     os.path.join(
         DATASETS_DIR,
-        "c3/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T02193_ard/"
-        + "ga_s2am_ard_3-2-1_53JMG_2022-11-23_final.odc-metadata.yaml",
+        "c3/S2A_MSIL1C_20200801T011731_N0209_R088_T52JFL_20200801T08163_ard/"
+        + "ga_s2am_ard_3-2-1_52JFL_2020-08-01_final.odc-metadata.yaml",
     ),
 ]
 
@@ -154,15 +154,16 @@ def test_s2_normal_operation_r3_2(tmp_path):
 
 
     found_log_line = False
-    with open(matching_files[0], encoding="utf-8") as ard_log_file:
+    with open(matching_files[0]) as ard_log_file:
         for line in ard_log_file:
+            print(line)
             try:
                 jline = json.loads(line)
                 if (
                     all(key in jline for key in ("reason", "dataset_id", "event"))
-                    and jline["reason"] == "The scene has been processed"
-                    and jline["dataset_id"] == "6a446ae9-7b10-544f-837b-c55b65ec7d68"
-                    and jline["event"] == "scene removed"
+                    and jline["reason"] == "Interim scene is being processed to final"
+                    and jline["dataset_id"] == "ca1f6ed0-6999-5589-8578-0c9579f18e67"
+                    and jline["event"] == "scene added"
                 ):
                     found_log_line = True
                     break
@@ -195,9 +196,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
     ), "Expected only 1 zip files to process but this has not been the case"
 
     expected_file = (
-        "/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2022"
-        + "/2022-11/30S130E-35S135E"
-        + "/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.zip"
+        "/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2020/"
+        + "2020-08/30S130E-35S135E/"
+        + "S2A_MSIL1C_20200801T011731_N0209_R088_T52JFL_20200801T081631.zip"
     )
 
     assert (
