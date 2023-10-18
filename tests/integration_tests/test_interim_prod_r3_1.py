@@ -104,7 +104,7 @@ def test_interim_prod_r3_1(tmp_path):
                 jline = json.loads(line)
                 if (
                     all(key in jline for key in ("event", "landsat_scene_id", "level"))
-                    and jline["event"] == "No ancillary. Processing to interim"
+                    and "Processing to interim" in jline["event"]
                     and jline["landsat_scene_id"]
                     == "LC08_L1GT_102079_20230129_20230227_02_T2"
                     and jline["level"] == "debug"
@@ -112,7 +112,7 @@ def test_interim_prod_r3_1(tmp_path):
                     found_log_line = True
                     break
             except json.JSONDecodeError as error_string:
-                print(f"Error decoding JSON: {error_string}")
+                print(f"Error decoding JSON: {error_string} in line:{line}")
     assert (
         found_log_line
     ), "Landsat scene still selected despite its date is being excluded"

@@ -161,7 +161,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
     found_log_line = False
     with open(matching_files[0]) as ard_log_file:
         for line in ard_log_file:
-            print(line)
+            if "Creating converter from 3 to 5" in line:
+                # The is non-JSON log info from the h5py module
+                continue
             try:
                 jline = json.loads(line)
                 if (
@@ -173,7 +175,7 @@ def test_s2_normal_operation_r3_2(tmp_path):
                     found_log_line = True
                     break
             except json.JSONDecodeError as error_string:
-                print(f"Error decoding JSON: {error_string}")
+                print(f"Error decoding JSON: {error_string} in line:{line}")
     assert (
         found_log_line
     ), "Interim scene not processed to final as expected"
