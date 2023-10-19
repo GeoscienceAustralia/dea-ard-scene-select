@@ -148,6 +148,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
         args=cmd_params,
     )
 
+    if result.exception is not None:
+        pytest.fail(f"Unexpected exception: {result.exception} \n {result.output}")
+
     # Use glob to search for the log file
     # within filter-jobid-* directories
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
