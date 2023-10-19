@@ -17,6 +17,7 @@ from util import (
     generate_yamldir_value,
     get_config_file_contents,
 )
+
 BRDF_TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "BRDF")
 WV_TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "water_vapour")
 METADATA_DIR = (
@@ -160,7 +161,6 @@ def test_s2_normal_operation_r3_2(tmp_path):
         matching_files and matching_files[0] is not None
     ), f"Scene select failed. Log is not available - {matching_files}"
 
-
     found_log_line = False
     with open(matching_files[0]) as ard_log_file:
         for line in ard_log_file:
@@ -179,10 +179,7 @@ def test_s2_normal_operation_r3_2(tmp_path):
                     break
             except json.JSONDecodeError as error_string:
                 print(f"Error decoding JSON: {error_string} in line:{line}")
-    assert (
-        found_log_line
-    ), "Interim scene not processed to final as expected"
-
+    assert found_log_line, "Interim scene not processed to final as expected"
 
     assert (
         result.exit_code == 0
