@@ -8,8 +8,6 @@ try:
     import tables  # This is needed when testing locally
 except ModuleNotFoundError:
     pass
-# This is needed when testing locally
-# import hdf5plugin
 import h5py
 import numpy
 import pandas
