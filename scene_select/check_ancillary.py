@@ -4,6 +4,10 @@ import datetime
 from functools import lru_cache
 from pathlib import Path
 
+try:
+    import tables  # This is needed when testing locally
+except ModuleNotFoundError:
+    pass
 # This is needed when testing locally
 # import hdf5plugin
 import h5py
