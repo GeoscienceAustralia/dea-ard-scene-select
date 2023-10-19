@@ -301,7 +301,7 @@ def filter_ancillary(l1_dataset, ancill_there, msg, interim_days_wait, temp_logg
                 "days_ago": str(days_ago),
                 "dataset.time.end": str(l1_dataset.time.end),
             }
-            temp_logger.debug("No ancillary. Processing to interim", **kwargs)
+            temp_logger.debug(f"{msg} Processing to interim", **kwargs)
         else:
             kwargs = {
                 REASON: "ancillary files not ready",

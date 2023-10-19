@@ -7,6 +7,7 @@ from typing import List, Tuple
 import os
 import subprocess
 from click.testing import CliRunner
+import json
 import pytest
 from scene_select.ard_scene_select import scene_select, GEN_LOG_FILE
 from scene_select.do_ard import ODC_FILTERED_FILE
@@ -17,6 +18,8 @@ from util import (
     get_config_file_contents,
 )
 
+BRDF_TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "BRDF")
+WV_TEST_DIR = Path(__file__).parent.joinpath("..", "test_data", "water_vapour")
 METADATA_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "metadata").resolve()
 )
@@ -49,14 +52,14 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 dataset_paths = [
     os.path.join(
         DATASETS_DIR,
-        "s2/autogen/yaml/2022/2022-11/30S130E-35S135E/"
-        + "S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932."
+        "s2/autogen/yaml/2020/2020-08/30S130E-35S135E/"
+        + "S2A_MSIL1C_20200801T011731_N0209_R088_T52JFL_20200801T081631."
         + "odc-metadata.yaml",
     ),
     os.path.join(
         DATASETS_DIR,
-        "c3/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T02193_ard/"
-        + "ga_s2am_ard_3-2-1_53JMG_2022-11-23_final.odc-metadata.yaml",
+        "c3/S2A_MSIL1C_20200801T011731_N0209_R088_T52JFL_20200801T08163_ard/"
+        + "ga_s2am_ard_3-2-1_52JFL_2020-08-01_final.odc-metadata.yaml",
     ),
 ]
 
@@ -134,6 +137,10 @@ def test_s2_normal_operation_r3_2(tmp_path):
         yamldir,
         "--logdir",
         tmp_path,
+        "--brdfdir",
+        BRDF_TEST_DIR,
+        "--wvdir",
+        WV_TEST_DIR,
     ]
 
     runner = CliRunner()
@@ -141,6 +148,38 @@ def test_s2_normal_operation_r3_2(tmp_path):
         scene_select,
         args=cmd_params,
     )
+
+    if result.exception is not None:
+        pytest.fail(f"Unexpected exception: {result.exception} \n {result.output}")
+
+    # Use glob to search for the log file
+    # within filter-jobid-* directories
+    matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
+
+    # There's only ever 1 copy of this file
+    assert (
+        matching_files and matching_files[0] is not None
+    ), f"Scene select failed. Log is not available - {matching_files}"
+
+    found_log_line = False
+    with open(matching_files[0]) as ard_log_file:
+        for line in ard_log_file:
+            if "Creating converter from 3 to 5" in line:
+                # The is non-JSON log info from the h5py module
+                continue
+            try:
+                jline = json.loads(line)
+                if (
+                    all(key in jline for key in ("reason", "dataset_id", "event"))
+                    and jline["reason"] == "Interim scene is being processed to final"
+                    and jline["dataset_id"] == "ca1f6ed0-6999-5589-8578-0c9579f18e67"
+                    and jline["event"] == "scene added"
+                ):
+                    found_log_line = True
+                    break
+            except json.JSONDecodeError as error_string:
+                print(f"Error decoding JSON: {error_string} in line:{line}")
+    assert found_log_line, "Interim scene not processed to final as expected"
 
     assert (
         result.exit_code == 0
@@ -164,9 +203,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
     ), "Expected only 1 zip files to process but this has not been the case"
 
     expected_file = (
-        "/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2022"
-        + "/2022-11/30S130E-35S135E"
-        + "/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.zip"
+        "/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2020/"
+        + "2020-08/30S130E-35S135E/"
+        + "S2A_MSIL1C_20200801T011731_N0209_R088_T52JFL_20200801T081631.zip"
     )
 
     assert (

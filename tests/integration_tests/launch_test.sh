@@ -27,8 +27,7 @@ export ODC_HOST=$host
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "duncans laptop"
-  echo "conda activate /home/duncan/bin/miniconda3/envs/odc2020"
-  echo "note the conda env is broken"
+  echo "conda activate dea2023"
   echo "sudo service postgresql start"
 fi
 

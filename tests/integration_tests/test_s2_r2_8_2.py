@@ -167,11 +167,6 @@ def test_scene_filtering_r2_8_2(tmp_path):
         matching_files and matching_files[0] is not None
     ), f"Scene select failed. Log is not available - {matching_files}"
 
-    assert matching_files and matching_files[0] is not None, (
-        "Scene select failed. List of entries to process is not available -",
-        f" {matching_files}",
-    )
-
     found_log_line = False
     with open(matching_files[0], encoding="utf-8") as ard_log_file:
         for line in ard_log_file:

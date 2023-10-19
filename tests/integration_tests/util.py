@@ -61,10 +61,11 @@ def get_config_file_contents():
     processes that get runned in this script as subprocesses
     will be able to access the same datacube instance"""
 
-    user_id = os.getenv("USER")
+    odc_db = os.getenv("ODC_DB")
+    odc_host = os.getenv("ODC_HOST")
     return f"""
 [datacube]
-db_hostname: deadev.nci.org.au
+db_hostname: {odc_host}
 db_port: 5432
-db_database: {user_id}_automated_testing
+db_database: {odc_db}
 """
