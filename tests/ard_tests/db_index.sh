@@ -3,6 +3,7 @@
 # start a local postgres
 # sudo service postgresql start
 
+source ../dynamic_config_file.sh
 
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
@@ -11,20 +12,21 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   module load dea/20221025
   #module load ard-pipeline/devv2.1
-  ODCCONF="--config ${USER}_dev.conf"
-  echo "Using local user's config, ${ODCCONF}"
-
-  TEST_DATA="/g/data/u46/users/dsg547/test_data"
-  
+  script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
+  TEST_DATA="$script_directory/test_data/integration_tests"  
+  ####TEST_DATA="/g/data/u46/users/dsg547/test_data"
+  generate_dynamic_config_file "gadi"  
 else
   echo "not NCI"
-  ODCCONF="--config ${USER}_local.conf"
   # datacube -v  $ODCCONF system init
+  generate_dynamic_config_file
 fi
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
     echo "This needs to be run on the NCI"
 fi
+
+ODCCONF="--config ${USER}_dev.conf"
 
 # Defining landsat l1 metadata
 datacube $ODCCONF metadata add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/eo3_landsat_l1.odc-type.yaml
@@ -66,3 +68,5 @@ datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC909707520
 
 # id: df4a46b0-258c-5d51-b48e-aeda4dd7de4e
 datacube $ODCCONF dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.odc-metadata.yaml
+
+clean_up_dynamic_config_file
