@@ -3,7 +3,6 @@
 # If a host name is given (at the moment, it's typically 'gadi'),
 # it reflects an NCI run.
 generate_dynamic_config_file() {
-    local hostname="local"
     local db_hostname="localhost"
     local config_file="${USER}_dev.conf"
 
