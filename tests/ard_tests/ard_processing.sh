@@ -6,6 +6,7 @@
 #PBS -l wd
 #PBS -l storage=gdata/v10+scratch/v10+gdata/if87+gdata/fj7+scratch/fj7+scratch/u46+gdata/u46
 #PBS -l ncpus=1
+source ../dynamic_config_file.sh
 
 if [[ $HOSTNAME == *"gadi"* ]]; then
    echo "gadi - NCI"
@@ -17,13 +18,12 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   TEST_DATA="/g/data/u46/users/dsg547/test_data"
   YAML_DIR=$TEST_DATA"/s2/autogen/yaml"
-  ODCCONF="--config ${USER}_dev.conf"
+  generate_dynamic_config_file "gadi"
 else
-  echo "not NCI"
-  echo "Warning - non repo datasets"
-  ODCCONF="--config ${USER}_local.conf"
+  generate_dynamic_config_file
   # datacube -v  $ODCCONF system init
 fi
+ODCCONF="--config ${USER}_dev.conf"
 
 PRODUCTS='["usgs_ls9c_level1_2"]'
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
