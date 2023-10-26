@@ -43,8 +43,8 @@ ard-scene-select $ODCCONF \
    --products $PRODUCTS \
    --project u46 \
    --walltime 05:00:00 \
-   --run-ard \
    --index-datacube-env $ENV_FILE \
+   # --run-ard \
 
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
@@ -58,5 +58,5 @@ ard-scene-select $ODCCONF \
    --project u46 \
    --walltime 05:00:00 \
    --yamls-dir $YAML_DIR \
-   --run-ard \
    --index-datacube-env $ENV_FILE \
+   #--run-ard \
