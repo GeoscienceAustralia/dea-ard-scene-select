@@ -12,9 +12,6 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   module load dea/20221025
   #module load ard-pipeline/devv2.1
-  script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
-  TEST_DATA="$script_directory/test_data/integration_tests"  
-  ####TEST_DATA="/g/data/u46/users/dsg547/test_data"
   generate_dynamic_config_file "gadi"  
 else
   echo "not NCI"
@@ -23,7 +20,9 @@ else
 fi
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
-    echo "This needs to be run on the NCI"
+  echo "duncans laptop"
+  echo "conda activate dea2023"
+  echo "sudo service postgresql start"
 fi
 
 ODCCONF="--config ${USER}_dev.conf"
@@ -58,6 +57,8 @@ datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustra
 # Defining ls8 ard
 datacube $ODCCONF product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/ard_ls8.odc-product.yaml
 
+script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
+TEST_DATA="$script_directory/test_data/integration_tests"
 # ls9 - The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239
 # moved to /g/data/u46/users/dsg547/test_data/c3/LC90970752022239/
 datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
