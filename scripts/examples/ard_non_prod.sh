@@ -20,6 +20,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SCRATCH=${DIR}/scratch
 mkdir -p $SCRATCH
 
+# The collection 1 products
+PRODUCTS='["usgs_ls5t_level1_1","usgs_ls7e_level1_1","usgs_ls8c_level1_1"]'
 PRODUCTS='["usgs_ls8c_level1_2","usgs_ls9c_level1_2"]'
 
 ard-scene-select \

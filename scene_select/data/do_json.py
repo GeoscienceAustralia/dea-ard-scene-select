@@ -3,7 +3,13 @@
 import json
 
 """
-Script to convert two text file AOI's into a json format.
+Script to convert Landsat and S2 AOI's into a json format.
+
+The forat for the Landsat AOI is a list of path_row strings;
+89_83 
+or 
+089_084
+
 """
 
 
@@ -14,7 +20,7 @@ def load_file(file_name):
     return lines
 
 
-landsat = "Australian_wrs_list_optimal_v2.txt"
+landsat = "Australian_wrs_list_extended.txt"
 with open(landsat) as fid:
     path_row_list = [line.rstrip() for line in fid.readlines()]
 path_row_list = [
@@ -25,7 +31,7 @@ path_row_list = [
 s2 = "Australian_tile_list_optimised.txt"
 tiles = load_file(s2)
 region_dic = {"ls": path_row_list, "s2": tiles}
-output_file = "Australian_AOI.json"
+output_file = "Australian_AOI_ls_extended.json"
 
 with open(output_file, "w") as f:
     json.dump(region_dic, f, ensure_ascii=False, indent=4)
