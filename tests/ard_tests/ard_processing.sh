@@ -8,6 +8,7 @@
 #PBS -l ncpus=1
 source ../dynamic_config_file.sh
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 if [[ $HOSTNAME == *"gadi"* ]]; then
    echo "gadi - NCI"
    module use /g/data/v10/public/modules/modulefiles
@@ -22,11 +23,13 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 else
   generate_dynamic_config_file
   # datacube -v  $ODCCONF system init
+  # No yamls, or tars, so processing can't happen locally
+  # Do this so DASS works
+  YAML_DIR=$DIR
 fi
 ODCCONF="--config ${USER}_dev.conf"
 
 PRODUCTS='["usgs_ls9c_level1_2"]'
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SCRATCH=$DIR"/scratch"
 mkdir -p $SCRATCH
 
@@ -35,7 +38,9 @@ mkdir -p $pkgdir
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-ls.env"
 ENV_FILE="$DIR/index-test-odc.env"
-ard-scene-select $ODCCONF \
+# locally, did
+# pip install --user -e dea-ard-scene-select
+python3 ../../scene_select/ard_scene_select.py $ODCCONF \
    --workdir $SCRATCH \
    --pkgdir  $pkgdir \
    --logdir $SCRATCH  \
@@ -49,7 +54,7 @@ ard-scene-select $ODCCONF \
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
 PRODUCTS='["esa_s2am_level1_0"]'
-ard-scene-select $ODCCONF \
+python3 ../../scene_select/ard_scene_select.py $ODCCONF \
    --workdir $SCRATCH \
    --pkgdir  $pkgdir \
    --logdir $SCRATCH  \
