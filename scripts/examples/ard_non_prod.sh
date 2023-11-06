@@ -11,9 +11,6 @@ module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles
 #module use /home/547/dsg547/devmodules/modulefiles
 
-#module load ard-scene-select-py3-dea/20200717  # fast no ancillary file checking
-#module load ard-scene-select-py3-dea/20200811  # crap and slow
-#module load ard-scene-select-py3-dea/20200813  # Fast.
 module load ard-scene-select-py3-dea/20220922
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
