@@ -49,7 +49,7 @@ python3 ../../scene_select/ard_scene_select.py  \
    --project u46 \
    --walltime 05:00:00 \
    --index-datacube-env $ENV_FILE \
-   # --run-ard \
+   -run-ard
 
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
@@ -64,4 +64,4 @@ python3 ../../scene_select/ard_scene_select.py  \
    --walltime 05:00:00 \
    --yamls-dir $YAML_DIR \
    --index-datacube-env $ENV_FILE \
-   #--run-ard \
+   --run-ard
