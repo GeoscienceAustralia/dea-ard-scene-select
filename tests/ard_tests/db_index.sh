@@ -5,6 +5,7 @@
 
 source ../dynamic_config_file.sh
 
+db_hostname="localhost"
 if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
@@ -12,12 +13,12 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   module load dea/20221025
   #module load ard-pipeline/devv2.1
-  generate_dynamic_config_file "gadi"  
+  db_hostname="deadev.nci.org.au"
 else
   echo "not NCI"
   # datacube -v  $ODCCONF system init
-  generate_dynamic_config_file
 fi
+export DATACUBE_DB_URL=postgresql://$USER"@"$db_hostname"/"$USER"_dev"
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "duncans laptop"
@@ -25,8 +26,11 @@ if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "sudo service postgresql start"
 fi
 
+# really relying on the undeleted config file
 ODCCONF="--config ${USER}_dev.conf"
+ODCCONF=""
 
+datacube system check
 # Defining landsat l1 metadata
 datacube $ODCCONF metadata add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/eo3_landsat_l1.odc-type.yaml
 
@@ -69,5 +73,3 @@ datacube $ODCCONF dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC909707520
 
 # id: df4a46b0-258c-5d51-b48e-aeda4dd7de4e
 datacube $ODCCONF dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.odc-metadata.yaml
-
-clean_up_dynamic_config_file

@@ -9,25 +9,27 @@
 source ../dynamic_config_file.sh
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+db_hostname="localhost"
 if [[ $HOSTNAME == *"gadi"* ]]; then
    echo "gadi - NCI"
    module use /g/data/v10/public/modules/modulefiles
    module use /g/data/v10/private/modules/modulefiles
 
-   #module load ard-scene-select-py3-dea/20230330
    module load ard-scene-select-py3-dea/20231010
+  db_hostname="deadev.nci.org.au"
 
   TEST_DATA="/g/data/u46/users/dsg547/test_data"
   YAML_DIR=$TEST_DATA"/s2/autogen/yaml"
-  generate_dynamic_config_file "gadi"
 else
-  generate_dynamic_config_file
   # datacube -v  $ODCCONF system init
   # No yamls, or tars, so processing can't happen locally
   # Do this so DASS works
   YAML_DIR=$DIR
 fi
+
+export DATACUBE_DB_URL=postgresql://$USER"@"$db_hostname"/"$USER"_dev"
 ODCCONF="--config ${USER}_dev.conf"
+ODCCONF=""
 
 PRODUCTS='["usgs_ls9c_level1_2"]'
 SCRATCH=$DIR"/scratch"

@@ -29,6 +29,16 @@ db_database: ${USER}_dev"
     echo "Config file, '${config_file}' generated"
 }
 
+
+use_env() {
+    local db_hostname="localhost"
+
+    if [ $# -eq 1 ]; then
+        db_hostname="deadev.nci.org.au"
+    fi
+    export ODC_TEST_DB_URL=postgresql://$USER"@"$db_hostname"/"$USER"_dev"
+}
+
 # Perform clean up of the dynamic config file that was generated on the fly.
 # The file name will resemble the "${USER}_dev.conf" pattern.
 clean_up_dynamic_config_file() {
