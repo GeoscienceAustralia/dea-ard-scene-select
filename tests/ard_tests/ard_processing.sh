@@ -21,15 +21,13 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   TEST_DATA="/g/data/u46/users/dsg547/test_data"
   YAML_DIR=$TEST_DATA"/s2/autogen/yaml"
 else
-  # datacube -v  $ODCCONF system init
+  # datacube -v   system init
   # No yamls, or tars, so processing can't happen locally
   # Do this so DASS works
   YAML_DIR=$DIR
 fi
 
 export DATACUBE_DB_URL=postgresql://$USER"@"$db_hostname"/"$USER"_dev"
-ODCCONF="--config ${USER}_dev.conf"
-ODCCONF=""
 
 PRODUCTS='["usgs_ls9c_level1_2"]'
 SCRATCH=$DIR"/scratch"
@@ -42,7 +40,7 @@ PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-ls.env"
 ENV_FILE="$DIR/index-test-odc.env"
 # locally, did
 # pip install --user -e dea-ard-scene-select
-python3 ../../scene_select/ard_scene_select.py $ODCCONF \
+python3 ../../scene_select/ard_scene_select.py  \
    --workdir $SCRATCH \
    --pkgdir  $pkgdir \
    --logdir $SCRATCH  \
@@ -56,7 +54,7 @@ python3 ../../scene_select/ard_scene_select.py $ODCCONF \
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
 PRODUCTS='["esa_s2am_level1_0"]'
-python3 ../../scene_select/ard_scene_select.py $ODCCONF \
+python3 ../../scene_select/ard_scene_select.py  \
    --workdir $SCRATCH \
    --pkgdir  $pkgdir \
    --logdir $SCRATCH  \
