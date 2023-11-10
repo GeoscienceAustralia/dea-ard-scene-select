@@ -6,7 +6,6 @@
 #PBS -l wd
 #PBS -l storage=gdata/v10+scratch/v10+gdata/if87+gdata/fj7+scratch/fj7+scratch/u46+gdata/u46
 #PBS -l ncpus=1
-source ../dynamic_config_file.sh
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 db_hostname="localhost"
