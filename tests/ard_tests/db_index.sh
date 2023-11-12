@@ -14,7 +14,6 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   db_hostname="deadev.nci.org.au"
 else
   echo "not NCI"
-  # datacube -v   system init
 fi
 export DATACUBE_DB_URL=postgresql://$USER"@"$db_hostname"/"$USER"_dev"
 

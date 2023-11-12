@@ -5,11 +5,10 @@ import json
 """
 Script to convert Landsat and S2 AOI's into a json format.
 
-The forat for the Landsat AOI is a list of path_row strings;
+The format for the Landsat AOI is a list of path_row strings;
 89_83 
 or 
 089_084
-
 """
 
 

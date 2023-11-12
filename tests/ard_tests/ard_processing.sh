@@ -20,7 +20,6 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   TEST_DATA="/g/data/u46/users/dsg547/test_data"
   YAML_DIR=$TEST_DATA"/s2/autogen/yaml"
 else
-  # datacube -v   system init
   # No yamls, or tars, so processing can't happen locally
   # Do this so DASS works
   YAML_DIR=$DIR
@@ -48,7 +47,7 @@ python3 ../../scene_select/ard_scene_select.py  \
    --project u46 \
    --walltime 05:00:00 \
    --index-datacube-env $ENV_FILE \
-   # -run-ard
+   # --run-ard
 
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
