@@ -12,9 +12,7 @@ import pytest
 from scene_select.ard_scene_select import scene_select, GEN_LOG_FILE
 from scene_select.do_ard import ODC_FILTERED_FILE
 
-from util import (
-    get_list_from_file,
-)
+from util import get_list_from_file
 
 METADATA_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "metadata").resolve()

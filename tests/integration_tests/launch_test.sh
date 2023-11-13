@@ -22,8 +22,9 @@ fi
 #export the following so that the s2 tests can directly manipulate the
 # local datacube with regards to dataset
 export ODC_DB=$USER"_automated_testing"
-export ODC_TEST_DB_URL=postgresql://$USER"@"$host":"$port"/"$ODC_DB
+export ODC_TEST_DB_URL=postgresql://$USER"@"$host"/"$ODC_DB
 export ODC_HOST=$host
+export DATACUBE_DB_URL=$ODC_TEST_DB_URL
 
 if [[ $HOSTNAME == *"LAPTOP-UOJEO8EI"* ]]; then
   echo "duncans laptop"

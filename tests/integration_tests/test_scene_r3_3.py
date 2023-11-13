@@ -11,10 +11,8 @@ import pytest
 from scene_select.ard_scene_select import scene_select, GEN_LOG_FILE
 from scene_select.do_ard import ODC_FILTERED_FILE
 import datacube
-from util import (
-    get_list_from_file,
-    get_config_file_contents,
-)
+from util import get_list_from_file
+
 
 METADATA_DIR = (
     Path(__file__).parent.joinpath("..", "test_data", "odc_setup", "metadata").resolve()
@@ -57,16 +55,6 @@ DATASETS = [
         "c3/ARD_LC81150802019349_old/ga_ls8c_ard_3-1-0_115080_2019-12-15_final.odc-metadata.yaml",
     ),
 ]
-
-
-def generate_temp_config_file(tmp_path):
-    test_config_file = os.path.abspath(tmp_path / "config_file.conf")
-    config_file_contents = get_config_file_contents()
-    with open(test_config_file, "w", encoding="utf-8") as config_file_handler:
-        config_file_handler.write(config_file_contents)
-    config_file_handler.close()
-    return test_config_file
-
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
