@@ -17,7 +17,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SCRATCH=${DIR}/scratch
 mkdir -p $SCRATCH
 
-PRODUCTS='["usgs_ls8c_level1_2","usgs_ls9c_level1_2"]'
+# The collection 1 products
+# PRODUCTS='["usgs_ls5t_level1_1","usgs_ls7e_level1_1","usgs_ls8c_level1_1"]'
+
+# PRODUCTS='["usgs_ls8c_level1_2","usgs_ls9c_level1_2"]'
 
 ard-scene-select \
 --workdir  $SCRATCH \
@@ -26,4 +29,5 @@ ard-scene-select \
 --project u46 \
 --products $PRODUCTS \
 --brdfdir  /g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061 \
+--allowed-codes /g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/scripts/examples/Australian_AOI_ls_extended.json \
 --find-blocked \
