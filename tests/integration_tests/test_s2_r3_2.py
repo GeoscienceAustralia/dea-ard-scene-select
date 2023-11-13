@@ -77,7 +77,7 @@ def test_s2_normal_operation_r3_2(tmp_path):
     lines = [f"{cmds}{dpath}" for dpath in dataset_paths]
     # Run the command and capture its output
     result = subprocess.run(
-        ';'.join(lines),
+        ";".join(lines),
         shell=True,
         stdout=subprocess.PIPE,
         text=True,

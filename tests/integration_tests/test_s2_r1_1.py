@@ -46,11 +46,11 @@ DATASETS_DIR = (
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 dataset_path = os.path.join(
-        DATASETS_DIR,
-        "s2/autogen/yaml/2022/2022-01/"
-        + "15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH"
-        + "_20220124T021536.odc-metadata.yaml",
-    )
+    DATASETS_DIR,
+    "s2/autogen/yaml/2022/2022-01/"
+    + "15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH"
+    + "_20220124T021536.odc-metadata.yaml",
+)
 
 
 def test_s2_normal_operation_r1_1(tmp_path):

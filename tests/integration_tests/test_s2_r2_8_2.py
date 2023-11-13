@@ -85,7 +85,7 @@ def test_scene_filtering_r2_8_2(tmp_path):
     lines = [f"{cmds}{dpath}" for dpath in s2_datasets]
     # Run the command and capture its output
     result = subprocess.run(
-        ';'.join(lines),
+        ";".join(lines),
         shell=True,
         stdout=subprocess.PIPE,
         text=True,
@@ -140,9 +140,7 @@ def test_scene_filtering_r2_8_2(tmp_path):
                     break
             except json.JSONDecodeError as error_string:
                 print(f"Error decoding JSON: {error_string}")
-    assert (
-        found_log_line
-    ), f"Logs look wrong {matching_files[0]}"
+    assert found_log_line, f"Logs look wrong {matching_files[0]}"
 
     # Use glob to search for the scenes_to_ARD_process.txt file
     # within filter-jobid-* directories
