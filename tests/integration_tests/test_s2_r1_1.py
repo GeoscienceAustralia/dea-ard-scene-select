@@ -14,7 +14,6 @@ from scene_select.do_ard import ODC_FILTERED_FILE
 from util import (
     get_list_from_file,
     generate_yamldir_value,
-    get_config_file_contents,
 )
 
 METADATA_DIR = (
@@ -46,56 +45,12 @@ DATASETS_DIR = (
 
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
-dataset_paths = [
-    os.path.join(
-        DATASETS_DIR,
-        "s2/autogen/yaml/2022/2022-01/"
-        + "15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH"
-        + "_20220124T021536.odc-metadata.yaml",
-    ),
-]
-
-
-def generate_commands_and_config_file_path(
-    paths: List[str], tmp_path
-) -> Tuple[str, str]:
-    """
-    Generate a group of shell commands that adds datasets to
-    the current datacube we are using to test.
-    This involves including environment variable settings
-    and dataset addition commands for each dataset path.
-    The reason this is done is because the s2 datasets
-    are not supported properly in pytest-odc at the
-    time this test is written.
-
-    Returns:
-        str: a long string comprising of multiple
-           shell commands as described above
-        str: the path to the config file
-
-        Note: the reason why this function is here
-        and not in utils.py is because some
-        dataset add commands in different upcoming
-        tests may not require "--confirm-ignore-lineage"
-        to be added
-    """
-
-    config_file_contents = get_config_file_contents()
-    test_config_file = os.path.abspath(tmp_path / "config_file.conf")
-
-    with open(test_config_file, "w", encoding="utf-8") as config_file_handler:
-        config_file_handler.write(config_file_contents)
-    config_file_handler.close()
-
-    datacube_add_command = ""
-    for dpath in paths:
-        datacube_add_command = (
-            datacube_add_command
-            + f"  datacube --config {test_config_file} "
-            + f" dataset add --confirm-ignore-lineage {dpath}; "
-        )
-
-    return datacube_add_command, test_config_file
+dataset_path = os.path.join(
+    DATASETS_DIR,
+    "s2/autogen/yaml/2022/2022-01/"
+    + "15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH"
+    + "_20220124T021536.odc-metadata.yaml",
+)
 
 
 def test_s2_normal_operation_r1_1(tmp_path):
@@ -103,13 +58,11 @@ def test_s2_normal_operation_r1_1(tmp_path):
     This is the collective test that implements the requirement as
     defined at the top of this test suite.
     """
-    datacube_add_commands, _ = generate_commands_and_config_file_path(
-        dataset_paths, tmp_path
-    )
+    cmd = f"datacube dataset add --confirm-ignore-lineage {dataset_path};"
 
     # Run the command and capture its output
     result = subprocess.run(
-        [datacube_add_commands],
+        cmd,
         shell=True,
         stdout=subprocess.PIPE,
         text=True,

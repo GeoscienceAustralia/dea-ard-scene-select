@@ -68,50 +68,6 @@ s2_datasets = [
     ),
 ]
 
-
-def generate_commands_and_config_file_path(
-    paths: List[str], tmp_path
-) -> Tuple[str, str]:
-    """
-    Generate a group of shell commands that adds datasets to
-    the current datacube we are using to test.
-    This involves including environment variable settings
-    and dataset addition commands for each dataset path.
-    The reason this is done is because the s2 datasets
-    are not supported properly in pytest-odc at the
-    time this test is written.
-
-    Returns:
-        str: a long string comprising of multiple
-           shell commands as described above
-        str: the path to the config file
-
-        Note: the reason why this function is here
-            and not in utils.py is because some
-            dataset add commands in different upcoming
-            tests may not require "--confirm-ignore-lineage"
-            to be added
-
-    """
-
-    config_file_contents = get_config_file_contents()
-    test_config_file = os.path.abspath(tmp_path / "config_file.conf")
-
-    with open(test_config_file, "w", encoding="utf-8") as config_file_handler:
-        config_file_handler.write(config_file_contents)
-    config_file_handler.close()
-
-    datacube_add_command = ""
-    for dpath in paths:
-        datacube_add_command = (
-            datacube_add_command
-            + f"  datacube --config {test_config_file} "
-            + f" dataset add --confirm-ignore-lineage {dpath}; "
-        )
-
-    return datacube_add_command, test_config_file
-
-
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
@@ -119,15 +75,17 @@ def test_scene_filtering_r2_8_2(tmp_path):
     """
     This is the collective test that implements the requirement as
     defined at the top of this test suite.
+
+    Note: s2 datasets
+    are not fully supported in pytest-odc at the
+    time this test is written. So do a datacube dataset add call
     """
 
-    datacube_add_commands, _ = generate_commands_and_config_file_path(
-        s2_datasets, tmp_path
-    )
-
+    cmds = "datacube dataset add --confirm-ignore-lineage "
+    lines = [f"{cmds}{dpath}" for dpath in s2_datasets]
     # Run the command and capture its output
     result = subprocess.run(
-        [datacube_add_commands],
+        ";".join(lines),
         shell=True,
         stdout=subprocess.PIPE,
         text=True,
@@ -182,9 +140,7 @@ def test_scene_filtering_r2_8_2(tmp_path):
                     break
             except json.JSONDecodeError as error_string:
                 print(f"Error decoding JSON: {error_string}")
-    assert (
-        found_log_line
-    ), "Landsat scene still selected despite its date is being excluded"
+    assert found_log_line, f"Logs look wrong {matching_files[0]}"
 
     # Use glob to search for the scenes_to_ARD_process.txt file
     # within filter-jobid-* directories
