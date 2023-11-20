@@ -8,7 +8,10 @@ fi
 
 # Convenience script for running checks.
 ./run_pylint.sh
-./run_black.sh
+
+if [[ $HOSTNAME == *"gadi"* ]]; then
+    ./run_black.sh
+fi
 tests/do_tests.sh
 
 # WARNING
