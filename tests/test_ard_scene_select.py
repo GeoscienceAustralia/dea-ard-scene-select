@@ -126,14 +126,6 @@ def test_s2_pattern():
 # of the scene select run will be displayed
 VERBOSE = False
 
-
-@pytest.fixture(scope="function")
-def temp_directory():
-    temp_dir = tempfile.mkdtemp()
-    yield temp_dir
-    shutil.rmtree(temp_dir)
-
-
 DATAFILE_DIR = Path(__file__).parent.joinpath("test_data").resolve()
 
 
