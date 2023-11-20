@@ -17,6 +17,7 @@ from scene_select.ard_scene_select import (
 
 DATAFILE_DIR = Path(__file__).parent.joinpath("test_data").resolve()
 
+
 def test_exclude_days():
     range1 = ["2020-08-09:2020-08-30", "2020-09-02:2020-09-05"]
 
@@ -149,7 +150,9 @@ def test_scene_select_with_explicit_jobdir(tmp_path):
         scene_select,
         cmd_params,
     )
-    assert result.exit_code == 0, f"Scene_select process failed to execute  {result.output}"
+    assert (
+        result.exit_code == 0
+    ), f"Scene_select process failed to execute  {result.output}"
 
     # Depending on the type of error, the info on the
     # error will either be in result.exception or result.output.
@@ -186,7 +189,9 @@ def test_scene_select_no_explicit_jobdir(tmp_path):
         scene_select,
         cmd_params,
     )
-    assert result.exit_code == 0, f"Scene_select process failed to execute  {result.output}"
+    assert (
+        result.exit_code == 0
+    ), f"Scene_select process failed to execute  {result.output}"
 
     # Depending on the type of error, the info on the
     # error will either be in result.exception or result.output.
