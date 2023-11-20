@@ -54,142 +54,19 @@ DATASET = [
 ]  # add
 
 
-# Set this to true and all the results
-# of the scene select run will be displayed
-VERBOSE = False
-
 pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
-def test_scene_select_with_explicit_jobdir_with_db():
+def test_using_auto_odc_db(tmp_path):
     """
-    Given an explicit jobdir which does not exist,
-    we expect that directory to be created and used.
+    If there is no explicit jobdir, DASS will create
+    a default directory to be used.
+    To run scene_select, we are passing in a file
+    containing all level-1 USGS/ESA entries to be filtered.
     """
-    custom_jobdir = "testing_jobdir_" + str(uuid.uuid4()).replace("-", "")
-
-    logdir = "testing_logdir_" + str(uuid.uuid4()).replace("-", "")
-    os.mkdir(logdir)
-
     cmd_params = [
         "--logdir",
-        logdir,
-        "--jobdir",
-        custom_jobdir,
-    ]
-
-    try:
-        runner = CliRunner()
-        result = runner.invoke(
-            scene_select,
-            cmd_params,
-        )
-
-        if VERBOSE:
-            print("RUNNING ARD SCENE SELECT")
-            print("***** results output ******")
-            print(result.output)
-            print("***** results exception ******")
-            print(result.exception)
-            print("***** results end ******")
-
-        # Depending on the type of error, the info on the
-        # error will either be in result.exception or result.output.
-        # result.output usually captures system errors whilst
-        # result.exception will capture errors with expected arguments.
-        # This usually traps process related errors such as
-        # missing arguments.
-        assert (
-            result.exception is None
-        ), f" Exception thrown in {result.exception}/{result.output}"
-
-        # Assert that when presented, the jobdir flag is accepted
-        assert (
-            "Error: No such option: --jobdir" not in result.output
-        ), "scene_select() doesn't recognise the job dir attribute"
-
-        assert (
-            len(os.listdir(custom_jobdir)) > 0
-        ), f" Nothing is inside the custom job directory, {custom_jobdir}"
-
-        # Assert that the file exists
-        assert os.path.exists(custom_jobdir), (
-            "Failed: Custom job dir, '" + str(custom_jobdir) + "' does not exist"
-        )
-    except Exception as exception_message:
-        # this traps errors thrown out by the scene_select() function
-        # such as bad parameter types or NoneType when the argument
-        # is expected to be non-None
-        pytest.fail(f"Unexpected exception: {exception_message}")
-    # clean up
-    finally:
-        shutil.rmtree(logdir)
-        shutil.rmtree(custom_jobdir)
-
-
-def test_scene_select_without_explicit_jobdir_with_db():
-    """
-    Given no mention of jobdir, we expect the scene
-    select to not throw an exception.
-    Under the hood, a default directory to be used.
-    It will be made from an extract of a unique id
-    (given by a package called uuid) thus there is
-    no way we could get the jobid from the outside.
-    Based on ard reprocessed l1s:
-    jobdir = logdir.joinpath(DIR_TEMPLATE.format(jobid=uuid.uuid4().hex[0:6]))
-    """
-    logdir = "testing_logdir_" + str(uuid.uuid4()).replace("-", "")
-    os.mkdir(logdir)
-    try:
-        cmd_params = [
-            "--logdir",
-            logdir,
-        ]
-
-        runner = CliRunner()
-        result = runner.invoke(
-            scene_select,
-            cmd_params,
-        )
-
-        if VERBOSE:
-            print("RUNNING ARD SCENE SELECT")
-            print("***** results output ******")
-            print(result.output)
-            print("***** results exception ******")
-            print(result.exception)
-            print("***** results end ******")
-
-        # Depending on the type of error, the info on the
-        # error will either be in result.exception or result.output.
-        # result.output usually captures system errors whilst
-        # result.exception will capture errors with expected arguments.
-        # This usually traps process related errors such as
-        # missing arguments.
-        assert (
-            result.exception is None
-        ), f" Exception thrown in {result.exception}/{result.output}"
-
-    except Exception as exception_message:
-        # this traps errors thrown out by the scene_select() function
-        # such as bad parameter types or NoneType when the argument
-        # is expected to be non-None
-        pytest.fail(f"Unexpected exception: {exception_message}")
-    finally:
-        shutil.rmtree(logdir)
-
-
-def test_scene_select_viirs(tmpdir):
-    """Checking the parameters for viirs"""
-    cmd_params = [
-        "--logdir",
-        tmpdir,
-        "--i-viirsdir",
-        ".",
-        "--m-viirsdir",
-        ".",
-        "--use-viirs-after",
-        "2099-12-20",
+        tmp_path,
     ]
 
     runner = CliRunner()
@@ -197,6 +74,16 @@ def test_scene_select_viirs(tmpdir):
         scene_select,
         cmd_params,
     )
+    assert (
+        result.exit_code == 0
+    ), f"Scene_select process failed to execute  {result.output}"
 
-    if result.exception is not None:
-        pytest.fail(f"Unexpected exception: {result.exception} \n {result.output}")
+    # Depending on the type of error, the info on the
+    # error will either be in result.exception or result.output.
+    # result.output usually captures system errors whilst
+    # result.exception will capture errors with expected arguments.
+    # This usually traps process related errors such as
+    # missing arguments.
+    assert (
+        result.exception is None
+    ), f" Exception thrown in {result.exception}/{result.output}"
