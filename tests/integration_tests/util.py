@@ -53,19 +53,3 @@ def generate_yamldir_value():
 
     script_directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     return f" {os.path.join(script_directory, 'test_data/integration_tests/s2/autogen/yaml')}"
-
-
-def get_config_file_contents():
-    """
-    Create the temporary config file so that ard scene select
-    processes that get runned in this script as subprocesses
-    will be able to access the same datacube instance"""
-
-    odc_db = os.getenv("ODC_DB")
-    odc_host = os.getenv("ODC_HOST")
-    return f"""
-[datacube]
-db_hostname: {odc_host}
-db_port: 5432
-db_database: {odc_db}
-"""

@@ -16,7 +16,6 @@ from scene_select.do_ard import ODC_FILTERED_FILE
 
 from util import (
     get_list_from_file,
-    get_config_file_contents,
     generate_yamldir_value,
 )
 
