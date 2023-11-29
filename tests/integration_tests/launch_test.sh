@@ -11,10 +11,15 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   if [ -d /g/data/u46/users/$USER/devmodules/modulefiles ]; then
     module use /g/data/u46/users/$USER/devmodules/modulefiles   # This is from ls_go_select.sh
   fi
-  module load dea/20221025
 
-  # module load ard-scene-select-py3-dea/dev_20230522
-  module load ard-scene-select-py3-dea/20231010  # This is from ls_go_select.sh
+  # these are the two modules ard-scene-select is dependant on
+  module load dea/20221025
+  module load h5-compression-filters/20230215
+  #module load dea/20231123
+
+  # This is useful when testing a new ard-scene-select module
+  # Comment out the export PYTHONPATH line below
+  # module load ard-scene-select-py3-dea/20231010
   host=deadev.nci.org.au
 
 fi
