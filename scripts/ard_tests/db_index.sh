@@ -8,8 +8,12 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   echo "gadi - NCI"
   module use /g/data/v10/public/modules/modulefiles
   module use /g/data/v10/private/modules/modulefiles
+  if [ -d /g/data/u46/users/$USER/devmodules/modulefiles ]; then
+    module use /g/data/u46/users/$USER/devmodules/modulefiles
+  fi
 
-  module load dea/20221025
+  #module load dea/20221025
+  module load dea/20231123
   #module load ard-pipeline/devv2.1
   db_hostname="deadev.nci.org.au"
 else

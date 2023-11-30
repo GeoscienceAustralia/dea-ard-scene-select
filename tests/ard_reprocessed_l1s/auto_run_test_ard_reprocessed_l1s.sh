@@ -6,7 +6,11 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
 
   module use /g/data/v10/public/modules/modulefiles;
   module use /g/data/v10/private/modules/modulefiles;
-  module load dea/20221025
+  if [ -d /g/data/u46/users/$USER/devmodules/modulefiles ]; then
+    module use /g/data/u46/users/$USER/devmodules/modulefiles
+  fi
+  module load ard-scene-select-py3-dea/dev_20231130
+  #module load dea/20231123
 
   echo "Loaded the necessary packages as we run on nci gadi"
   host=deadev.nci.org.au
@@ -21,6 +25,6 @@ SSPATH=$DIR/../..
 # in this repository.
 # Comment these lines out to use the module installed system wide. 
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
-export PYTHONPATH=$PYTHONPATH
+#export PYTHONPATH=$PYTHONPATH
 
 python3 -m pytest -v -s auto_test_ard_reprocessed_l1s.py

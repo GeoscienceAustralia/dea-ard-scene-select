@@ -9,7 +9,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   module use /g/data/v10/public/modules/modulefiles
   module use /g/data/v10/private/modules/modulefiles
   if [ -d /g/data/u46/users/$USER/devmodules/modulefiles ]; then
-    module use /g/data/u46/users/$USER/devmodules/modulefiles   # This is from ls_go_select.sh
+    module use /g/data/u46/users/$USER/devmodules/modulefiles
   fi
 
   # the  3 modules/packages ard-scene-select is dependant on;
@@ -17,12 +17,13 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   # h5-compression-filters module
   # pytest-odc package
   #module load dea/20221025
-  module load dea/20231123
+  #module load dea/20231123
   #module load h5-compression-filters/20230215
 
   # This is useful when testing a new ard-scene-select module
   # Comment out the export PYTHONPATH line below
   # module load ard-scene-select-py3-dea/20231010
+  module load ard-scene-select-py3-dea/dev_20231130
   host=deadev.nci.org.au
 
 fi
@@ -46,7 +47,7 @@ SSPATH=$DIR/../../
 
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 #echo $PYTHONPATH
-export PYTHONPATH=$PYTHONPATH
+#export PYTHONPATH=$PYTHONPATH
 
 
 cd "$(dirname "$0")"
