@@ -10,13 +10,20 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 db_hostname="localhost"
 if [[ $HOSTNAME == *"gadi"* ]]; then
+
    echo "gadi - NCI"
    module use /g/data/v10/public/modules/modulefiles
    module use /g/data/v10/private/modules/modulefiles
 
-   module load ard-scene-select-py3-dea/20231010
-  db_hostname="deadev.nci.org.au"
+  module load dea/20221025
+  #module load dea/20231123
+  module load h5-compression-filters/20230215
 
+  # This is useful when testing a new ard-scene-select module
+  # Comment out the export PYTHONPATH line below
+  # module load ard-scene-select-py3-dea/20231010
+
+  db_hostname="deadev.nci.org.au"
   TEST_DATA="/g/data/u46/users/dsg547/test_data"
   YAML_DIR=$TEST_DATA"/s2/autogen/yaml"
 else
@@ -24,6 +31,12 @@ else
   # Do this so DASS works
   YAML_DIR=$DIR
 fi
+
+# Use the local scene-select
+SSPATH=$DIR/../../
+[[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
+#echo $PYTHONPATH
+export PYTHONPATH=$PYTHONPATH
 
 export DATACUBE_DB_URL=postgresql://$USER"@"$db_hostname"/"$USER"_dev"
 
