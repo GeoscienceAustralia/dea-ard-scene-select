@@ -56,7 +56,8 @@ datacube  product add https://raw.githubusercontent.com/GeoscienceAustralia/digi
 datacube  product add https://raw.githubusercontent.com/GeoscienceAustralia/digitalearthau/develop/digitalearthau/config/eo3/products/ard_ls8.odc-product.yaml
 
 script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
-TEST_DATA="$script_directory/test_data/integration_tests"
+TEST_DATA=$(realpath "$script_directory/../tests/test_data/integration_tests")
+
 # ls9 - The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239
 # moved to /g/data/u46/users/dsg547/test_data/c3/LC90970752022239/
 datacube  dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
