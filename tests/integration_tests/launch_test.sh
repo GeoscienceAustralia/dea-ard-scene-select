@@ -12,17 +12,10 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
     module use /g/data/u46/users/$USER/devmodules/modulefiles
   fi
 
-  # the  3 modules/packages ard-scene-select is dependant on;
-  # dea module
-  # h5-compression-filters module
-  # pytest-odc package
-  #module load dea/20221025
   #module load dea/20231123
-  #module load h5-compression-filters/20230215
 
   # This is useful when testing a new ard-scene-select module
   # Comment out the export PYTHONPATH line below
-  # module load ard-scene-select-py3-dea/20231010
   module load ard-scene-select-py3-dea/dev_20231130
   host=deadev.nci.org.au
 
