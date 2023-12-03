@@ -62,13 +62,18 @@ datacube  product add https://raw.githubusercontent.com/GeoscienceAustralia/digi
 script_directory=$(dirname $(dirname "$(readlink -f "$0")"))
 TEST_DATA=$(realpath "$script_directory/../tests/test_data/integration_tests")
 
-# ls9 - The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239
-# moved to /g/data/u46/users/dsg547/test_data/c3/LC90970752022239/
-datacube  dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
+if [[ $HOSTNAME == *"gadi"* ]]; then
+  # Use a prod scene
+  datacube  dataset add --confirm-ignore-lineage /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
+  datacube  dataset add --confirm-ignore-lineage /g/data/ka08/ga/l1c_metadata/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.odc-metadata.yaml
+else
+  # ls9 - The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C2/097_075/LC90970752022239
+  # moved to /g/data/u46/users/dsg547/test_data/c3/LC90970752022239/
+  datacube  dataset add --confirm-ignore-lineage $TEST_DATA/c3/LC90970752022239/LC09_L1TP_097075_20220827_20220827_02_T1.odc-metadata.yaml
 
-# S2 - don't know where the tar is
-# id:
-# datacube  dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-01/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.odc-metadata.yaml
-
-# id: df4a46b0-258c-5d51-b48e-aeda4dd7de4e
-datacube  dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.odc-metadata.yaml
+  # S2 - don't know where the tar is
+  # id:
+  # datacube  dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-01/15S140E-20S145E/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.odc-metadata.yaml
+  # id: df4a46b0-258c-5d51-b48e-aeda4dd7de4e
+  datacube  dataset add --confirm-ignore-lineage  $TEST_DATA/s2/autogen/yaml/2022/2022-11/30S130E-35S135E/S2A_MSIL1C_20221123T005711_N0400_R002_T53JMG_20221123T021932.odc-metadata.yaml
+fi

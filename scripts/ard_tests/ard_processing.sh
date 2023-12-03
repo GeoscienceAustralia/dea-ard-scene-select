@@ -40,7 +40,7 @@ fi
 SSPATH=$DIR/../../
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 #echo $PYTHONPATH
-export PYTHONPATH=$PYTHONPATH
+#export PYTHONPATH=$PYTHONPATH
 
 export DATACUBE_DB_URL=postgresql://$USER"@"$db_hostname"/"$USER"_dev"
 
@@ -55,7 +55,8 @@ PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-ls.env"
 ENV_FILE="$DIR/index-test-odc.env"
 # locally, did
 # pip install --user -e dea-ard-scene-select
-python3 ../../scene_select/ard_scene_select.py  \
+# python3 ../../scene_select/ard_scene_select.py  \
+ard-scene-select \
    --workdir $SCRATCH \
    --pkgdir  $pkgdir \
    --logdir $SCRATCH  \
@@ -64,12 +65,13 @@ python3 ../../scene_select/ard_scene_select.py  \
    --project u46 \
    --walltime 05:00:00 \
    --index-datacube-env $ENV_FILE \
-   # --run-ard
+   --run-ard
 
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
 PRODUCTS='["esa_s2am_level1_0"]'
-python3 ../../scene_select/ard_scene_select.py  \
+#python3 ../../scene_select/ard_scene_select.py  \
+ard-scene-select \
    --workdir $SCRATCH \
    --pkgdir  $pkgdir \
    --logdir $SCRATCH  \
@@ -79,4 +81,4 @@ python3 ../../scene_select/ard_scene_select.py  \
    --walltime 05:00:00 \
    --yamls-dir $YAML_DIR \
    --index-datacube-env $ENV_FILE \
-   # --run-ard
+   --run-ard
