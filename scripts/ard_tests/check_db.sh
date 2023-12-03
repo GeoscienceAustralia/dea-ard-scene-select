@@ -6,7 +6,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   module use /g/data/v10/public/modules/modulefiles
   module use /g/data/v10/private/modules/modulefiles
 
-  module load dea
+  module load dea/20231123
 
   db_hostname="deadev.nci.org.au"
 fi
