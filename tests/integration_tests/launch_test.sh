@@ -12,11 +12,12 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
     module use /g/data/u46/users/$USER/devmodules/modulefiles
   fi
 
-  #module load dea/20231123
+  #module load dea/20231204
 
   # This is useful when testing a new ard-scene-select module
   # Comment out the export PYTHONPATH line below
-  module load ard-scene-select-py3-dea/dev_20231130
+  # module load ard-scene-select-py3-dea/dev_20231130
+  module load ard-scene-select-py3-dea/20231204
   host=deadev.nci.org.au
 
 fi
@@ -39,7 +40,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 SSPATH=$DIR/../../
 
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
-#echo $PYTHONPATH
 #export PYTHONPATH=$PYTHONPATH
 
 
