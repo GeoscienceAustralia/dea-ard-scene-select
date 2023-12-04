@@ -82,17 +82,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 	# The destination needs to be on the path so that latter dependencies can see earlier ones
 	export PYTHONPATH=${PYTHONPATH:+${PYTHONPATH}:}${python_dest}
 
-	echo
 	echo "Installing ard-scene-select"
+
+	installrepo ard-scene-select  master    https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
 	
-	if [[ $2 == "--prod" ]]; then
-		installrepo ard-scene-select module-prod https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
-	else
-		echo "Non prod..."
-		installrepo ard-scene-select  master    https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
-	fi
-	
-	echo
 	echo "Writing modulefile"
 	modulefile_dir="${module_dir}/modulefiles/${package_name}"
 	mkdir -v -p "${modulefile_dir}"
