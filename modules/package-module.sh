@@ -91,8 +91,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 		echo "Non prod..."
 		installrepo ard-scene-select  master    https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
 	fi
-        echo "Installing pytest-odc..."
-        installrepo pytest-odc main https://github.com/opendatacube/pytest-odc
 	
 	echo
 	echo "Writing modulefile"
