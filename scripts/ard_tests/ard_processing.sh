@@ -25,7 +25,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
   # This is useful when testing a new ard-scene-select module
   # Comment out the export PYTHONPATH line below
   # module load ard-scene-select-py3-dea/20231010
-  module load ard-scene-select-py3-dea/dev_20231130
+  module load ard-scene-select-py3-dea/dev_20231205
 
   db_hostname="deadev.nci.org.au"
   TEST_DATA="/g/data/u46/users/dsg547/test_data"
@@ -65,11 +65,11 @@ ard-scene-select \
    --project u46 \
    --walltime 05:00:00 \
    --index-datacube-env $ENV_FILE \
-   --run-ard
+   #--run-ard
 
 
 PRODWAGLLS="${DIR}/../../scripts/prod/ard_env/prod-wagl-s2.env"
-PRODUCTS='["esa_s2am_level1_0"]'
+PRODUCTS='["esa_s2am_level1_0","esa_s2bm_level1_0"]'
 #python3 ../../scene_select/ard_scene_select.py  \
 ard-scene-select \
    --workdir $SCRATCH \
@@ -81,4 +81,4 @@ ard-scene-select \
    --walltime 05:00:00 \
    --yamls-dir $YAML_DIR \
    --index-datacube-env $ENV_FILE \
-   --run-ard
+   #--run-ard
