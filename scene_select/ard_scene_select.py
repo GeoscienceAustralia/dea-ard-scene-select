@@ -417,26 +417,20 @@ def l1_filter(
     duplicates = 0
     uuids2archive = []
     for l1_dataset in dc.index.datasets.search(product=l1_product):
-        if sat_key == "ls":
-            product_id = l1_dataset.metadata.landsat_product_id
-            choppedsceneid = utils.chopped_scene_id(
-                l1_dataset.metadata.landsat_scene_id
-            )
-        elif sat_key == "s2":
-            product_id = l1_dataset.metadata.sentinel_tile_id
-            # S2 has no eqivalent to a scene id
-            # I'm using sentinel_tile_id.  This will work for handling interim to final.
-            # it will not catch duplicates.
-            choppedsceneid = l1_dataset.metadata.sentinel_tile_id
+        product_id = l1_dataset.metadata.sentinel_tile_id
+        choppedsceneid = l1_dataset.metadata.sentinel_tile_id
         region_code = l1_dataset.metadata.region_code
-        file_path = utils.calc_file_path(l1_dataset, product_id)
+        #file_path = utils.calc_file_path(l1_dataset, product_id)
         # Set up the logging
         temp_logger = LOGGER.bind(
             landsat_scene_id=product_id,
             dataset_id=str(l1_dataset.id),
-            dataset_path=file_path,
+            #dataset_path=file_path,
         )
+        #continue
+        temp_logger.debug('Info before crash')
 
+        continue
         # Filter out if the processing level is too low
         if l1_product in PROCESSING_PATTERN_MAPPING:
             prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
@@ -452,7 +446,6 @@ def l1_filter(
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
-
         ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
         # Continue here if a maturity level of final cannot be produced
         # since the ancillary files are not there
@@ -479,7 +472,6 @@ def l1_filter(
             }
             temp_logger.debug(SCENEREMOVED, **kwargs)
             continue
-
         if filter_reprocessed_scenes(
             dc,
             l1_dataset,
