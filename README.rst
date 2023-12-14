@@ -22,7 +22,7 @@ Please run
 
      pre-commit install
 
-after cloning to make your life easier, automatically!
+after cloning to make your life easier.
 
 (if "pre-commit not found", then `pip install pre-commit` or `conda install pre_commit` and try again)
 
@@ -33,7 +33,7 @@ Scene Select Module creation
 Modules are built off the module-prod branch. Create an annotated tag to tag a module build.
 
 1. make sure the latest changes in the master branch are brought/sync-ed to the module-prod branch. To do this, create a PR from the master to the module-prod branch
-2. once the PR is approved, merge it to the module-prod 
+2. once the PR is approved, merge it to the module-prod
 3. login or sudo as lpgs in a terminal since production modules must be built as the lpgs user
 4. head to the path, "/home/547/lpgs/sandbox/dea-ard-scene-select/module". Run "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
 5. checkout the master branch as it will have the latest revisions of the build source codes. Run "git checkout master"
@@ -78,6 +78,6 @@ Code checker/validator
   * ensures consistency by applying our python code formatter across scripts, tests and scene_select directories
   * ensures code quality by running pylint across scrips, tests and scene_select directories
 
- To run this, one will just execute './check_code.sh'. 
+ To run this, one will just execute './check_code.sh'.
  It will provide a report when it finishes its execution.
- 
+
