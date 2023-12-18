@@ -1,18 +1,8 @@
-ard-scene-select: select scenes to be processed by ARD
+DASS: DEA ARD scene select
 =======================================================
 
 
-This code is used to select scenes to be processed by ARD. This Repo is deployed as a module to run at NCI.  It is used in production to generate Landsat collection 3 ARD.
-
-Branch Structure
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. csv-table:: Branches
-   :header: "Branch name", "Use"
-
-   "master", "Stable code base"
-   "production", "The branch used in production. It is the .env files that are used in production."
-   "module-prod", "The branch used to produce a module."
+This code is used to select scenes to be processed to ARD (Analysis Ready Data). This Repo si used ot build a module to run at NCI.  It is used in production to generate Landsat and Sentinel 2 Collection 3 ARD.
 
 ---
 
@@ -28,46 +18,68 @@ after cloning to make your life easier.
 
 ---
 
-Scene Select Module creation
+DASS Module creation
 ----------------------------
-Modules are built off the module-prod branch. Create an annotated tag to tag a module build.
+Modules are built off the master branch. To generate a new production module, follow these steps:
 
-1. make sure the latest changes in the master branch are brought/sync-ed to the module-prod branch. To do this, create a PR from the master to the module-prod branch
-2. once the PR is approved, merge it to the module-prod
-3. login or sudo as lpgs in a terminal since production modules must be built as the lpgs user
-4. head to the path, "/home/547/lpgs/sandbox/dea-ard-scene-select/module". Run "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
-5. checkout the master branch as it will have the latest revisions of the build source codes. Run "git checkout master"
-6. tag the new version. This does not have to be done as lpgs. For example:
 
-      git tag -a "ard-scene-select-py3-dea/20231010" -m "DSNS 262-baked pytest into scene select so that the new integration tests are supported"
-
-7. build the new version of the package. Run "./go.sh --prod"
-8. If there are no errors in the terminal, the package build should have been successful and the
+1. login or sudo as lpgs in a terminal since production modules must be built as the lpgs user
+2. Get to the lpgs sandbox of this repo "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
+3. Update to the latest version of master. Run "git pull --rebase"
+4. build the new version of the package. Run "./go.sh --prod"
+5. If there are no errors in the terminal, the package build should have been successful and the
 final line will reflect where the newly built dea-ard-scene-select package has been written to.
     For example,
         "Wrote modulefile to /g/data/v10/private/modules/modulefiles/ard-scene-select-py3-dea/20231010"
+6. tag the new version and push the tag up. This does not have to be done as lpgs. For example:
+
+    git tag -a "ard-scene-select-py3-dea/20231010" -m "Add new integration tests"
+    git push origin ard-scene-select-py3-dea/20231010
+7. Test the new module by updating the test scripts.
+8. To use the new module in production, update module parameters in the airflow dags; nci_s2_ard.py and
+nci_ls_ard.py. These are in the airflow repo;
+    https://bitbucket.org/geoscienceaustralia/dea-airflow/src/master/dags/nci_ard/
+Note, update and test in the develop branch and then merge to master.
 
 
 Updating the ard_pipeline Modules
 ---------------------------------
-To update the ard_pipeline modules update the .env files in;
+The ard_pipeline modules are used to process the ARD.
+To update the ARD software used in production update the dass-prod-wagl-ls.env and dass-prod-wagl-s2.env files used by DASS.
 
-    dea-ard-scene-select/scripts/prod/ard_env
+These files are in the landsat-downloader repo;
+
+   https://bitbucket.org/geoscienceaustralia/landsat-downloader/src/master/config/
+
+Follow the steps in the readme of the landsat-downloader repo to update the env files used in production.
+
+Testing
+-------
+There are a variety of tests in the tests directory.
+Depending on what you want to test you may need to edit the scripts.
+The scripts have been set up to load modules on the NCI.
+Otherwise it is assumed the scripts are running in an appropriate environment.
+
+
+DASS unit tests
+---------------
+To run the unit tests, run the following from the tests directory:
+
+    ./do_tests.sh
+
+DASS integration tests
+----------------------
+
+Read this [README](tests/integration_tests/README.md).
 
 Test that the modules work by doing a development run that produces and indexes ARD.
 This is done from dea-ard-scene-select/tests/ard_tests by running:
 
     ./overall.sh
 
-To check that the ARD processing was successful run check_db.sh
+To check that the ARD processing was successful run check_db.sh and see that the number of scenes in the database has increased.
 
-If this is successful then update the production branch with the new .env files.
 
-To update the .env files used in production manually git pull from the production branch at this location;
-
-   /g/data/v10/projects/c3_ard/dea-ard-scene-select/
-
-Do this from the lpgs user account.
 
 
 Code checker/validator
@@ -80,4 +92,3 @@ Code checker/validator
 
  To run this, one will just execute './check_code.sh'.
  It will provide a report when it finishes its execution.
-
