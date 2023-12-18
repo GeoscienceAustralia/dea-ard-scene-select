@@ -8,7 +8,7 @@ repos:
       rev: 0.5.3
       hooks:
       - id: shed
-    - repo: https://gitlab.com/pycqa/flake8
+    - repo: https://github.com/PyCQA/flake8
       # flake8 version should match .travis.yml
       rev: 3.9.2
       hooks:
@@ -38,7 +38,6 @@ repos:
         - id: check-symlinks # Symlinks that don't point to anything?
         - id: check-yaml # Check Yaml file syntax
         - id: debug-statements # Avoid commiting debug/breakpoints
-        - id: end-of-file-fixer # Normalise on exactly one newline
         - id: fix-byte-order-marker # No UTF-8 byte order marks
         - id: mixed-line-ending # Don't allow mixed line endings
         - id: pretty-format-json

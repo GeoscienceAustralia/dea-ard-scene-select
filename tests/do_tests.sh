@@ -23,7 +23,7 @@ if [[ $HOSTNAME == *"gadi"* ]]; then
     # This is useful when testing a new ard-scene-select module
     # Comment out the export PYTHONPATH line below
     # module load ard-scene-select-py3-dea/dev_20231130
-    module load ard-scene-select-py3-dea/20231204
+    module load ard-scene-select-py3-dea/20231205
 
 fi
 
