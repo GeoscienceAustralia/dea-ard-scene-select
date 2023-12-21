@@ -57,9 +57,11 @@ Testing
 -------
 There are a variety of tests in the tests directory.
 Depending on what you want to test you may need to edit the scripts.
+For example, to test a new DASS module it would need to be added to the script.
 The scripts have been set up to load modules on the NCI.
 Otherwise it is assumed the scripts are running in an appropriate environment.
 
+For the integration tests, it is assumed that there is a  $USER"_automated_testing" database that can be created and destroyed.
 
 DASS unit tests
 ---------------
