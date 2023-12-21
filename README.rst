@@ -62,6 +62,7 @@ The scripts have been set up to load modules on the NCI.
 Otherwise it is assumed the scripts are running in an appropriate environment.
 
 For the integration tests, it is assumed that there is a  $USER"_automated_testing" database that can be created and destroyed.
+For NCI the database is hosted on deadev.nci.org.au.
 
 DASS unit tests
 ---------------
@@ -72,7 +73,8 @@ To run the unit tests, run the following from the tests directory:
 DASS integration tests
 ----------------------
 
-Read this [README](tests/integration_tests/README.md).
+Read this [README](tests/integration_tests/README.md)
+Read this `README <tests/integration_tests/README.md>`_
 
 Test that the modules work by doing a development run that produces and indexes ARD.
 This is done from dea-ard-scene-select/tests/ard_tests by running:
