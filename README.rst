@@ -73,7 +73,6 @@ To run the unit tests, run the following from the tests directory:
 DASS integration tests
 ----------------------
 
-Read this [README](tests/integration_tests/README.md)
 Read this `README <tests/integration_tests/README.md>`_
 
 Test that the modules work by doing a development run that produces and indexes ARD.
