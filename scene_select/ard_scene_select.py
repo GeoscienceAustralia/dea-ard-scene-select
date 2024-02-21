@@ -14,6 +14,9 @@ from typing import List, Optional, Tuple, Dict
 import click
 import json
 
+from datacube import Datacube
+from datacube.model import Dataset
+
 try:
     import datacube
 except (ImportError, AttributeError):
@@ -187,7 +190,7 @@ def load_aoi(file_name: Path) -> Dict:
     return data
 
 
-def dataset_with_final_child(dc, dataset):
+def dataset_has_a_mature_child(dc: Datacube, dataset: Dataset) -> bool:
     """
     If any child exists that isn't archived, with a dataset_maturity of 'final'
     :param dc:
@@ -204,57 +207,52 @@ def dataset_with_final_child(dc, dataset):
     return any(ds_w_child)
 
 
-def calc_processed_ard_scene_ids(dc, product, sat_key):
+def create_list_of_processed_ards(dc: Datacube, level1_product_name: str, sat_key: str):
     """
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    if product in ARD_PARENT_PRODUCT_MAPPING:  # and sat_key == "ls":
-        processed_ard_scene_ids = {}
-        if sat_key == "ls":
-            scene_id = "landsat_scene_id"
-        elif sat_key == "s2":
-            scene_id = "sentinel_tile_id"
-        for result in dc.index.datasets.search_returning(
-            (scene_id, "dataset_maturity", "id"),
-            product=ARD_PARENT_PRODUCT_MAPPING[product],
-        ):
-            if sat_key == "ls":
-                chopped_id = utils.chopped_scene_id(result.landsat_scene_id)
-            elif sat_key == "s2":
-                chopped_id = result.sentinel_tile_id
-            else:
-                raise RuntimeError(f"Unsupported sat_key: {sat_key!r}")
-            if chopped_id in processed_ard_scene_ids:
-                # The same chopped scene id has multiple scenes
-                old_uuid = processed_ard_scene_ids[chopped_id]["id"]
-                LOGGER.warning(
-                    MANYSCENES,
-                    landsat_scene_id=chopped_id,
-                    old_uuid=old_uuid,
-                    new_uuid=result.id,
-                )
-            processed_ard_scene_ids[chopped_id] = {
-                "dataset_maturity": result.dataset_maturity,
-                "id": result.id,
-            }
+    # (ARD_PARENT_PRODUCT_MAPPING).
+    # If there is a l1 product that is not in this mapping this warning
+    # is logged.
+    # This uses the l1 product to ard mapping to filter out
+    # updated l1 scenes that have been processed using the old l1 scene.
+    if level1_product_name not in ARD_PARENT_PRODUCT_MAPPING:
+        raise RuntimeError(
+            f"Unknown product attempting to be processed? {level1_product_name!r}"
+        )
+
+    processed_ard_scene_ids = {}
+    if sat_key == "ls":
+        scene_field_name = "landsat_scene_id"
+    elif sat_key == "s2":
+        scene_field_name = "sentinel_tile_id"
     else:
-        # scene select has its own mapping for l1 product to ard product
-        # (ARD_PARENT_PRODUCT_MAPPING).
-        # If there is a l1 product that is not in this mapping this warning
-        # is logged.
-        # This uses the l1 product to ard mapping to filter out
-        # updated l1 scenes that have been processed using the old l1 scene.
-        if product not in ARD_PARENT_PRODUCT_MAPPING:
+        raise RuntimeError(f"Unsupported sat_key: {sat_key!r}")
+
+    ard_product_name = ARD_PARENT_PRODUCT_MAPPING[level1_product_name]
+    for tile_id, maturity, dataset_id in dc.index.datasets.search_returning(
+        (scene_field_name, "dataset_maturity", "id"),
+        product=ard_product_name,
+    ):
+        chopped_id = utils.chopped_scene_id(tile_id)
+
+        if chopped_id in processed_ard_scene_ids:
+            # The same chopped scene id has multiple scenes
             LOGGER.warning(
-                "THE ARD ODC product name after ARD processing is not known.",
-                product=product,
+                MANYSCENES,
+                landsat_scene_id=chopped_id,
+                old_uuid=processed_ard_scene_ids[chopped_id]["id"],
+                new_uuid=dataset_id,
             )
-        processed_ard_scene_ids = None
+        processed_ard_scene_ids[chopped_id] = {
+            "dataset_maturity": maturity,
+            "id": dataset_id,
+        }
     return processed_ard_scene_ids
 
 
-def exclude_days(days_to_exclude: List, checkdatetime):
+def is_an_excluded_day(days_to_exclude: List[str], checkdatetime: datetime) -> bool:
     """
     days_to_exclude format example;
     '["2020-08-09:2020-08-30", "2020-09-02:2020-09-05"]'
@@ -315,32 +313,32 @@ def filter_ancillary(l1_dataset, ancill_there, msg, interim_days_wait, temp_logg
 
 
 def filter_reprocessed_scenes(
-    dc,
+    dc: Datacube,
     l1_dataset,
-    processed_ard_scene_ids,
+    processed_dataset_keys: Dict[str, Dict],
     find_blocked,
     ancill_there,
-    uuids2archive,
-    choppedsceneid,
+    uuids2archive: List[str],
+    dataset_uniqueness_key: str,
     temp_logger,
-):
-
+) -> bool:
     filter_out = False
+
     # Do the data with child filter here
     # It will slow things down
     # But any chopped_scene_id in processed_ard_scene_ids
     # will now be a blocked reprocessed scene
     if find_blocked:
-        if dataset_with_final_child(dc, l1_dataset):
+        if dataset_has_a_mature_child(dc, l1_dataset):
             temp_logger.debug(
                 SCENEREMOVED, **{REASON: "Skipping dataset with children"}
             )
             filter_out = True
 
-    if processed_ard_scene_ids and not filter_out:
-        if choppedsceneid in processed_ard_scene_ids:
+    if processed_dataset_keys and not filter_out:
+        if dataset_uniqueness_key in processed_dataset_keys:
             kwargs = {}
-            produced_ard = processed_ard_scene_ids[choppedsceneid]
+            produced_ard = processed_dataset_keys[dataset_uniqueness_key]
             if find_blocked:
                 kwargs[REASON] = "Potential blocked reprocessed scene."
                 kwargs["Blocking_ard_scene_id"] = str(produced_ard["id"])
@@ -361,30 +359,29 @@ def filter_reprocessed_scenes(
                 )
             else:
                 temp_logger.debug(SCENEREMOVED, **kwargs)
-                # Contine for everything except interim
+                # Continue for everything else
                 # so it doesn't get processed
                 filter_out = True
     return filter_out
 
 
 def l1_filter(
-    dc,
-    l1_product,
-    brdfdir: Path,
-    i_viirsdir: Path,
-    m_viirsdir: Path,
+    dc: Datacube,
+    l1_product_name: str,
+    brdf_dir: Path,
+    i_viirs_dir: Path,
+    m_viirs_dir: Path,
     use_viirs_after: datetime.datetime,
     wvdir: Path,
     region_codes: Dict,
     interim_days_wait: int,
-    days_to_exclude: List,
+    days_to_exclude: List[str],
     find_blocked: bool,
 ):
-
     """return
     @param dc:
-    @param l1_product: l1 product
-    @param brdfdir:
+    @param l1_product_name: l1 product
+    @param brdf_dir:
     @param wvdir:
     @param region_codes:
     @param interim_days_wait:
@@ -396,38 +393,45 @@ def l1_filter(
     # R0913: Too many arguments
     # R0914: Too many local variables
 
-    sat_key = get_aoi_sat_key(region_codes, l1_product)
+    sat_key = get_aoi_sat_key(region_codes, l1_product_name)
 
-    # This is used to block reprocessing of reprocessed l1's
-    processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product, sat_key)
+    # This is used to skip reprocessing of processed l1's
+    processed_ard_scene_ids = create_list_of_processed_ards(
+        dc, l1_product_name, sat_key
+    )
 
     # Don't crash on unknown l1 products
-    if l1_product not in PROCESSING_PATTERN_MAPPING:
-        msg = " not known to scene select processing filtering. Disabling processing filtering."
-        LOGGER.warn(l1_product + msg)
+    if l1_product_name not in PROCESSING_PATTERN_MAPPING:
+        raise RuntimeError(
+            f"Unknown product attempting to be processed: {l1_product_name!r}"
+        )
 
     ancillary_ob = AncillaryFiles(
-        brdf_dir=brdfdir,
-        viirs_i_path=i_viirsdir,
-        viirs_m_path=m_viirsdir,
+        brdf_dir=brdf_dir,
+        viirs_i_path=i_viirs_dir,
+        viirs_m_path=m_viirs_dir,
         wv_dir=wvdir,
         use_viirs_after=use_viirs_after,
     )
-    files2process = set({})
+    l1_paths_to_process = set({})
     duplicates = 0
     uuids2archive = []
-    for l1_dataset in dc.index.datasets.search(product=l1_product):
+
+    for l1_dataset in dc.index.datasets.search(product=l1_product_name):
         if sat_key == "ls":
             product_id = l1_dataset.metadata.landsat_product_id
-            choppedsceneid = utils.chopped_scene_id(
-                l1_dataset.metadata.landsat_scene_id
-            )
+            tile_id = l1_dataset.metadata.landsat_scene_id
+
         elif sat_key == "s2":
             product_id = l1_dataset.metadata.sentinel_tile_id
             # S2 has no eqivalent to a scene id
             # I'm using sentinel_tile_id.  This will work for handling interim to final.
             # it will not catch duplicates.
-            choppedsceneid = l1_dataset.metadata.sentinel_tile_id
+            tile_id = l1_dataset.metadata.sentinel_tile_id
+        else:
+            raise RuntimeError(f"Unknown satellite key {sat_key!r}")
+
+        uniqueness_key = utils.chopped_scene_id(tile_id)
         region_code = l1_dataset.metadata.region_code
         file_path = utils.calc_file_path(l1_dataset, product_id)
         # Set up the logging
@@ -438,8 +442,8 @@ def l1_filter(
         )
 
         # Filter out if the processing level is too low
-        if l1_product in PROCESSING_PATTERN_MAPPING:
-            prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
+        if l1_product_name in PROCESSING_PATTERN_MAPPING:
+            prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product_name]
             if not re.match(prod_pattern, product_id):
                 temp_logger.debug(SCENEREMOVED, **{REASON: "Processing level too low"})
                 continue
@@ -462,7 +466,7 @@ def l1_filter(
             continue
 
         # FIXME remove the hard-coded list
-        if exclude_days(days_to_exclude, l1_dataset.time.end):
+        if is_an_excluded_day(days_to_exclude, l1_dataset.time.end):
             kwargs = {
                 DATASETTIMEEND: l1_dataset.time.end,
                 REASON: "This day is excluded.",
@@ -471,7 +475,7 @@ def l1_filter(
             continue
 
         # Filter out duplicate zips
-        if file_path in files2process:
+        if file_path in l1_paths_to_process:
             duplicates += 1
             kwargs = {
                 REASON: "Potential multi-granule duplicate file path removed.",
@@ -487,7 +491,7 @@ def l1_filter(
             find_blocked,
             ancill_there,
             uuids2archive,
-            choppedsceneid,
+            uniqueness_key,
             temp_logger,
         ):
             continue
@@ -498,15 +502,15 @@ def l1_filter(
 
         # LOGGER.debug("location:pre dataset_with_final_child")
         # If any child exists that isn't archived
-        if dataset_with_final_child(dc, l1_dataset):
+        if dataset_has_a_mature_child(dc, l1_dataset):
             temp_logger.debug(
                 SCENEREMOVED, **{REASON: "Skipping dataset with children"}
             )
             continue
 
-        files2process.add(file_path)
+        l1_paths_to_process.add(file_path)
 
-    return list(files2process), uuids2archive, duplicates
+    return sorted(l1_paths_to_process), uuids2archive, duplicates
 
 
 def l1_scenes_to_process(
@@ -529,35 +533,35 @@ def l1_scenes_to_process(
     # R0913: Too many arguments
     # pylint: disable=R0914
     # R0914: Too many local variables
-    dc = datacube.Datacube(app="gen-list", config=config)
-    l1_count = 0
-    with open(outfile, "w") as fid:
-        uuids2archive_combined = []
-        for product in products:
-            files2process, uuids2archive, duplicates = l1_filter(
-                dc,
-                product,
-                brdfdir=brdfdir,
-                i_viirsdir=i_viirsdir,
-                m_viirsdir=m_viirsdir,
-                use_viirs_after=use_viirs_after,
-                wvdir=wvdir,
-                region_codes=region_codes,
-                interim_days_wait=interim_days_wait,
-                days_to_exclude=days_to_exclude,
-                find_blocked=find_blocked,
-            )
-            uuids2archive_combined += uuids2archive
-            for fp in files2process:
-                fid.write(str(fp) + "\n")
-                l1_count += 1
+    with datacube.Datacube(app="gen-list", config=config) as dc:
+        l1_count = 0
+        with open(outfile, "w") as out_fid:
+            uuids2archive_combined = []
+            for product in products:
+                files2process, uuids2archive, duplicates = l1_filter(
+                    dc,
+                    product,
+                    brdf_dir=brdfdir,
+                    i_viirs_dir=i_viirsdir,
+                    m_viirs_dir=m_viirsdir,
+                    use_viirs_after=use_viirs_after,
+                    wvdir=wvdir,
+                    region_codes=region_codes,
+                    interim_days_wait=interim_days_wait,
+                    days_to_exclude=days_to_exclude,
+                    find_blocked=find_blocked,
+                )
+                uuids2archive_combined += uuids2archive
+                for fp in files2process:
+                    out_fid.write(str(fp) + "\n")
+                    l1_count += 1
+                    if l1_count >= scene_limit:
+                        break
+                # Note this means a scene limit will not work
+                # for multi-granule scenes
+                l1_count += duplicates
                 if l1_count >= scene_limit:
                     break
-            # Note this means a scene limit will not work
-            # for multi-granule scenes
-            l1_count += duplicates
-            if l1_count >= scene_limit:
-                break
     return l1_count, uuids2archive_combined
 
 
