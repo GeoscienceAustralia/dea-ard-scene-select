@@ -7,16 +7,16 @@ from pathlib import Path
 from logging.config import fileConfig
 import click
 from datetime import timedelta, datetime
-import pprint
 import uuid
+
+from datacube import Datacube
 
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select import utils
 from scene_select.do_ard import do_ard
 
 import datacube
-from datacube.index.hl import Doc2Dataset
-from datacube.model import Range
+from datacube.model import Range, Dataset
 
 PRODUCT = "ga_ls9c_ard_3"
 DIR_TEMPLATE = "reprocess-jobid-{jobid}"
@@ -41,7 +41,7 @@ def landsat_date(product_id):
     return date_obj
 
 
-def find_blocked_l1_for_a_dataset(dc, dataset):
+def find_blocked_l1_for_a_dataset(dc: Datacube, dataset: Dataset):
     """
     Find the blocked l1 for a given dataset.
 

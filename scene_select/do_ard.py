@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import math
+from typing import Optional
+
 from scene_select.dass_logs import LOGGER
 from pathlib import Path
 import subprocess
@@ -103,7 +105,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
 def do_ard(
     ard_click_params: dict,
     l1_count: int,
-    usgs_level1_files: Path,
+    usgs_level1_files: Optional[Path],
     uuids2archive: list,
     jobdir: Path,
     run_ard: bool,
@@ -121,7 +123,8 @@ def do_ard(
         LOGGER.warning("ValueError", message=err.args)
 
     if l1_zips is not None:
-        assert usgs_level1_files is None
+        if usgs_level1_files is not None:
+            raise RuntimeError(f"Expected either l1_zips or usgs_level1_files. {l1_zips}, {usgs_level1_files}")
         # ODC_FILTERED_FILE
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         with open(usgs_level1_files, "w") as fid:

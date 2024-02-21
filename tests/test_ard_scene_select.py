@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 from click.testing import CliRunner
 from scene_select.ard_scene_select import (
-    exclude_days,
+    is_an_excluded_day,
     scene_select,
 )
 
@@ -23,12 +23,12 @@ def test_exclude_days():
 
     # not excluded
     a_dt = datetime.datetime(1944, 6, 4, tzinfo=pytz.UTC)
-    assert not exclude_days(range1, a_dt)
+    assert not is_an_excluded_day(range1, a_dt)
     a_dt = datetime.datetime(2020, 9, 1, tzinfo=pytz.UTC)
-    assert not exclude_days(range1, a_dt)
+    assert not is_an_excluded_day(range1, a_dt)
     a_dt = datetime.datetime(2020, 9, 6, tzinfo=pytz.UTC)
 
-    assert not exclude_days(range1, a_dt)
+    assert not is_an_excluded_day(range1, a_dt)
     a_dt = datetime.datetime(
         2020,
         8,
@@ -39,7 +39,7 @@ def test_exclude_days():
         microsecond=999999,
         tzinfo=pytz.UTC,
     )
-    assert not exclude_days(range1, a_dt)
+    assert not is_an_excluded_day(range1, a_dt)
 
     # excluded
     a_dt = datetime.datetime(
@@ -52,9 +52,9 @@ def test_exclude_days():
         microsecond=999999,
         tzinfo=pytz.UTC,
     )
-    assert exclude_days(range1, a_dt)
+    assert is_an_excluded_day(range1, a_dt)
     a_dt = datetime.datetime(2020, 8, 9, tzinfo=pytz.UTC)
-    assert exclude_days(range1, a_dt)
+    assert is_an_excluded_day(range1, a_dt)
 
     range2 = ["2020-08-09:2020-08-09"]
     # excluded
@@ -68,9 +68,9 @@ def test_exclude_days():
         microsecond=999999,
         tzinfo=pytz.UTC,
     )
-    assert exclude_days(range1, a_dt)
+    assert is_an_excluded_day(range1, a_dt)
     a_dt = datetime.datetime(2020, 8, 9, tzinfo=pytz.UTC)
-    assert exclude_days(range1, a_dt)
+    assert is_an_excluded_day(range1, a_dt)
 
 
 def test_exclude_days_diff_tzinfo():
@@ -78,7 +78,7 @@ def test_exclude_days_diff_tzinfo():
 
     # not excluded
     a_dt = datetime.datetime(1944, 6, 4, tzinfo=datetime.timezone.utc)
-    assert not exclude_days(range1, a_dt)
+    assert not is_an_excluded_day(range1, a_dt)
 
 
 def test_exclude_days_empty():
@@ -86,7 +86,7 @@ def test_exclude_days_empty():
 
     # not excluded
     a_dt = datetime.datetime(1944, 6, 4, tzinfo=datetime.timezone.utc)
-    assert not exclude_days(range1, a_dt)
+    assert not is_an_excluded_day(range1, a_dt)
 
 
 L8_C2_PATTERN = (
