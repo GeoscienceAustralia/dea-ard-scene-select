@@ -11,6 +11,7 @@ import yaml
 import click
 
 from datacube import Datacube
+from datacube.model import Dataset
 
 DATA_DIR = Path(__file__).parent.joinpath("data")
 
@@ -30,7 +31,7 @@ INSIGNIFICANT_DIGITS_FIX = [
 ]
 
 
-def calc_file_path(l1_dataset, product_id):
+def calc_file_path(l1_dataset: Dataset, product_id: str) -> str:
     if l1_dataset.local_path is None:
         # The s2 way
         file_path = calc_local_path(l1_dataset)
@@ -44,7 +45,7 @@ def calc_file_path(l1_dataset, product_id):
     return file_path
 
 
-def calc_local_path(l1_dataset):
+def calc_local_path(l1_dataset: Dataset) -> str:
     assert len(l1_dataset.uris) == 1, str(l1_dataset.uris)
     components = urlparse(l1_dataset.uris[0])
     if not (components.scheme == "file" or components.scheme == "zip"):

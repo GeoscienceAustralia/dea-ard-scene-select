@@ -506,7 +506,21 @@ def l1_filter(
 
         files2process.add(file_path)
 
-    return list(files2process), uuids2archive, duplicates
+    # Sort files so most recent are processed first.
+    # This is to avoid a backlog holding up recent acquisitions
+    return sorted(files2process, key=_get_path_date, reverse=True), uuids2archive, duplicates
+
+
+def _get_path_date(path: str) -> str:
+    """
+    >>> _get_path_date('/g/data/da82/AODH/USGS/L1/Landsat/C2/135_097/LC81350972022337/LC08_L1GT_135097_20221203_20221212_02_T2.tar')
+    '20221203'
+    """
+    try:
+        return path.split('_')[4]
+    except IndexError:
+        # If the filename doesn't follow that pattern, just sort it last
+        return '00000000'
 
 
 def l1_scenes_to_process(
