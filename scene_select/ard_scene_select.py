@@ -539,12 +539,20 @@ def _get_path_date(path: str) -> str:
     """
     >>> _get_path_date('/g/data/da82/AODH/USGS/L1/Landsat/C2/135_097/LC81350972022337/LC08_L1GT_135097_20221203_20221212_02_T2.tar')
     '20221203'
+    >>> _get_path_date('/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2022/2022-07/05S140E-10S145E/S2A_MSIL1C_20220706T005721_N0400_R002_T54LWQ_20220706T022422.zip')
+    '20220706T005721'
     """
+    filename = os.path.basename(path)
     try:
-        return path.split('_')[4]
+        if filename.upper().startswith("L"):
+            return filename.split('_')[3]
+        elif filename.upper().startswith("S"):
+            return filename.split('_')[2]
     except IndexError:
-        # If the filename doesn't follow that pattern, just sort it last
-        return '00000000'
+        pass
+
+    # If the filename doesn't follow that pattern, just sort it last
+    return '00000000'
 
 
 def l1_scenes_to_process(
