@@ -370,6 +370,12 @@ def filter_reprocessed_scenes(
 
 
 def month_as_range(year: int, month: int) -> Range:
+    """
+    >>> month_as_range(2024, 2)
+    Range(begin=datetime.datetime(2024, 2, 1, 0, 0), end=datetime.datetime(2024, 2, 29, 23, 59, 59, 999999))
+    >>> month_as_range(2023, 12)
+    Range(begin=datetime.datetime(2023, 12, 1, 0, 0), end=datetime.datetime(2023, 12, 31, 23, 59, 59, 999999))
+    """
     week_day, number_of_days = calendar.monthrange(year, month)
     return Range(
         datetime.datetime(year, month, 1),
