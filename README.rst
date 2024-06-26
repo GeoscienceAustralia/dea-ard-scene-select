@@ -2,7 +2,10 @@ DASS: DEA ARD scene select
 =======================================================
 
 
-This code is used to select scenes to be processed to ARD (Analysis Ready Data). This Repo si used ot build a module to run at NCI.  It is used in production to generate Landsat and Sentinel 2 Collection 3 ARD.
+This code is used to select scenes to be processed to ARD (Analysis Ready Data).
+
+This Repo is used to build a module to run at NCI.
+It is used in production to generate Landsat and Sentinel 2 Collection 3 ARD.
 
 ---
 
@@ -24,7 +27,7 @@ Modules are built off the master branch. To generate a new production module, fo
 
 
 1. login or sudo as lpgs in a terminal since production modules must be built as the lpgs user
-2. Get to the lpgs sandbox of this repo "cd /home/547/lpgs/sandbox/dea-ard-scene-select/module/"
+2. Get to the lpgs sandbox of this repo "cd /home/547/lpgs/sandbox/dea-ard-scene-select/modules/"
 3. Update to the latest version of master. Run "git pull --rebase"
 4. build the new version of the package. Run "./go.sh --prod"
 5. If there are no errors in the terminal, the package build should have been successful and the

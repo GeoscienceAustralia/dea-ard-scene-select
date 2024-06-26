@@ -16,7 +16,11 @@ from scene_select.do_ard import do_ard
 
 import datacube
 from datacube.index.hl import Doc2Dataset
-from datacube.model import Range
+from datacube.model import Range, Dataset
+from datacube import Datacube
+
+from typing import TypedDict, List
+from pathlib import Path
 
 PRODUCT = "ga_ls9c_ard_3"
 DIR_TEMPLATE = "reprocess-jobid-{jobid}"
@@ -41,27 +45,29 @@ def landsat_date(product_id):
     return date_obj
 
 
-def find_blocked_l1_for_a_dataset(dc, dataset):
+def find_newer_level1_datasets(dc: Datacube, level1_dataset: Dataset) -> List[Dataset]:
     """
-    Find the blocked l1 for a given dataset.
+    Find the blocked l1 for a given level 1 dataset.
 
-    return None or a list with one dataset.
+    (Note: I think this just finds newer datasets of the same scene, there's nothing specific to "blocking",
+           so I've tentatively renamed it for clarity)
     """
+
     blocked_l1s = []
-    blocking_scene_id = dataset.metadata.landsat_scene_id
-    blocking_product_id = dataset.metadata.landsat_product_id
+    blocking_scene_id = level1_dataset.metadata.landsat_scene_id
+    blocking_product_id = level1_dataset.metadata.landsat_product_id
     previous_dataset_versions = dc.index.datasets.search_eager(
         product_family="level1",
-        platform=dataset.metadata.platform,
-        region_code=dataset.metadata.region_code,
+        platform=level1_dataset.metadata.platform,
+        region_code=level1_dataset.metadata.region_code,
         time=Range(
-            dataset.time.begin - timedelta(days=1),
-            dataset.time.end + timedelta(days=1),
+            level1_dataset.time.begin - timedelta(days=1),
+            level1_dataset.time.end + timedelta(days=1),
         ),
     )
     for previous_dataset in previous_dataset_versions:
         previous_scene_id = previous_dataset.metadata.landsat_scene_id
-        if previous_dataset.id == dataset.id:
+        if previous_dataset.id == level1_dataset.id:
             # Skip the current dataset
             continue
         # assert the chopped scenes are the same
@@ -72,7 +78,7 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
                 "skipped l1 pairs with different chopped scene ids",
                 blocking_scene_id=blocking_scene_id,
                 other_l1_id=previous_dataset.id,
-                blocking_l1_ds=dataset,
+                blocking_l1_ds=(level1_dataset),
             )
             continue
 
@@ -85,7 +91,7 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
                 "skipped l1 pairs with blocked processing date less than blocking date",
                 blocking_l1_id=blocking_scene_id,
                 blocked_l1_id=previous_dataset.id,
-                blocking_l1_ds=dataset,
+                blocking_l1_ds=(level1_dataset),
             )
             continue
 
@@ -93,21 +99,30 @@ def find_blocked_l1_for_a_dataset(dc, dataset):
             "l1 pairs",
             blocking_scene_id=blocking_scene_id,
             blocked_l1_id=previous_dataset.id,
-            blocking_l1_ds=dataset,
+            blocking_l1_ds=(level1_dataset),
         )
 
         blocked_l1s.append(previous_dataset)
-    # Two or more blocked l1s is a problem
-    if len(blocked_l1s) > 1:
-        LOGGER.error(
-            "multiple blocked l1s. Ignore this group of l1s",
-            dataset_id=dataset.id,
-        )
-        blocked_l1s = []
+
     return blocked_l1s
 
 
-def find_blocked(dc, product, scene_limit):
+class BlockResult(TypedDict):
+    blocking_ard_id: str
+    blocked_l1_zip_path: Path
+    blocking_ard_path: Path
+
+
+def find_blocked(dc: Datacube, product:str, scene_limit:int) -> List[BlockResult]:
+    """
+
+    From what I can tell (reading this code), it finds all ARD datasets that have a newer
+    level 1 available.
+
+    Presumably the level1 is "blocked" because we already have a dataset for it?
+
+    It returns the existing ARD dataset and newer Level 1 that is available
+    """
     blocked_scenes = []
     for tmp_dataset in dc.index.datasets.search_returning(("id",), product=product):
         ard_id = tmp_dataset.id
@@ -116,36 +131,48 @@ def find_blocked(dc, product, scene_limit):
         l1_id = ard_dataset.metadata_doc["lineage"]["source_datasets"]["level1"]["id"]
         l1_ds = dc.index.datasets.get(l1_id)
 
-        if l1_ds.is_archived:
-            # All blocking l1s are archived.
-            # l1s are archived for other reasons too though.
-            # Check if there is a blocked l1
-            # LOGGER.info("ARD with archived l1", blocking_l1=blocking_l1_id, archive=ard_id)
-            blocked_l1 = find_blocked_l1_for_a_dataset(dc, l1_ds)
-            # blocked_l1 is None or a list with one dataset.
-            if blocked_l1 is None or len(blocked_l1) == 0:
-                # Could not find an l1 that is being blocked.
-                continue
-            # this is the yaml file
-            blocked_l1_local_path = blocked_l1[0].local_path
-            blocked_l1_zip_path = utils.calc_file_path(
-                blocked_l1[0], blocked_l1[0].metadata.landsat_product_id
+        # All blocking l1s are archived.
+        # l1s are archived for other reasons too though.
+        if not l1_ds.is_archived:
+            continue
+
+        # Check if there is a blocked l1
+        # LOGGER.info("ARD with archived l1", blocking_l1=blocking_l1_id, archive=ard_id)
+        blocked_l1s = find_newer_level1_datasets(dc, l1_ds)
+        # blocked_l1 is None or a list with one dataset.
+        if not blocked_l1s:
+            # Could not find an l1 that is being blocked.
+            continue
+
+        # Two or more blocked l1s is a problem
+        if len(blocked_l1s) > 1:
+            LOGGER.error(
+                "multiple blocked l1s. Ignore this group of l1s",
+                dataset_id=l1_ds.id,
             )
-            blocking_ard_path = ard_dataset.local_path
-            # pprint.pprint (blocked_l1[0].metadata_doc)
-            LOGGER.info(
-                "Found_blocked_l1",
+            continue
+        [blocked_l1] = blocked_l1s
+        # this is the yaml file
+        blocked_l1_local_path = blocked_l1.local_path
+        blocked_l1_zip_path = Path(utils.calc_file_path(
+            blocked_l1, blocked_l1.metadata.landsat_product_id
+        ))
+        blocking_ard_path = ard_dataset.local_path
+        # pprint.pprint (blocked_l1[0].metadata_doc)
+        LOGGER.info(
+            "Found_blocked_l1",
+            blocked_l1_zip_path=blocked_l1_zip_path,
+            blocking_ard_path=blocking_ard_path,
+            archive=str(ard_id),
+        )
+        blocked_scenes.append(
+            BlockResult(
+                blocking_ard_id=str(ard_id),
                 blocked_l1_zip_path=blocked_l1_zip_path,
                 blocking_ard_path=blocking_ard_path,
-                archive=str(ard_id),
             )
-            blocked_scenes.append(
-                {
-                    "blocking_ard_id": str(ard_id),
-                    "blocked_l1_zip_path": blocked_l1_zip_path,
-                    "blocking_ard_path": blocking_ard_path,
-                }
-            )
+        )
+
         if len(blocked_scenes) >= scene_limit:
             LOGGER.info(
                 "scene_limit reached",
