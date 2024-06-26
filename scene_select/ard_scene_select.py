@@ -176,7 +176,7 @@ PROCESSING_PATTERN_MAPPING = {
 }
 
 
-def load_aoi(file_name: Path) -> Dict:
+def load_aoi(file_name: str) -> Dict:
     """load a file of region codes."""
 
     with open(file_name, "r") as f:
@@ -530,15 +530,15 @@ def l1_filter(
 
                 files2process.add(file_path)
 
-    # Sort files so most recent are processed first.
-    # This is to avoid a backlog holding up recent acquisitions
-    return sorted(files2process, key=_get_path_date, reverse=True), uuids2archive, duplicates
+    return list(files2process), uuids2archive, duplicates
 
 
 def _get_path_date(path: str) -> str:
     """
     >>> _get_path_date('/g/data/da82/AODH/USGS/L1/Landsat/C2/135_097/LC81350972022337/LC08_L1GT_135097_20221203_20221212_02_T2.tar')
     '20221203'
+    >>> _get_path_date('/g/data/da82/AODH/USGS/L1/Landsat/C2/135_097/LC91350972023268/LC09_L1GT_135097_20230925_20230925_02_T2.tar')
+    '20230925'
     >>> _get_path_date('/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2022/2022-07/05S140E-10S145E/S2A_MSIL1C_20220706T005721_N0400_R002_T54LWQ_20220706T022422.zip')
     '20220706T005721'
     """
@@ -575,10 +575,11 @@ def l1_scenes_to_process(
     # R0913: Too many arguments
     # pylint: disable=R0914
     # R0914: Too many local variables
-    dc = datacube.Datacube(app="gen-list", config=config)
-    l1_count = 0
-    with open(outfile, "w") as fid:
-        uuids2archive_combined = []
+    duplicate_count = 0
+    uuids2archive_combined = []
+    paths_to_process = []
+
+    with datacube.Datacube(app="ard-scene-select", config=config) as dc:
         for product in products:
             files2process, uuids2archive, duplicates = l1_filter(
                 dc,
@@ -594,16 +595,22 @@ def l1_scenes_to_process(
                 find_blocked=find_blocked,
             )
             uuids2archive_combined += uuids2archive
-            for fp in files2process:
-                fid.write(str(fp) + "\n")
-                l1_count += 1
-                if l1_count >= scene_limit:
-                    break
-            # Note this means a scene limit will not work
-            # for multi-granule scenes
-            l1_count += duplicates
-            if l1_count >= scene_limit:
-                break
+            paths_to_process.extend(files2process)
+            duplicate_count += duplicates
+
+    # If we stopped above as soon as we reached the limit we could end up in a situation where
+    # only the first product is ever processed.
+
+    # Sort files so most recent acquisitions are processed first.
+    # This is to avoid a backlog holding up recent acquisitions
+    paths_to_process.sort(key=_get_path_date, reverse=True)
+
+    # TODO: the old code reduced written records by the duplicate count, seemingly for multi-granule to be counted
+    #       multiple times. But it also had a comment saying it wouldn't work well with multi-granule...
+    l1_count = min(len(paths_to_process), scene_limit)
+    with open(outfile, "w") as fid:
+        for path in paths_to_process[:l1_count]:
+            fid.write(str(path) + "\n")
     return l1_count, uuids2archive_combined
 
 
@@ -682,7 +689,7 @@ Does not work for multigranule zip files.",
 )
 @click.option(
     "--interim-days-wait",
-    default=18,
+    default=40,
     type=int,
     help="Maxi days to wait for ancillary data before processing ARD to "
     "an interim maturity level.",
@@ -769,19 +776,19 @@ Does not work for multigranule zip files.",
 )
 @LogMainFunction()
 def scene_select(
-    usgs_level1_files: click.Path,
-    allowed_codes: click.Path,
-    config: click.Path,
+    usgs_level1_files: str,
+    allowed_codes: str,
+    config: str,
     products: list,
-    logdir: click.Path,
-    jobdir: click.Path,
-    brdfdir: click.Path,
-    i_viirsdir: click.Path,
-    m_viirsdir: click.Path,
+    logdir: str,
+    jobdir: str,
+    brdfdir: str,
+    i_viirsdir: str,
+    m_viirsdir: str,
     use_viirs_after: datetime.datetime,
-    wvdir: click.Path,
+    wvdir: str,
     stop_logging: bool,
-    log_config: click.Path,
+    log_config: str,
     scene_limit: int,
     interim_days_wait: int,
     days_to_exclude: list,
