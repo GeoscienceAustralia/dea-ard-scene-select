@@ -1,7 +1,8 @@
 """
-    DSNS-235
-    R2.5 Filter within the excluded days
+DSNS-235
+R2.5 Filter within the excluded days
 """
+
 from pathlib import Path
 import os
 import json

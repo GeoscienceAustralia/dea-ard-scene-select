@@ -7,7 +7,6 @@ from pathlib import Path
 from logging.config import fileConfig
 import click
 from datetime import timedelta, datetime
-import pprint
 import uuid
 
 from scene_select.dass_logs import LOGGER, LogMainFunction
@@ -15,12 +14,10 @@ from scene_select import utils
 from scene_select.do_ard import do_ard
 
 import datacube
-from datacube.index.hl import Doc2Dataset
 from datacube.model import Range, Dataset
 from datacube import Datacube
 
 from typing import TypedDict, List
-from pathlib import Path
 
 PRODUCT = "ga_ls9c_ard_3"
 DIR_TEMPLATE = "reprocess-jobid-{jobid}"
@@ -113,7 +110,7 @@ class BlockResult(TypedDict):
     blocking_ard_path: Path
 
 
-def find_blocked(dc: Datacube, product:str, scene_limit:int) -> List[BlockResult]:
+def find_blocked(dc: Datacube, product: str, scene_limit: int) -> List[BlockResult]:
     """
 
     From what I can tell (reading this code), it finds all ARD datasets that have a newer
@@ -154,9 +151,9 @@ def find_blocked(dc: Datacube, product:str, scene_limit:int) -> List[BlockResult
         [blocked_l1] = blocked_l1s
         # this is the yaml file
         blocked_l1_local_path = blocked_l1.local_path
-        blocked_l1_zip_path = Path(utils.calc_file_path(
-            blocked_l1, blocked_l1.metadata.landsat_product_id
-        ))
+        blocked_l1_zip_path = Path(
+            utils.calc_file_path(blocked_l1, blocked_l1.metadata.landsat_product_id)
+        )
         blocking_ard_path = ard_dataset.local_path
         # pprint.pprint (blocked_l1[0].metadata_doc)
         LOGGER.info(

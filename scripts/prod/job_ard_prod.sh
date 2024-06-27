@@ -9,7 +9,7 @@
 
 # Note it is assumed the user lpgs will be executing this script via;
 # ./submit_ard_prod.sh
-# Note the submit_ard_prod.sh sets the $INIT_PWD variable 
+# Note the submit_ard_prod.sh sets the $INIT_PWD variable
 
 module use /g/data/v10/public/modules/modulefiles
 module use /g/data/v10/private/modules/modulefiles

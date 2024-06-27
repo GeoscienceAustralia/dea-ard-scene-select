@@ -1,8 +1,8 @@
 """
-    Helper functions for integration tests
+Helper functions for integration tests
 """
 
-from typing import List, Optional
+from typing import List
 import os
 
 

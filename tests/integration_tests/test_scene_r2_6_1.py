@@ -1,8 +1,9 @@
 """
-    DSNS-236
-        R2.6.1 Filter out l1 scenes if the dataset has a child
-        and the child is not archived
+DSNS-236
+    R2.6.1 Filter out l1 scenes if the dataset has a child
+    and the child is not archived
 """
+
 from pathlib import Path
 import os
 import json
