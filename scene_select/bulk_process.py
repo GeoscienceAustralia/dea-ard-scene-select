@@ -28,9 +28,11 @@ import click
 from datacube import Datacube
 
 from scene_select.do_ard import calc_node_with_defaults
-from scene_select.collections import ArdCollection, Level1Dataset
+from scene_select.collections import get_collection
 import logging
 from packaging import version
+
+from scene_select.library import Level1Dataset
 
 WORK_DIR = Path("/g/data/v10/work/bulk-process")
 
@@ -65,7 +67,8 @@ def cli(prefix: str, max_count: int):
     log = logging.getLogger("ard-bulk-reprocess")
 
     with Datacube() as dc:
-        collection = ArdCollection(dc, prefix)
+        collection = get_collection(dc, prefix)
+
         log.info(f"Choosing products {[c.name for c in collection.products]}")
         # Filter to our set of ARD products.
 
