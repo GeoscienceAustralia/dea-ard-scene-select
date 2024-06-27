@@ -23,7 +23,7 @@ SSPATH=$DIR/../..
 
 # The line below ensures we use the copy of scene_select.ard_reprocessed_l1s
 # in this repository.
-# Comment these lines out to use the module installed system wide. 
+# Comment these lines out to use the module installed system wide.
 [[ ":$PYTHONPATH:" != *":$SSPATH:"* ]] && PYTHONPATH="$SSPATH:${PYTHONPATH}"
 #export PYTHONPATH=$PYTHONPATH
 

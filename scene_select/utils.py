@@ -5,12 +5,10 @@ from pathlib import Path
 
 from urllib.parse import urlparse
 from urllib.request import url2pathname
-from subprocess import STDOUT, check_output, Popen, PIPE
+from subprocess import Popen, PIPE
 
-import yaml
 import click
 
-from datacube import Datacube
 from datacube.model import Dataset
 
 DATA_DIR = Path(__file__).parent.joinpath("data")

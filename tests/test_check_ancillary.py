@@ -7,7 +7,7 @@ try:
     from wagl.hdf5 import H5CompressionFilter  # don't delete, needed 4 plugins
 except ModuleNotFoundError:
     # for non-NCI setup
-    import tables
+    pass
 import pytz
 
 from scene_select.check_ancillary import AncillaryFiles
@@ -103,7 +103,6 @@ def test_ancillaryfiles_local():
 
 
 def test_ancillaryfiles_water():
-
     # BRDF there. last day out of wv data
     af_ob = AncillaryFiles(brdf_dir=BRDF_TEST_DIR, wv_dir=WV_TEST_DIR)
     a_dt = datetime.datetime(2020, 8, 9, tzinfo=pytz.UTC)
@@ -123,7 +122,6 @@ def test_ancillaryfiles_water():
 
 
 def test_ancillaryfiles_actual():
-
     # BRDF there. last day out of wv data
     af_ob = AncillaryFiles()
     a_dt = datetime.datetime(1944, 8, 10, tzinfo=pytz.UTC)

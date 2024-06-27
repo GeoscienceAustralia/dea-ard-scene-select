@@ -20,7 +20,7 @@ ard_pbs --level1-list {scene_list} {ard_args}
 """
 
 
-def _calc_node_with_defaults(ard_click_params, count_all_scenes_list):
+def calc_node_with_defaults(ard_click_params, count_all_scenes_list):
     # Estimate the number of nodes needed
 
     hours_per_granule = 7.5
@@ -87,7 +87,6 @@ def dict2ard_arg_string(ard_click_params):
 
 
 def make_ard_pbs(level1_list, **ard_click_params):
-
     if ard_click_params["env"] is None:
         # Don't error out, just
         # fill env with a bad value
@@ -115,7 +114,7 @@ def do_ard(
       it will write the file."""
     LOGGER.info("do_ard", **locals())
     try:
-        _calc_node_with_defaults(ard_click_params, l1_count)
+        calc_node_with_defaults(ard_click_params, l1_count)
     except ValueError as err:
         print(err.args)
         LOGGER.warning("ValueError", message=err.args)

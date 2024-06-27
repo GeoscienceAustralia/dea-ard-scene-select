@@ -1,7 +1,7 @@
 """
-    DSNS 237
-        R2.8.1 Filter out ls8 l1 scenes if the dataset has a child,
-        the child is interim and there is no ancillary
+DSNS 237
+    R2.8.1 Filter out ls8 l1 scenes if the dataset has a child,
+    the child is interim and there is no ancillary
 """
 
 from pathlib import Path

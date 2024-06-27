@@ -32,9 +32,7 @@ import os
 import pytest
 from click.testing import CliRunner
 import os.path
-import uuid
 import shutil
-from subprocess import STDOUT
 from typing import Dict
 
 import datacube

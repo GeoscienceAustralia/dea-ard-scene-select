@@ -1,14 +1,14 @@
 """
-    DSNS-229
-        R1.1 for s2: Unfiltered scenes are ARD processed
+DSNS-229
+    R1.1 for s2: Unfiltered scenes are ARD processed
 """
+
 from pathlib import Path
-from typing import List, Tuple
 import os
 import subprocess
 from click.testing import CliRunner
 import pytest
-from scene_select.ard_scene_select import scene_select, GEN_LOG_FILE
+from scene_select.ard_scene_select import scene_select
 from scene_select.do_ard import ODC_FILTERED_FILE
 
 from util import (

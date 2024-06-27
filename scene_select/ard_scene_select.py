@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
 import datetime
-import math
 import os
 import re
-import stat
-import subprocess
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
@@ -326,7 +323,6 @@ def filter_reprocessed_scenes(
     choppedsceneid,
     temp_logger,
 ):
-
     filter_out = False
     # Do the data with child filter here
     # It will slow things down
@@ -363,7 +359,7 @@ def filter_reprocessed_scenes(
                 )
             else:
                 temp_logger.debug(SCENEREMOVED, **kwargs)
-                # Contine for everything except interim
+                # Continue for everything except interim
                 # so it doesn't get processed
                 filter_out = True
     return filter_out
@@ -383,8 +379,6 @@ def month_as_range(year: int, month: int) -> Range:
     )
 
 
-
-
 def l1_filter(
     dc,
     l1_product,
@@ -398,7 +392,6 @@ def l1_filter(
     days_to_exclude: List,
     find_blocked: bool,
 ):
-
     """return
     @param dc:
     @param l1_product: l1 product
@@ -434,13 +427,17 @@ def l1_filter(
     files2process = set({})
     duplicates = 0
     uuids2archive = []
-    product_start_time, product_end_time = dc.index.datasets.get_product_time_bounds(product=l1_product)
+    product_start_time, product_end_time = dc.index.datasets.get_product_time_bounds(
+        product=l1_product
+    )
 
     # Query month-by-month to make DB queries smaller.
     # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
     for year in range(product_start_time.year, product_end_time.year + 1):
         for month in range(1, 13):
-            for l1_dataset in dc.index.datasets.search(product=l1_product, time=month_as_range(year, month)):
+            for l1_dataset in dc.index.datasets.search(
+                product=l1_product, time=month_as_range(year, month)
+            ):
                 if sat_key == "ls":
                     product_id = l1_dataset.metadata.landsat_product_id
                     choppedsceneid = utils.chopped_scene_id(
@@ -465,7 +462,9 @@ def l1_filter(
                 if l1_product in PROCESSING_PATTERN_MAPPING:
                     prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
                     if not re.match(prod_pattern, product_id):
-                        temp_logger.debug(SCENEREMOVED, **{REASON: "Processing level too low"})
+                        temp_logger.debug(
+                            SCENEREMOVED, **{REASON: "Processing level too low"}
+                        )
                         continue
 
                 # Filter out if outside area of interest
@@ -545,14 +544,14 @@ def _get_path_date(path: str) -> str:
     filename = os.path.basename(path)
     try:
         if filename.upper().startswith("L"):
-            return filename.split('_')[3]
+            return filename.split("_")[3]
         elif filename.upper().startswith("S"):
-            return filename.split('_')[2]
+            return filename.split("_")[2]
     except IndexError:
         pass
 
     # If the filename doesn't follow that pattern, just sort it last
-    return '00000000'
+    return "00000000"
 
 
 def l1_scenes_to_process(

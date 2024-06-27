@@ -1,8 +1,9 @@
 """
-    DSNS-241
-    R1.1 for ls: Unfiltered scenes are ARD processed
-    The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C1/092_085/LC80920852020223
+DSNS-241
+R1.1 for ls: Unfiltered scenes are ARD processed
+The tar is from /g/data/da82/AODH/USGS/L1/Landsat/C1/092_085/LC80920852020223
 """
+
 from collections import Counter
 from pathlib import Path
 import os
@@ -64,7 +65,6 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
-
     cmd_params = [
         "--products",
         '["usgs_ls8c_level1_1", "usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
