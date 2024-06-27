@@ -76,9 +76,7 @@ ARD_PRODUCTS = {
         sources=[
             Level1Product(
                 "esa_s2am_level1_0",
-                base_collection_path=Path(
-                    "/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C"
-                ),
+                base_collection_path=Path("/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C"),
                 separate_metadata_directory=Path("/g/data/ka08/ga/l1c_metadata"),
                 is_active=True,
             )
@@ -90,9 +88,7 @@ ARD_PRODUCTS = {
         sources=[
             Level1Product(
                 "esa_s2bm_level1_0",
-                base_collection_path=Path(
-                    "/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C"
-                ),
+                base_collection_path=Path("/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C"),
                 separate_metadata_directory=Path("/g/data/ka08/ga/l1c_metadata"),
                 is_active=True,
             )
@@ -103,13 +99,9 @@ ARD_PRODUCTS = {
 
 def get_collection(dc: Datacube, prefix: str) -> ArdCollection:
     products = {
-        product
-        for product in ARD_PRODUCTS
-        if product.name.startswith(f"ga_{prefix}")
+        product for product in ARD_PRODUCTS if product.name.startswith(f"ga_{prefix}")
     }
     if not products:
         raise ValueError(f"No products found for {prefix=}")
 
-    return ArdCollection(
-        dc=dc, products=products, aoi_path=AOI_PATH
-    )
+    return ArdCollection(dc=dc, products=products, aoi_path=AOI_PATH)

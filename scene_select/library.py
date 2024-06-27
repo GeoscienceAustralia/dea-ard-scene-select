@@ -1,17 +1,18 @@
 import calendar
 import datetime
-import logging
 
 from pathlib import Path
 from typing import Optional, List, Generator, Tuple, Iterable
 
+import structlog
 from attr import define, field
 from datacube import Datacube
 from datacube.model import Range, Dataset
 from datacube.utils import uri_to_local_path
 from ruamel import yaml
 
-_LOG = logging.getLogger(__name__)
+
+_LOG = structlog.get_logger()
 
 
 @define
@@ -43,7 +44,6 @@ class ArdProduct:
 
     # Example:
     # /g/data/xu18/ga/ga_ls8c_ard_3/089/074/2024/05/27/ga_ls8c_ard_3-2-1_089074_2024-05-27_final.odc-metadata.yaml
-
 
 
 @define
@@ -88,15 +88,22 @@ class Level1Dataset(BaseDataset):
             ).with_suffix(".odc-metadata.yaml")
 
             if not metadata_path.exists():
-                all_granule_metadatas = list(metadata_path.parent.glob(f'{data_path.stem}*.odc-metadata.yaml'))
+                all_granule_metadatas = list(
+                    metadata_path.parent.glob(f"{data_path.stem}*.odc-metadata.yaml")
+                )
                 # All file have an `id` field, so we can find which one matches dataset.id
                 for granule_metadata in all_granule_metadatas:
                     with granule_metadata.open() as f:
                         granule_doc = yaml.safe_load(f)
-                        if str(granule_doc['id']) == str(dataset.id):
+                        if str(granule_doc["id"]) == str(dataset.id):
                             metadata_path = granule_metadata
                             break
-                        _LOG.debug(f"Filtering granule with id {granule_doc['id']}!={dataset.id} for {granule_metadata}")
+                        _LOG.debug(
+                            "filtered_different_id",
+                            document_dataset_id=granule_doc["id"],
+                            our_dataset_id=dataset.id,
+                            metadata_path=granule_metadata,
+                        )
                 else:
                     raise ValueError(
                         f"Could not find metadata for {data_path}, tried {metadata_path} and {all_granule_metadatas}"
@@ -131,7 +138,7 @@ def zip_uri_to_path(uri: str) -> Path:
     prefix = "zip:"
     if not uri.startswith(prefix):
         raise ValueError(f"Expected {uri=} to start with {prefix=}")
-    return Path(uri.split("!")[0][len(prefix):])
+    return Path(uri.split("!")[0][len(prefix) :])
 
 
 @define
@@ -181,12 +188,11 @@ def month_as_range(year: int, month: int) -> Range:
 
 
 class ArdCollection:
-
     def __init__(
-            self,
-            dc: Datacube,
-            products: Iterable[ArdProduct],
-            aoi_path: Path,
+        self,
+        dc: Datacube,
+        products: Iterable[ArdProduct],
+        aoi_path: Path,
     ):
         """
         Prefix will determine the set of products you want
@@ -206,9 +212,10 @@ class ArdCollection:
 
     # def iterate_processable_levels1s(self): ...
     def iterate_indexed_ard_datasets(
-            self,
+        self,
     ) -> Generator[Tuple[ArdProduct, ArdDataset], None, None]:
         for product in self.products:
+            _LOG.info("finding_product_time_bounds", product_name=product.name)
             product_start_time, product_end_time = (
                 self.dc.index.datasets.get_product_time_bounds(product=product.name)
             )
@@ -217,11 +224,17 @@ class ArdCollection:
             seen_dataset_ids = set()
             for year in range(product_start_time.year, product_end_time.year + 1):
                 for month in range(1, 13):
-                    _LOG.debug("Searching %s %s-%s", product.name, year, month)
+                    _LOG.info(
+                        "searching_month",
+                        product_name=product.name,
+                        year=year,
+                        month=month,
+                    )
+
                     for (
-                            dataset_id,
-                            maturity,
-                            uri,
+                        dataset_id,
+                        maturity,
+                        uri,
                     ) in self.dc.index.datasets.search_returning(
                         ("id", "dataset_maturity", "uri"),
                         product=product.name,

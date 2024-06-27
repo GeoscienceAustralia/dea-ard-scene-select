@@ -25,14 +25,15 @@ from textwrap import dedent
 from typing import List, Dict
 
 import click
+import structlog
 from datacube import Datacube
 
 from scene_select.do_ard import calc_node_with_defaults
 from scene_select.collections import get_collection
-import logging
 from packaging import version
 
 from scene_select.library import Level1Dataset
+from scene_select.utils import structlog_setup
 
 WORK_DIR = Path("/g/data/v10/work/bulk-process")
 
@@ -44,7 +45,7 @@ WORK_DIR = Path("/g/data/v10/work/bulk-process")
 
 @click.command("ard-bulk-reprocess")
 @click.argument("prefix")
-@click.option("--max-count", default=10, help="Maximum number of scenes to process")
+@click.option("--max-count", default=100, help="Maximum number of scenes to process")
 def cli(prefix: str, max_count: int):
     import wagl
 
@@ -61,15 +62,14 @@ def cli(prefix: str, max_count: int):
         )
     environment_file = f"/g/data/v10/work/landsat_downloads/landsat-downloader/config/dass-prod-wagl-{platform}.env"
 
-    logging.basicConfig(level=logging.INFO)
-    logging.getLogger("scene_select.collections").setLevel(logging.DEBUG)
+    structlog_setup()
 
-    log = logging.getLogger("ard-bulk-reprocess")
+    log = structlog.get_logger()
 
     with Datacube() as dc:
         collection = get_collection(dc, prefix)
 
-        log.info(f"Choosing products {[c.name for c in collection.products]}")
+        log.info("chosen_products", products=[c.name for c in collection.products])
         # Filter to our set of ARD products.
 
         # The level1s to process, and the ids of datasets that will be replaced by them.
@@ -78,7 +78,9 @@ def cli(prefix: str, max_count: int):
 
         for ard_product, ard_dataset in collection.iterate_indexed_ard_datasets():
             if not ard_dataset.metadata_path.exists():
-                log.warning(f"{ard_dataset.dataset_id} does not exist on disk")
+                log.warning(
+                    "dataset_missing_from_disk", dataset_id=ard_dataset.dataset_id
+                )
                 continue
 
             processed_with_wagl_version = ard_dataset.software_versions()["wagl"]
@@ -87,7 +89,8 @@ def cli(prefix: str, max_count: int):
                 current_wagl_version, processed_with_wagl_version
             ):
                 log.info(
-                    f"{ard_dataset.dataset_id} already processed with a recent version of wagl"
+                    "skip.already_processed_with_current_wagl",
+                    dataset_id=ard_dataset.dataset_id,
                 )
                 continue
 
@@ -96,7 +99,7 @@ def cli(prefix: str, max_count: int):
             level1 = dc.index.datasets.get(ard_dataset.level1_id)
             if level1 is None:
                 log.warning(
-                    f"Source level 1 {ard_dataset.level1_id} not found in index"
+                    "skip.source_level1_not_indexed", dataset_id=ard_dataset.dataset_id
                 )
                 # TODO: Perhaps a newer one exists? Or on disk?
                 continue
@@ -113,6 +116,7 @@ def cli(prefix: str, max_count: int):
             unique_products.add(ard_product)
 
             if len(level1s_to_process) >= max_count:
+                log.info("reached_max_dataset_count", max_count=max_count)
                 break
 
         from datetime import datetime
@@ -169,8 +173,13 @@ def cli(prefix: str, max_count: int):
             src.write(pbs)
         os.chmod(script_path, os.stat(script_path).st_mode | stat.S_IEXEC)
 
-        log.info(f"Job directory for {len(level1s_to_process)} datasets: {job_directory}")
-        log.info(f"Runnable: {script_path}")
+        log.info(
+            "created_job",
+            dataset_count=len(level1s_to_process),
+            products=len(unique_products),
+            job_directory=str(job_directory),
+            script_path=str(script_path),
+        )
 
 
 def is_before_our_version(our_version: str, their_version: str) -> bool:
