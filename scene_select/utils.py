@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-
+import logging
 import os
+import sys
 from pathlib import Path
+from typing import TextIO
 
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 from subprocess import Popen, PIPE
 
 import click
+import structlog
 
 from datacube.model import Dataset
 
@@ -137,3 +140,42 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
         "errs": str(errs),
     }
     return worked, update_results
+
+
+def structlog_setup(output: TextIO | None = sys.stderr):
+    """
+    Sensible structlog defaults.
+
+    It will pretty-print if going to an interactive terminal, and otherwise output json.
+
+    You can manually give a file to output to.
+
+    :param output: file to print to. (default: `sys.stderr`)
+    """
+    shared_processors = [
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.add_log_level,
+        structlog.processors.StackInfoRenderer(),
+        structlog.dev.set_exc_info,
+        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
+    ]
+
+    if output.isatty():
+        # Pretty printing when run in a terminal session.
+        # Automatically prints pretty tracebacks when "rich" is installed
+        processors = shared_processors + [
+            structlog.dev.ConsoleRenderer(sort_keys=False),
+        ]
+    else:
+        # Log JSON when run otherwise
+        processors = shared_processors + [
+            structlog.processors.dict_tracebacks,
+            structlog.processors.JSONRenderer(),
+        ]
+    structlog.configure(
+        processors=processors,
+        wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(file=output),
+        cache_logger_on_first_use=False,
+    )
