@@ -103,7 +103,6 @@ class AncillaryFiles:
             return False, f"VIIRS BRDF data for {ymd} does not exist."
 
     def ancillary_files(self, acquisition_datetime):
-
         if not self.wv_file_exists(acquisition_datetime.year):
             return (
                 False,

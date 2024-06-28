@@ -9,7 +9,7 @@ from scene_select.do_ard import (
     PBS_ARD_FILE,
     dict2ard_arg_string,
     _calc_nodes_req,
-    _calc_node_with_defaults,
+    calc_node_with_defaults,
 )
 
 
@@ -48,13 +48,12 @@ def test_calc_nodes_req_more():
     count_all_scenes_list = 1
 
     try:
-        _calc_node_with_defaults(ard_click_params, count_all_scenes_list)
+        calc_node_with_defaults(ard_click_params, count_all_scenes_list)
     except ValueError as err:
         assert len(err.args) >= 1
 
 
 def test_do_ard(tmp_path):
-
     ard_click_params = {
         "email": None,
         "env": "/g/data/u46/users/dsg547/sandbox/dea-ard-scene-select/tests/integration_tests/ls_interim_prod_wagl.env",

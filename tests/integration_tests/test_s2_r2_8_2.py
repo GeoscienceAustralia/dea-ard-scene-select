@@ -1,11 +1,10 @@
 """
-    DSNS-240
-        R2.8.2 Filter out S2 l1 scenes if the dataset has a child,
-        the child is interim and there is no ancillary
+DSNS-240
+    R2.8.2 Filter out S2 l1 scenes if the dataset has a child,
+    the child is interim and there is no ancillary
 """
 
 from pathlib import Path
-from typing import List, Tuple
 import os
 import subprocess
 import json

@@ -1,8 +1,9 @@
 """
-    DSNS-233
-    R2.3 Filter out if outside the AOI
-    
+DSNS-233
+R2.3 Filter out if outside the AOI
+
 """
+
 from pathlib import Path
 import os
 import json
@@ -53,7 +54,6 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_ard_landsat_scenes_outside_AOI_r2_3(tmp_path):
-
     cmd_params = [
         "--products",
         '[ "usgs_ls8c_level1_1" ]',

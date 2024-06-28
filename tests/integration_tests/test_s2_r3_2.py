@@ -1,9 +1,9 @@
 """
-    DSNS-230
-        R3.2 Process a scene if the child is interim and ancill data is there
+DSNS-230
+    R3.2 Process a scene if the child is interim and ancill data is there
 """
+
 from pathlib import Path
-from typing import List, Tuple
 import os
 import subprocess
 from click.testing import CliRunner

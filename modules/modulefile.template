@@ -22,6 +22,9 @@ if { ! [is-loaded ${dep_module}] } {
 if { ! [is-loaded ${dea_module}] } {
     module load ${dea_module}
 }
+
+setenv SQLALCHEMY_SILENCE_UBER_WARNING 1
+
 prepend-path PYTHONPATH /g/data/v10/private/modules/wagl/5.4.1/bin
 prepend-path PYTHONPATH ${python_dest}
 prepend-path PATH ${package_dest}/bin

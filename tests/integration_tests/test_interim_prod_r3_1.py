@@ -1,8 +1,9 @@
 """
-    DSNS-239
-    R3.1 Process a scene if the ancillary is not there,
-    after the wait time (Process to interim)
+DSNS-239
+R3.1 Process a scene if the ancillary is not there,
+after the wait time (Process to interim)
 """
+
 from collections import Counter
 from pathlib import Path
 import os
