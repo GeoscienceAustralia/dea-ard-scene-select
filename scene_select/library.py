@@ -245,7 +245,7 @@ class ArdCollection:
                         yield (
                             product,
                             ArdDataset(
-                                dataset_id=dataset_id,
+                                dataset_id=str(dataset_id),
                                 maturity=maturity,
                                 metadata_path=uri_to_local_path(uri),
                             ),
