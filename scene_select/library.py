@@ -9,6 +9,7 @@ from attr import define, field
 from datacube import Datacube
 from datacube.model import Range, Dataset
 from datacube.utils import uri_to_local_path
+from eodatasets3.utils import default_utc
 from ruamel import yaml
 
 
@@ -98,12 +99,12 @@ class Level1Dataset(BaseDataset):
                         if str(granule_doc["id"]) == str(dataset.id):
                             metadata_path = granule_metadata
                             break
-                        _LOG.debug(
-                            "filtered_different_id",
-                            document_dataset_id=granule_doc["id"],
-                            our_dataset_id=dataset.id,
-                            metadata_path=granule_metadata,
-                        )
+                        # _LOG.debug(
+                        #     "filtered_different_id",
+                        #     document_dataset_id=granule_doc["id"],
+                        #     our_dataset_id=dataset.id,
+                        #     metadata_path=granule_metadata,
+                        # )
                 else:
                     raise ValueError(
                         f"Could not find metadata for {data_path}, tried {metadata_path} and {all_granule_metadatas}"
@@ -173,20 +174,6 @@ class ArdDataset(BaseDataset):
         return self.metadata_doc()["lineage"]["level1"][0]
 
 
-def month_as_range(year: int, month: int) -> Range:
-    """
-    >>> month_as_range(2024, 2)
-    Range(begin=datetime.datetime(2024, 2, 1, 0, 0), end=datetime.datetime(2024, 2, 29, 23, 59, 59, 999999))
-    >>> month_as_range(2023, 12)
-    Range(begin=datetime.datetime(2023, 12, 1, 0, 0), end=datetime.datetime(2023, 12, 31, 23, 59, 59, 999999))
-    """
-    week_day, number_of_days = calendar.monthrange(year, month)
-    return Range(
-        datetime.datetime(year, month, 1),
-        datetime.datetime(year, month, number_of_days, 23, 59, 59, 999999),
-    )
-
-
 class ArdCollection:
     def __init__(
         self,
@@ -213,42 +200,105 @@ class ArdCollection:
     # def iterate_processable_levels1s(self): ...
     def iterate_indexed_ard_datasets(
         self,
+        search_expressions: dict,
     ) -> Generator[Tuple[ArdProduct, ArdDataset], None, None]:
         for product in self.products:
-            _LOG.info("finding_product_time_bounds", product_name=product.name)
-            product_start_time, product_end_time = (
-                self.dc.index.datasets.get_product_time_bounds(product=product.name)
-            )
-            # Query month-by-month to make DB queries smaller.
+            if (
+                "product" in search_expressions
+                and search_expressions["product"] != product.name
+            ):
+                continue
+
+            expressions = search_expressions.copy()
+
+            if "time" in search_expressions:
+                product_start_time, product_end_time = expressions.pop("time")
+            else:
+                _LOG.info("finding_product_time_bounds", product_name=product.name)
+                product_start_time, product_end_time = (
+                    self.dc.index.datasets.get_product_time_bounds(product=product.name)
+                )
 
             seen_dataset_ids = set()
-            for year in range(product_start_time.year, product_end_time.year + 1):
-                for month in range(1, 13):
-                    _LOG.info(
-                        "searching_month",
-                        product_name=product.name,
-                        year=year,
-                        month=month,
-                    )
 
-                    for (
-                        dataset_id,
-                        maturity,
-                        uri,
-                    ) in self.dc.index.datasets.search_returning(
-                        ("id", "dataset_maturity", "uri"),
-                        product=product.name,
-                        time=month_as_range(year, month),
-                    ):
-                        # Note that we may receive the same dataset multiple times due to time boundaries
-                        # (hence: record our seen ones)
-                        if dataset_id not in seen_dataset_ids:
-                            yield (
-                                product,
-                                ArdDataset(
-                                    dataset_id=dataset_id,
-                                    maturity=maturity,
-                                    metadata_path=uri_to_local_path(uri),
-                                ),
-                            )
-                            seen_dataset_ids.add(dataset_id)
+            # Query month-by-month to make DB queries smaller.
+            for time in iterate_as_months(product_start_time, product_end_time):
+                _LOG.info(
+                    "searching_time_block",
+                    product_name=product.name,
+                    time=displayable_date_range(time),
+                )
+
+                for (
+                    dataset_id,
+                    maturity,
+                    uri,
+                ) in self.dc.index.datasets.search_returning(
+                    ("id", "dataset_maturity", "uri"),
+                    product=product.name,
+                    time=time,
+                    **expressions,
+                ):
+                    # Note that we may receive the same dataset multiple times due to time boundaries
+                    # (hence: record our seen ones)
+                    if dataset_id not in seen_dataset_ids:
+                        yield (
+                            product,
+                            ArdDataset(
+                                dataset_id=dataset_id,
+                                maturity=maturity,
+                                metadata_path=uri_to_local_path(uri),
+                            ),
+                        )
+                        seen_dataset_ids.add(dataset_id)
+
+
+def month_as_range(
+    year: int, month: int, start_time: datetime.datetime, end_time: datetime.datetime
+) -> Range:
+    """
+    Returns a Range object for the given year and month, strictly constrained by start_time and end_time.
+
+    >>> start = datetime.datetime(2024, 2, 15, 10, 30)
+    >>> end = datetime.datetime(2024, 3, 10, 14, 45)
+    >>> month_as_range(2024, 2, start, end)
+    Range(begin=datetime.datetime(2024, 2, 15, 10, 30), end=datetime.datetime(2024, 2, 29, 23, 59, 59, 999999))
+    >>> month_as_range(2024, 3, start, end)
+    Range(begin=datetime.datetime(2024, 3, 1, 0, 0), end=datetime.datetime(2024, 3, 10, 14, 45))
+    """
+    month_start = datetime.datetime(year, month, 1, tzinfo=start_time.tzinfo)
+    _, last_day = calendar.monthrange(year, month)
+    month_end = datetime.datetime(
+        year, month, last_day, 23, 59, 59, 999999, tzinfo=start_time.tzinfo
+    )
+
+    range_start = max(month_start, start_time)
+    range_end = min(month_end, end_time)
+
+    return Range(range_start, range_end)
+
+
+def iterate_as_months(start_time: datetime.datetime, end_time: datetime.datetime):
+    """
+    Iterate the time range as individual months (or smaller).
+    """
+    start_time = default_utc(start_time)
+    end_time = default_utc(end_time)
+
+    current = start_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    while current <= end_time:
+        year, month = current.year, current.month
+        yield month_as_range(year, month, start_time, end_time)
+
+        # Move to the next month
+        if month == 12:
+            current = current.replace(year=year + 1, month=1)
+        else:
+            current = current.replace(month=month + 1)
+
+
+def displayable_date_range(range: Range):
+    begin: datetime.datetime = range.begin
+    end: datetime.datetime = range.end
+    return f"({begin.isoformat()}, {end.isoformat()})"
