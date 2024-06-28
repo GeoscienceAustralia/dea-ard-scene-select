@@ -84,7 +84,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
 	echo "Installing ard-scene-select"
 
-	installrepo ard-scene-select  master    https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
+	installrepo ard-scene-select  jez/bulk-process  https://github.com/GeoscienceAustralia/dea-ard-scene-select.git
 
 	echo "Writing modulefile"
 	modulefile_dir="${module_dir}/modulefiles/${package_name}"
