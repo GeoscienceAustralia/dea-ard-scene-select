@@ -110,9 +110,10 @@ def expression_parse(ctx, param, value):
     default=None,
     help="Output package base path (default: work-dir/pkg)",
 )
+@click.option("--workers-per-node", type=int, default=48, help="Workers per node")
 @ui.pass_index(app_name="bulk-reprocess")
 def cli(
-    index, prefix: str, max_count: int, work_dir: Path, pkg_dir: Path, expressions: dict
+    index, prefix: str, max_count: int, workers_per_node:int, work_dir: Path, pkg_dir: Path, expressions: dict
 ):
     import wagl
 
@@ -153,10 +154,11 @@ def cli(
                 ilog.warning("dataset_missing_from_disk")
                 continue
 
-            if not matches_software_expressions(
-                ard_dataset.software_versions(), software_expressions, log=ilog
-            ):
-                continue
+            if software_expressions:
+                if not matches_software_expressions(
+                    ard_dataset.software_versions(), software_expressions, log=ilog
+                ):
+                    continue
 
             level1 = dc.index.datasets.get(ard_dataset.level1_id)
             if level1 is None:
@@ -221,7 +223,7 @@ def cli(
             walltime="10:00:00",
             env=environment_file,
             nodes=None,
-            workers=None,
+            workers=workers_per_node,
             **dirs,
         )
         calc_node_with_defaults(ard_args, len(level1s_to_process))
