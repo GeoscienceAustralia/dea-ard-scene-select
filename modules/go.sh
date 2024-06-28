@@ -7,8 +7,8 @@
 # a --prod flag is to be provided to this script.
 if [[ $1 == "--prod" ]]; then
     # production version
-    ./package-module.sh "${2:-$(date +'%Y%m%d')}" --prod
+    ./package-module.sh "${2:-$(date +'%Y%m%d')}-bulk" --prod
 else
     # dev version
-    ./package-module.sh  dev_${2:-$(date +'%Y%m%d')} ---not-prod
+    ./package-module.sh  dev_${2:-$(date +'%Y%m%d')}-bulk ---not-prod
 fi
