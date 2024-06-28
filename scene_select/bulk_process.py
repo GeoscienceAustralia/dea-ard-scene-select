@@ -64,6 +64,7 @@ You can redirect stderr if you want to record logs:
 import os
 import shlex
 import stat
+import sys
 from pathlib import Path
 from textwrap import dedent
 from typing import List, Dict
@@ -94,7 +95,9 @@ def expression_parse(ctx, param, value):
 @ui.config_option
 @click.argument("prefix")
 @click.argument("expressions", callback=expression_parse, nargs=-1)
-@click.option("--max-count", default=100, help="Maximum number of scenes to process")
+@click.option(
+    "--max-count", default=sys.maxsize, help="Maximum number of scenes to process"
+)
 @click.option(
     "--work-dir",
     type=Path,
@@ -177,6 +180,10 @@ def cli(
             if len(level1s_to_process) >= max_count:
                 log.info("reached_max_dataset_count", max_count=max_count)
                 break
+
+        if not level1s_to_process:
+            log.info("no_datasets_to_process")
+            return
 
         from datetime import datetime
 
