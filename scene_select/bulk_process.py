@@ -1,20 +1,33 @@
 """
-Create a PBS Job to (re)process dataset in bulk
+Create a PBS Job to (re)process ARD datasets in bulk
 
 This is a simpler alternative to scene_select, intended for bulk jobs
 that replace existing data.
 
 (It is intended to have good defaults, so you don't need to remember our AOI, where our Level 1 lives on NCI,
-or where logs should go)
+or where logs should go, etc... )
 
-There's no logic to fill gaps etc, as you're planning
-to replace scenes.
+This will search, filter the scenes, and create the ard_pbs script. You can then run the result if it looks good.
 
-This will search, filter the scenes, and create the jobs.
+The first argument is which "collections" to process. This can be "ls", "s2", or more specific matches
+like "ls7" or "s2a"*
 
-Example:
+ (*prefix is globbed on ARD product names as "ga_{prefix}*", so "ls" is expanded to "ga_ls*", etc)
 
-    ard-bulk-reprocess collection=ls7 'ard<1.2.3' 'fmask<1.2.3'
+Nothing is actually run by default, it simply creates a work directory and scripts to kickoff.
+
+Optionally, you can provide standard ODC search expressions to limit the scenes chosen. See EXPRESSIONS below.
+
+Examples:
+
+    # Any five sentinel2 scenes
+
+    ard-bulk-reprocess s2  --max-count 5
+
+    # Landsat scenes for a given month that are below a gqa value
+
+    ard-bulk-reprocess ls  'time in 2023-04'  'gqa<0.1'  --max-count 1000
+
 """
 
 import os
@@ -39,11 +52,11 @@ from scene_select.utils import structlog_setup
 DEFAULT_WORK_DIR = Path("/g/data/v10/work/bulk-runs")
 
 
-@click.command("ard-bulk-reprocess")
+@click.command("ard-bulk-reprocess", help=__doc__)
 @ui.environment_option
 @ui.config_option
-@ui.pass_index(app_name="bulk-reprocess")
 @click.argument("prefix")
+@ui.parsed_search_expressions
 @click.option("--max-count", default=100, help="Maximum number of scenes to process")
 @click.option(
     "--work-dir",
@@ -57,7 +70,7 @@ DEFAULT_WORK_DIR = Path("/g/data/v10/work/bulk-runs")
     default=None,
     help="Output package base path (default: work-dir/pkg)",
 )
-@ui.parsed_search_expressions
+@ui.pass_index(app_name="bulk-reprocess")
 def cli(
     index, prefix: str, max_count: int, work_dir: Path, pkg_dir: Path, expressions: dict
 ):
