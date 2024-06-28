@@ -174,7 +174,9 @@ def structlog_setup(output: TextIO | None = sys.stderr, verbose=False):
         ]
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET if verbose else logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(
+            logging.NOTSET if verbose else logging.INFO
+        ),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(file=output),
         cache_logger_on_first_use=False,

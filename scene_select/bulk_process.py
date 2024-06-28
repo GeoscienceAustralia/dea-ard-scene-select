@@ -93,7 +93,7 @@ def expression_parse(ctx, param, value):
 @ui.environment_option
 @ui.config_option
 @click.argument("prefix")
-@click.argument('expressions', callback=expression_parse, nargs=-1)
+@click.argument("expressions", callback=expression_parse, nargs=-1)
 @click.option("--max-count", default=100, help="Maximum number of scenes to process")
 @click.option(
     "--work-dir",
@@ -111,8 +111,8 @@ def expression_parse(ctx, param, value):
 def cli(
     index, prefix: str, max_count: int, work_dir: Path, pkg_dir: Path, expressions: dict
 ):
-
     import wagl
+
     current_wagl_version = wagl.__version__
 
     software_expressions = pop_software_expressions(expressions)
@@ -147,12 +147,12 @@ def cli(
         ):
             log = log.bind(dataset_id=ard_dataset.dataset_id)
             if not ard_dataset.metadata_path.exists():
-                log.warning(
-                    "dataset_missing_from_disk"
-                )
+                log.warning("dataset_missing_from_disk")
                 continue
 
-            if not matches_software_expressions(ard_dataset.software_versions(), software_expressions, log=log):
+            if not matches_software_expressions(
+                ard_dataset.software_versions(), software_expressions, log=log
+            ):
                 continue
 
             level1 = dc.index.datasets.get(ard_dataset.level1_id)
@@ -242,7 +242,6 @@ def cli(
         )
 
 
-
 def dict_to_cli_args(args: dict, multiline_indent=None) -> str:
     """
     >>> dict_to_cli_args({"this_env": "env123", "complex_key": "a complex key"})
@@ -270,7 +269,6 @@ def dict_to_cli_args(args: dict, multiline_indent=None) -> str:
     return ard_arg_string
 
 
-
 def pop_software_expressions(expressions: dict) -> dict:
     """
     Any key ending in `_version` is removed from the expressions and returned as a separate dict.
@@ -282,7 +280,9 @@ def pop_software_expressions(expressions: dict) -> dict:
     return software_expressions
 
 
-def matches_software_expressions(software_versions: dict, software_expressions: dict, log) -> bool:
+def matches_software_expressions(
+    software_versions: dict, software_expressions: dict, log
+) -> bool:
     """
     Check if the software versions match the expressions provided.
     """
@@ -290,7 +290,7 @@ def matches_software_expressions(software_versions: dict, software_expressions: 
 
     for key, value in software_expressions.items():
         # "wagl_version" key should correspond to software called "wagl"
-        key = key[:-len("_version")]
+        key = key[: -len("_version")]
 
         if key not in software_versions:
             log.error("skip.missing_software_version", key=key)
@@ -298,22 +298,47 @@ def matches_software_expressions(software_versions: dict, software_expressions: 
         dataset_version = version.parse(software_versions[key])
         if isinstance(value, Range):
             if value.begin and dataset_version < version.parse(value.begin):
-                log.debug("skip.software_version_too_low", key=key, expected_range=value, actual=software_versions[key])
+                log.debug(
+                    "skip.software_version_too_low",
+                    key=key,
+                    expected_range=value,
+                    actual=software_versions[key],
+                )
                 return False
             if value.end and dataset_version > version.parse(value.end):
-                log.debug("skip.software_version_too_high", key=key, expected_range=value, actual=software_versions[key])
+                log.debug(
+                    "skip.software_version_too_high",
+                    key=key,
+                    expected_range=value,
+                    actual=software_versions[key],
+                )
                 return False
         elif isinstance(value, GreaterThan):
             if dataset_version <= version.parse(value.value):
-                log.debug("skip.software_version_too_low", key=key, expected=value, actual=software_versions[key])
+                log.debug(
+                    "skip.software_version_too_low",
+                    key=key,
+                    expected=value,
+                    actual=software_versions[key],
+                )
                 return False
         elif isinstance(value, LessThan):
             if dataset_version >= version.parse(value.value):
-                log.debug("skip.software_version_too_high", key=key, expected=value, actual=software_versions[key])
+                log.debug(
+                    "skip.software_version_too_high",
+                    key=key,
+                    expected=value,
+                    actual=software_versions[key],
+                )
                 return False
         else:
             if dataset_version != version.parse(value):
-                log.debug("skip.software_version_mismatch", key=key, expected=value, actual=software_versions[key])
+                log.debug(
+                    "skip.software_version_mismatch",
+                    key=key,
+                    expected=value,
+                    actual=software_versions[key],
+                )
                 return False
     return True
 
@@ -346,6 +371,7 @@ def test_matches_software_expressions():
         dict(wagl_version=Range("1.2.3", "1.2.4")),
         structlog.get_logger(),
     )
+
 
 if __name__ == "__main__":
     cli()
