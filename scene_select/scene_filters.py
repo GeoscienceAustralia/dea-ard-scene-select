@@ -1,167 +1,217 @@
-from lark import Lark, Transformer
-import attr
-from enum import Enum
-from packaging import version
-import pytest
+"""
+This is derived from ODC's expressions, but those frustratingly are too limited to work
+for our searches now — for example, we want to accept ranges of strings for software
+version numbers.
 
-from scene_select.collections import ArdDataset
+The actual syntax is the same, we just support ranges and comparisons that are non-numeric.
+
+Four types of expressions are available:
+
+    FIELD = VALUE
+    FIELD in DATE-RANGE
+    FIELD in [START, END]
+    TIME > DATE
+    TIME < DATE
+
+Where DATE or DATE-RANGE is one of YYYY, YYYY-MM or YYYY-MM-DD
+and START, END are either numbers or dates.
+"""
+import datetime
+import warnings
+from typing import Any, NamedTuple
+
+import pandas
+from eodatasets3.utils import default_utc
+from pandas import to_datetime as pandas_to_datetime
+from lark import Lark, v_args, Transformer
+
+from datacube.model import Range
+
+search_grammar = r"""
+    start: expression*
+    ?expression: equals_expr
+               | time_in_expr
+               | field_in_expr
+               | time_gt_expr
+               | time_lt_expr
+               | field_gt_expr
+               | field_lt_expr
+
+    equals_expr: field "=" value
+    time_in_expr: time "in" date_range
+    field_in_expr: field "in" "[" value "," value "]"
+    time_gt_expr: time ">" date_gt
+    time_lt_expr: time "<" date_lt
+    field_gt_expr: field ">" value
+    field_lt_expr: field "<" value
+
+    field: FIELD
+    time: TIME
+
+    ?value: INT -> integer
+          | SIGNED_NUMBER -> number
+          | ESCAPED_STRING -> string
+          | SIMPLE_STRING -> simple_string
+          | URL_STRING -> url_string
+          | UUID -> simple_string
+
+    ?date_range: date -> single_date
+               | "[" date "," date "]" -> date_pair
+
+    date_gt: date -> range_lower_bound
+
+    date_lt: date -> range_upper_bound
+
+    date: YEAR ["-" MONTH ["-" DAY ]]
+
+    TIME: "time"
+    FIELD: /[a-zA-Z][\w\d_]*/
+    YEAR: DIGIT ~ 4
+    MONTH: DIGIT ~ 1..2
+    DAY: DIGIT ~ 1..2
+    SIMPLE_STRING: /[a-zA-Z][\w._-]*/ | /[0-9]+[\w_-][\w._-]*/
+    URL_STRING: /[a-z0-9+.-]+:\/\/([:\/\w._-])*/
+    UUID: HEXDIGIT~8 "-" HEXDIGIT~4 "-" HEXDIGIT~4 "-" HEXDIGIT~4 "-" HEXDIGIT~12
 
 
-class Operator(Enum):
-    EQ = "="
-    LT = "<"
-    LE = "<="
-    GT = ">"
-    GE = ">="
-
-
-@attr.define
-class Filter:
-    key: str
-    operator: Operator
-    value: str
-
-    def get_value(self, dataset: ArdDataset):
-        raise NotImplementedError
-
-    def matches(self, test_value: str) -> bool:
-        return {
-            Operator.EQ: test_value == self.value,
-            Operator.LT: test_value < self.value,
-            Operator.LE: test_value <= self.value,
-            Operator.GT: test_value > self.value,
-            Operator.GE: test_value >= self.value,
-        }[self.operator]
-
-
-@attr.define
-class SoftwareVersionFilter(Filter):
-    def get_value(self, dataset: ArdDataset):
-        return dataset.proc_info_doc["software_versions"][self.key]
-
-    def matches(self, test_value: str) -> bool:
-        v1 = version.parse(self.value)
-        v2 = version.parse(test_value)
-        return {
-            Operator.EQ: v1 == v2,
-            Operator.LT: v2 < v1,
-            Operator.LE: v2 <= v1,
-            Operator.GT: v2 > v1,
-            Operator.GE: v2 >= v1,
-        }[self.operator]
-
-
-# Define the grammar
-grammar = """
-    start: filter+
-    filter: key "=" value
-    key: /[a-zA-Z0-9_]+/
-    value: comparison
-    comparison: OPERATOR? simple_value
-    simple_value: UNQUOTED_STRING | QUOTED_STRING
-    OPERATOR: "<" | "<=" | ">" | ">="
-    UNQUOTED_STRING: /[a-zA-Z0-9_.]+/
-    QUOTED_STRING: /"[^"]*"/
-
+    %import common.ESCAPED_STRING
+    %import common.SIGNED_NUMBER
+    %import common.INT
+    %import common.DIGIT
+    %import common.HEXDIGIT
+    %import common.CNAME
     %import common.WS
     %ignore WS
 """
 
-# Create the parser
-parser = Lark(grammar, parser="lalr", transformer=None)
+
+def identity(x):
+    return x
+
+class GreaterThan(NamedTuple):
+    value: Any
+class LessThan(NamedTuple):
+    value: Any
+
+@v_args(inline=True)
+class TreeToSearchExprs(Transformer):
+    # Convert the expressions
+    def equals_expr(self, field, value):
+        return {str(field): value}
+
+    def field_in_expr(self, field, lower, upper):
+        return {str(field): Range(lower, upper)}
+
+    def time_in_expr(self, time_field, date_range):
+        return {str(time_field): date_range}
+
+    def time_gt_expr(self, time_field, date_gt):
+        return {str(time_field): date_gt}
+
+    def time_lt_expr(self, time_field, date_lt):
+
+        return {str(time_field): date_lt}
+
+    def field_gt_expr(self, field, value):
+        if not field.endswith('_version'):
+            # Underlying ODC doesn't support this operator for fields.
+            # You have to use "in" expressions for numbers.
+            raise ValueError(f"Can only use > with software version "
+                             f"fields (or dates) for now, sorry. Tried {field}")
+        return {str(field): GreaterThan(value)}
+
+    def field_lt_expr(self, field, value):
+        if not field.endswith('_version'):
+            # Underlying ODC doesn't support this operator for fields.
+            # You have to use "in" expressions for numbers.
+            raise ValueError(f"Can only use < with software version "
+                             f"fields (or dates) for now, sorry. Tried {field}")
+        return {str(field): LessThan(value)}
+
+    # Convert the literals
+    def string(self, val):
+        return str(val[1:-1])
+
+    simple_string = url_string = field = time = str
+    number = float
+    integer = int
+    value = identity
+
+    def single_date(self, date):
+        return _time_to_search_dims(date)
+
+    def date_pair(self, start, end):
+        return _time_to_search_dims((start, end))
+
+    def range_lower_bound(self, date):
+        return _time_to_search_dims((date, None))
+
+    def range_upper_bound(self, date):
+        return _time_to_search_dims((None, date))
+
+    def date(self, y, m=None, d=None):
+        return "-".join(x for x in [y, m, d] if x is not None)
+
+    # Merge everything into a single dict
+    def start(self, *search_exprs):
+        combined = {}
+        for expr in search_exprs:
+            combined.update(expr)
+        return combined
 
 
-class FilterTransformer(Transformer):
-    def start(self, filters):
-        return filters
-
-    def filter(self, items):
-        software_names = [
-            "modtran",
-            "wagl",
-            "eugl",
-            "gverify",
-            "fmask",
-            "tesp",
-            "eodatasets3",
-        ]
-
-        key = str(items[0])
-        operator = Operator(
-            items[2].children[0] if items[2].children[0] != "simple_value" else "="
-        )
-        value = str(items[2].children[-1])
-
-        if items[0] in software_names:
-            return SoftwareVersionFilter(key=key, operator=operator, value=value)
-        # TODO: Non-software filters.
-        else:
-            raise NotImplementedError(
-                f"Filter key {key} not supported. Expecting one of {software_names}"
-            )
-
-    def key(self, k):
-        return k[0]
-
-    def value(self, v):
-        return v[0]
-
-    def comparison(self, c):
-        return c
-
-    def simple_value(self, v):
-        return v[0]
-
-    def UNQUOTED_STRING(self, s):
-        return str(s)
-
-    def QUOTED_STRING(self, s):
-        return s[1:-1]  # Remove quotes
+def parse_expressions(*expression_text):
+    expr_parser = Lark(search_grammar)
+    tree = expr_parser.parse(' '.join(expression_text))
+    return TreeToSearchExprs().transform(tree)
 
 
-# Parse and transform the input
-def parse_filters(input_string):
-    tree = parser.parse(input_string)
-    transformer = FilterTransformer()
-    return transformer.transform(tree)
+def test_parser():
+    assert parse_expressions('platform = "LANDSAT_8"') == {'platform': 'LANDSAT_8'}
+
+    # Wagl version tests
+    assert parse_expressions('wagl_version in ["1.2.3", "3.4.5"]') == {'wagl_version': Range('1.2.3', '3.4.5')}
+    assert parse_expressions('wagl_version < "1.2.3.dev4"') == {'wagl_version': Range(None, '1.2.3.dev4')}
 
 
-# Pytest functions
-def test_parse_filters():
-    input_string = "wagl<1.2.3 fmask<=1.2.3"
-    result = parse_filters(input_string)
+def _time_to_search_dims(time_range):
 
-    assert len(result) == 2
-    assert result[1] == Filter(key="wagl", operator=Operator.LT, value="1.2.3")
-    assert result[2] == Filter(key="fmask", operator=Operator.LE, value="1.2.3")
+    tr_start, tr_end = time_range, time_range
 
+    if hasattr(time_range, '__iter__') and not isinstance(time_range, str):
+        tmp = list(time_range)
+        if len(tmp) > 2:
+            raise ValueError("Please supply start and end date only for time query")
 
-def test_filter_matches():
-    f1 = Filter(key="collection", operator=Operator.EQ, value="ls7")
-    f2 = Filter(key="ard", operator=Operator.LT, value="1.2.3")
-    f3 = Filter(key="fmask", operator=Operator.LE, value="1.2.3")
+        tr_start, tr_end = tmp[0], tmp[-1]
 
-    assert f1.matches("ls7")
-    assert not f1.matches("ls8")
+    if isinstance(tr_start, (int, float)) or isinstance(tr_end, (int, float)):
+        raise TypeError("Time dimension must be provided as a datetime or a string")
 
-    assert f2.matches("1.2.2")
-    assert not f2.matches("1.2.3")
-    assert not f2.matches("1.2.4")
+    if tr_start is None:
+        start = datetime.datetime.fromtimestamp(0)
+    elif not isinstance(tr_start, datetime.datetime):
+        # convert to datetime.datetime
+        if hasattr(tr_start, 'isoformat'):
+            tr_start = tr_start.isoformat()
+        start = pandas_to_datetime(tr_start).to_pydatetime()
+    else:
+        start = tr_start
 
-    assert f3.matches("1.2.2")
-    assert f3.matches("1.2.3")
-    assert not f3.matches("1.2.4")
+    if tr_end is None:
+        tr_end = datetime.datetime.now().strftime("%Y-%m-%d")
+    # Attempt conversion to isoformat
+    # allows pandas.Period to handle datetime objects
+    if hasattr(tr_end, 'isoformat'):
+        tr_end = tr_end.isoformat()
+    # get end of period to ensure range is inclusive
 
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        end = pandas.Period(tr_end).end_time.to_pydatetime()
 
-def test_quoted_string():
-    input_string = 'name="John Doe"'
-    result = parse_filters(input_string)
+    tr = Range(default_utc(start), default_utc(end))
+    if start == end:
+        return tr[0]
 
-    assert len(result) == 1
-    assert result[0] == Filter(key="name", operator=Operator.EQ, value="John Doe")
-    assert result[0].matches("John Doe")
-    assert not result[0].matches("Jane Doe")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
+    return tr

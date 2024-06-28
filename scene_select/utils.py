@@ -142,7 +142,7 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
     return worked, update_results
 
 
-def structlog_setup(output: TextIO | None = sys.stderr):
+def structlog_setup(output: TextIO | None = sys.stderr, verbose=False):
     """
     Sensible structlog defaults.
 
@@ -174,7 +174,7 @@ def structlog_setup(output: TextIO | None = sys.stderr):
         ]
     structlog.configure(
         processors=processors,
-        wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET if verbose else logging.INFO),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(file=output),
         cache_logger_on_first_use=False,
