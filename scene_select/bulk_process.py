@@ -145,19 +145,19 @@ def cli(
         for ard_product, ard_dataset in collection.iterate_indexed_ard_datasets(
             expressions
         ):
-            log = log.bind(dataset_id=ard_dataset.dataset_id)
+            ilog = log.bind(dataset_id=ard_dataset.dataset_id)
             if not ard_dataset.metadata_path.exists():
-                log.warning("dataset_missing_from_disk")
+                ilog.warning("dataset_missing_from_disk")
                 continue
 
             if not matches_software_expressions(
-                ard_dataset.software_versions(), software_expressions, log=log
+                ard_dataset.software_versions(), software_expressions, log=ilog
             ):
                 continue
 
             level1 = dc.index.datasets.get(ard_dataset.level1_id)
             if level1 is None:
-                log.warning(
+                ilog.warning(
                     "skip.source_level1_not_indexed", dataset_id=ard_dataset.dataset_id
                 )
                 # TODO: Perhaps a newer one exists? Or on disk?
