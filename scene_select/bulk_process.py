@@ -27,6 +27,7 @@ from typing import List, Dict
 import click
 import structlog
 from datacube import Datacube
+from datacube.ui import click as ui
 
 from scene_select.do_ard import calc_node_with_defaults
 from scene_select.collections import get_collection
@@ -35,18 +36,31 @@ from packaging import version
 from scene_select.library import Level1Dataset
 from scene_select.utils import structlog_setup
 
-WORK_DIR = Path("/g/data/v10/work/bulk-process")
-
-
-#
-# ard-bulk-reprocess ls7
-#
+DEFAULT_WORK_DIR = Path("/g/data/v10/work/bulk-runs")
 
 
 @click.command("ard-bulk-reprocess")
+@ui.environment_option
+@ui.config_option
+@ui.pass_index(app_name="bulk-reprocess")
 @click.argument("prefix")
 @click.option("--max-count", default=100, help="Maximum number of scenes to process")
-def cli(prefix: str, max_count: int):
+@click.option(
+    "--work-dir",
+    type=Path,
+    default=DEFAULT_WORK_DIR,
+    help="Base folder for working files (will create subfolders for each job)",
+)
+@click.option(
+    "--pkg-dir",
+    type=Path,
+    default=None,
+    help="Output package base path (default: work-dir/pkg)",
+)
+@ui.parsed_search_expressions
+def cli(
+    index, prefix: str, max_count: int, work_dir: Path, pkg_dir: Path, expressions: dict
+):
     import wagl
 
     current_wagl_version = wagl.__version__
@@ -66,7 +80,7 @@ def cli(prefix: str, max_count: int):
 
     log = structlog.get_logger()
 
-    with Datacube() as dc:
+    with Datacube(index=index) as dc:
         collection = get_collection(dc, prefix)
 
         log.info("chosen_products", products=[c.name for c in collection.products])
@@ -76,7 +90,9 @@ def cli(prefix: str, max_count: int):
         level1s_to_process: Dict[Level1Dataset, List[str]] = {}
         unique_products = set()
 
-        for ard_product, ard_dataset in collection.iterate_indexed_ard_datasets():
+        for ard_product, ard_dataset in collection.iterate_indexed_ard_datasets(
+            expressions
+        ):
             if not ard_dataset.metadata_path.exists():
                 log.warning(
                     "dataset_missing_from_disk", dataset_id=ard_dataset.dataset_id
@@ -122,7 +138,7 @@ def cli(prefix: str, max_count: int):
         from datetime import datetime
 
         job_directory = (
-            WORK_DIR / platform / datetime.now().strftime("%Y-%m/%Y-%m-%d-%H%M%S")
+            work_dir / platform / datetime.now().strftime("%Y-%m/%Y-%m-%d-%H%M%S")
         )
         job_directory = job_directory.resolve()
         job_directory.mkdir(parents=True, exist_ok=False)
@@ -141,7 +157,7 @@ def cli(prefix: str, max_count: int):
 
         dirs = dict(
             workdir=job_directory / "run",
-            pkgdir=job_directory / "pkg",
+            pkgdir=pkg_dir or job_directory / "pkg",
             logdir=job_directory / "log",
         )
         for _, dir_path in dirs.items():
