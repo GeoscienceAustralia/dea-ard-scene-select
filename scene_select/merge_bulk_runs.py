@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Dict, Optional, List
 from uuid import UUID
 
+
 import click
 import structlog
 from datacube import Datacube
@@ -27,28 +28,43 @@ from datacube.index import Index
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
 from datacube.ui import click as ui
+from eodatasets3.prepare.landsat_l1_prepare import normalise_nci_symlinks
 from ruamel import yaml
+
+from scene_select.utils import structlog_setup
 
 _LOG = structlog.get_logger()
 
 PRODUCTION_BASE = Path("/g/data/xu18/ga")
 TRASH_BASE = PRODUCTION_BASE / ".trash"
 
+UUIDsForPath = Dict[Path, List[UUID]]
 
-def load_archive_list(csv_path: Path) -> Dict[UUID, UUID]:
+def load_archive_list(csv_path: Path) -> UUIDsForPath:
     """
-    The archive CSV contains a list of Level 1 paths and the existing ARD UUID to archive when we have a new ARD
+    The archive CSV contains a list of Level 1 paths and the existing ARD UUIDs to archive when we have a new ARD for
+    that level 1.
     """
-    level1_to_old_ard_uuids = {}
-    with csv_path.open('r') as f:
+    archive_list = {}
+    with csv_path.open('r', newline='') as f:
         reader = csv.reader(f)
         for row in reader:
-            if len(row) == 2:
-                level1_to_old_ard_uuids[UUID(row[0])] = UUID(row[1])
-    return level1_to_old_ard_uuids
+            path, *uuid_list = row
+            archive_list[normal_path(Path(path))] = [UUID(uuid) for uuid in uuid_list]
+    return archive_list
 
 
-def process_dataset(index: Index, metadata_file: Path, archive_list: Dict[UUID, UUID], dry_run: bool) -> None:
+def find_source_level1_path(metadata_file:Path) -> Path:
+    [proc_info_file] = metadata_file.parent.glob("*.proc-info.yaml")
+    with proc_info_file.open('r') as f:
+        proc_info = yaml.safe_load(f)
+        level1_path = Path(proc_info['wagl']['source_datasets']['source_level1'])
+    return level1_path
+
+def normal_path(path: Path) -> Path:
+    return normalise_nci_symlinks(path.absolute())
+
+def process_dataset(index: Index, metadata_file: Path, archive_list: UUIDsForPath, dry_run: bool) -> None:
     log = _LOG.bind(metadata_file=metadata_file)
     log.info("dataset.processing")
 
@@ -57,6 +73,8 @@ def process_dataset(index: Index, metadata_file: Path, archive_list: Dict[UUID, 
         return
 
     dataset = load_dataset(index, metadata_file)
+    source_level1_path= find_source_level1_path(metadata_file)
+
     if dataset is None:
         log.error("dataset.error", error="Failed to load dataset")
         return
@@ -70,7 +88,9 @@ def process_dataset(index: Index, metadata_file: Path, archive_list: Dict[UUID, 
         log.info("dataset.destination.exists.skipping", destination=str(dest_metadata_path))
         return
 
-    archive_old_dataset_if_needed(index, dataset, archive_list, dry_run, log)
+    for old_ard_uuid in archive_list.get(source_level1_path, []):
+        archive_old_dataset(index, old_ard_uuid, dry_run, log)
+
     move_dataset(metadata_file, dest_metadata_path, dry_run, log)
     index_dataset(index, dataset, dry_run, log)
 
@@ -87,16 +107,6 @@ def load_dataset(index: Index, metadata_file: Path) -> Optional[Dataset]:
         raise ValueError(f"Failed to load dataset: {error_msg}")
     return dataset
 
-
-def archive_old_dataset_if_needed(index: Index,
-                                  dataset: Dataset,
-                                  archive_list: Dict[UUID, UUID],
-                                  dry_run: bool,
-                                  log: structlog.BoundLogger) -> None:
-    """Archive the old ARD dataset if it exists in the archive list."""
-    level1_uuid = dataset.sources['level1'].id
-    if level1_uuid in archive_list:
-        archive_old_dataset(index, archive_list[level1_uuid], dry_run, log)
 
 
 def archive_old_dataset(index: Index, old_ard_uuid: UUID, dry_run: bool, log: structlog.BoundLogger) -> None:
@@ -191,10 +201,13 @@ def index_dataset(index: Index, dataset: Dataset, dry_run: bool, log: structlog.
 @ui.pass_index(app_name='ard-dataset-merger')
 def cli(index: Index, bulk_run_dirs: List[Path], dry_run: bool) -> None:
     """Process a bulk run of ARD data and merge into datacube."""
+    structlog_setup()
 
     _LOG.info("run.start", bulk_run_dir_count=len(bulk_run_dirs), dry_run=dry_run)
     with Datacube(index=index) as dc:
         for bulk_run_dir in bulk_run_dirs:
+            bulk_run_dir = bulk_run_dir.resolve()
+
             log = _LOG.bind(bulk_run_dir=bulk_run_dir)
 
             log.info("run.processing")
