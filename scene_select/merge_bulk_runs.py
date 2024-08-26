@@ -65,16 +65,16 @@ def process_dataset(index: Index, metadata_file: Path, archive_list: Dict[UUID, 
         log.info("dataset.exists.skipping", dataset_id=str(dataset.id))
         return
 
-    dest_path = PRODUCTION_BASE / get_dataset_relative_path(metadata_file)
-    if dest_path.exists():
-        log.info("dataset.destination.exists.skipping", destination=str(dest_path))
+    dest_metadata_path = PRODUCTION_BASE / get_dataset_relative_path(metadata_file)
+    if dest_metadata_path.exists():
+        log.info("dataset.destination.exists.skipping", destination=str(dest_metadata_path))
         return
 
     archive_old_dataset_if_needed(index, dataset, archive_list, dry_run, log)
-    move_dataset(metadata_file, dest_path, dry_run, log)
+    move_dataset(metadata_file, dest_metadata_path, dry_run, log)
     index_dataset(index, dataset, dry_run, log)
 
-    log.info("dataset.processing.end", dataset_id=str(dataset.id))
+    log.info("dataset.processing.end", dataset_id=str(dataset.id), target_path=str(dest_metadata_path))
 
 
 def load_dataset(index: Index, metadata_file: Path) -> Optional[Dataset]:
@@ -163,16 +163,16 @@ def get_dataset_relative_path(metadata_file: Path) -> Path:
     return metadata_file.relative_to(source_base_folder)
 
 
-def move_dataset(source: Path, destination: Path, dry_run: bool, log: structlog.BoundLogger) -> None:
+def move_dataset(souce_md_path: Path, dest_md_path: Path, dry_run: bool, log: structlog.BoundLogger) -> None:
     """Move a dataset from source to destination."""
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    dest_md_path.parent.mkdir(parents=True, exist_ok=True)
 
     if not dry_run:
-        shutil.move(str(source.parent), str(destination.parent))
+        shutil.move(str(souce_md_path.parent), str(dest_md_path.parent))
     else:
         log.info("dry_run.move_dataset",
-                 source=str(source.parent),
-                 destination=str(destination.parent))
+                 source=str(souce_md_path.parent),
+                 destination=str(dest_md_path.parent))
 
 
 def index_dataset(index: Index, dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -> None:
