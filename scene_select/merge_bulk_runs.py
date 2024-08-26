@@ -189,7 +189,7 @@ def index_dataset(index: Index, dataset: Dataset, dry_run: bool, log: structlog.
 @ui.environment_option
 @ui.config_option
 @ui.pass_index(app_name='ard-dataset-merger')
-def main(index: Index, bulk_run_dirs: List[Path], dry_run: bool) -> None:
+def cli(index: Index, bulk_run_dirs: List[Path], dry_run: bool) -> None:
     """Process a bulk run of ARD data and merge into datacube."""
 
     _LOG.info("run.start", bulk_run_dir_count=len(bulk_run_dirs), dry_run=dry_run)
@@ -220,4 +220,4 @@ def main(index: Index, bulk_run_dirs: List[Path], dry_run: bool) -> None:
 
 
 if __name__ == '__main__':
-    main()
+    cli()
