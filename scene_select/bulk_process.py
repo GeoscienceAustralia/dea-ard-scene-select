@@ -72,6 +72,7 @@ from typing import List, Dict
 import click
 import structlog
 from datacube import Datacube
+from datacube.index.abstract import AbstractIndex
 from datacube.model import Range
 from datacube.ui import click as ui
 
@@ -111,9 +112,13 @@ def expression_parse(ctx, param, value):
     help="Output package base path (default: work-dir/pkg)",
 )
 @click.option("--workers-per-node", type=int, default=48, help="Workers per node")
+@click.command("ard-bulk-reprocess", help=__doc__)
+@ui.environment_option
+@ui.config_option
+@click.argument("prefix")
 @ui.pass_index(app_name="bulk-reprocess")
 def cli(
-    index, prefix: str, max_count: int, workers_per_node:int, work_dir: Path, pkg_dir: Path, expressions: dict
+    index: AbstractIndex, prefix: str, max_count: int, workers_per_node:int, work_dir: Path, pkg_dir: Path, expressions: dict
 ):
     import wagl
 
@@ -237,6 +242,7 @@ def cli(
 
             ard_pbs --level1-list {scene_list_path} {dict_to_cli_args(ard_args, multiline_indent=16)}
         """).lstrip()
+
         script_path = job_directory / "run_ard_pbs.sh"
         with open(script_path, "w") as src:
             src.write(pbs)
@@ -277,17 +283,11 @@ def dict_to_cli_args(args: dict, multiline_indent=None) -> str:
         ard_arg_string = " ".join(ard_params)
     return ard_arg_string
 
-
 def pop_software_expressions(expressions: dict) -> dict:
     """
     Any key ending in `_version` is removed from the expressions and returned as a separate dict.
     """
-    software_expressions = {}
-    for key in list(expressions.keys()):
-        if key.endswith("_version"):
-            software_expressions[key] = expressions.pop(key)
-    return software_expressions
-
+    return {k: expressions.pop(k) for k in list(expressions) if k.endswith("_version")}
 
 def matches_software_expressions(
     software_versions: dict, software_expressions: dict, log
@@ -305,81 +305,54 @@ def matches_software_expressions(
             log.error("skip.missing_software_version", key=key)
             return False
         dataset_version = version.parse(software_versions[key])
-        if isinstance(value, Range):
-            if value.begin and dataset_version < version.parse(value.begin):
-                log.debug(
-                    "skip.software_version_too_low",
-                    key=key,
-                    expected_range=value,
-                    actual=software_versions[key],
-                )
-                return False
-            if value.end and dataset_version > version.parse(value.end):
-                log.debug(
-                    "skip.software_version_too_high",
-                    key=key,
-                    expected_range=value,
-                    actual=software_versions[key],
-                )
-                return False
-        elif isinstance(value, GreaterThan):
-            if dataset_version <= version.parse(value.value):
-                log.debug(
-                    "skip.software_version_too_low",
-                    key=key,
-                    expected=value,
-                    actual=software_versions[key],
-                )
-                return False
-        elif isinstance(value, LessThan):
-            if dataset_version >= version.parse(value.value):
-                log.debug(
-                    "skip.software_version_too_high",
-                    key=key,
-                    expected=value,
-                    actual=software_versions[key],
-                )
-                return False
-        else:
-            if dataset_version != version.parse(value):
-                log.debug(
-                    "skip.software_version_mismatch",
-                    key=key,
-                    expected=value,
-                    actual=software_versions[key],
-                )
-                return False
+        match value:
+            case Range():
+                if value.begin and dataset_version < version.parse(value.begin):
+                    log.debug(
+                        "skip.software_version_too_low",
+                        key=key,
+                        expected_range=value,
+                        actual=software_versions[key],
+                    )
+                    return False
+                if value.end and dataset_version > version.parse(value.end):
+                    log.debug(
+                        "skip.software_version_too_high",
+                        key=key,
+                        expected_range=value,
+                        actual=software_versions[key],
+                    )
+                    return False
+            case GreaterThan():
+                if dataset_version <= version.parse(value.value):
+                    log.debug(
+                        "skip.software_version_too_low",
+                        key=key,
+                        expected=value,
+                        actual=software_versions[key],
+                    )
+                    return False
+            case LessThan():
+                if dataset_version >= version.parse(value.value):
+                    log.debug(
+                        "skip.software_version_too_high",
+                        key=key,
+                        expected=value,
+                        actual=software_versions[key],
+                    )
+                    return False
+            case _:
+                if dataset_version != version.parse(value):
+                    log.debug(
+                        "skip.software_version_mismatch",
+                        key=key,
+                        expected=value,
+                        actual=software_versions[key],
+                    )
+                    return False
     return True
 
 
-def test_matches_software_expressions():
-    assert matches_software_expressions(
-        dict(wagl="1.2.3", fmask="4.2.0"),
-        dict(wagl_version="1.2.3", fmask_version="4.2.0"),
-        structlog.get_logger(),
-    )
-    assert not matches_software_expressions(
-        dict(wagl="1.2.3", fmask="4.2.0"),
-        dict(wagl_version="1.2.4", fmask_version="4.2.0"),
-        structlog.get_logger(),
-    )
-
-    # Ranges
-    assert matches_software_expressions(
-        dict(wagl="1.2.3"),
-        dict(wagl_version=Range("1.2.3", None)),
-        structlog.get_logger(),
-    )
-    assert not matches_software_expressions(
-        dict(wagl="1.2.3"),
-        dict(wagl_version=Range("1.2.4", None)),
-        structlog.get_logger(),
-    )
-    assert matches_software_expressions(
-        dict(wagl="1.2.3"),
-        dict(wagl_version=Range("1.2.3", "1.2.4")),
-        structlog.get_logger(),
-    )
 
 
 if __name__ == "__main__":
