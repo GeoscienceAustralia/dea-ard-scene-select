@@ -17,7 +17,7 @@ import csv
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple
 from uuid import UUID
 
 
@@ -36,7 +36,6 @@ from scene_select.utils import structlog_setup
 _LOG = structlog.get_logger()
 
 PRODUCTION_BASE = Path("/g/data/xu18/ga")
-TRASH_BASE = PRODUCTION_BASE / ".trash"
 
 UUIDsForPath = Dict[Path, List[UUID]]
 
@@ -83,7 +82,8 @@ def process_dataset(index: Index, metadata_file: Path, archive_list: UUIDsForPat
         log.info("dataset.exists.skipping", dataset_id=str(dataset.id))
         return
 
-    dest_metadata_path = PRODUCTION_BASE / get_dataset_relative_path(metadata_file)
+    _, dataset_offset = split_dataset_base_path(metadata_file)
+    dest_metadata_path = PRODUCTION_BASE / dataset_offset
     if dest_metadata_path.exists():
         log.info("dataset.destination.exists.skipping", destination=str(dest_metadata_path))
         return
@@ -138,8 +138,8 @@ def move_to_trash(dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -
 
     dataset_dir = source_path.parent
 
-    trash_date = datetime.now().strftime("%Y%m%d")
-    trash_path = TRASH_BASE / trash_date / dataset_dir.relative_to(PRODUCTION_BASE)
+    base_path, dataset_offset = split_dataset_base_path(dataset_dir)
+    trash_path = base_path / ".trash" / datetime.now().strftime("%Y%m%d") / dataset_offset
 
     if dry_run:
         log.info("dry_run.move_to_trash", dataset_path=str(dataset_dir), trash_path=str(trash_path))
@@ -148,7 +148,7 @@ def move_to_trash(dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -
         dataset_dir.rename(trash_path)
 
 
-def get_dataset_relative_path(metadata_file: Path) -> Path:
+def split_dataset_base_path(metadata_file: Path) -> Tuple[Path, Path]:
     """
     Get the subfolder structure for a dataset.
 
@@ -156,10 +156,14 @@ def get_dataset_relative_path(metadata_file: Path) -> Path:
     Remove the parent folders it is sitting on.
 
     >>> p = Path('/g/data/xu18/ga/ga_ls8c_ard_3/088/083/2024/08/08/ga_ls8c_ard_3-2-1_088083_2024-08-08_final.odc-metadata.yaml')
-    >>> get_dataset_relative_path(p).as_posix()
+    >>> base, ds = split_dataset_base_path(p)
+    >>> ds.as_posix()
     'ga_ls8c_ard_3/088/083/2024/08/08/ga_ls8c_ard_3-2-1_088083_2024-08-08_final.odc-metadata.yaml'
+    >>> base.as_posix()
+    '/g/data/xu18/ga'
+    >>> (base / ds) == p
+    True
     """
-    # For now, we only support s2.
     product_name = metadata_file.name.split('-')[0]
 
     # The root of the folder structure has the product name.
@@ -170,7 +174,7 @@ def get_dataset_relative_path(metadata_file: Path) -> Path:
     else:
         raise ValueError(f"Failed to base product name {product_name} in {metadata_file}")
 
-    return metadata_file.relative_to(source_base_folder)
+    return source_base_folder, metadata_file.relative_to(source_base_folder)
 
 
 def move_dataset(souce_md_path: Path, dest_md_path: Path, dry_run: bool, log: structlog.BoundLogger) -> None:
