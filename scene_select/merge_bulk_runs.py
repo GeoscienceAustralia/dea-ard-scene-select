@@ -82,8 +82,8 @@ def process_dataset(index: Index, metadata_file: Path, archive_list: UUIDsForPat
         log.info("dataset.exists.skipping", dataset_id=str(dataset.id))
         return
 
-    _, dataset_offset = split_dataset_base_path(metadata_file)
-    dest_metadata_path = PRODUCTION_BASE / dataset_offset
+    _, metadata_offset = split_dataset_base_path(metadata_file)
+    dest_metadata_path = PRODUCTION_BASE / metadata_offset
     if dest_metadata_path.exists():
         log.info("dataset.destination.exists.skipping", destination=str(dest_metadata_path))
         return
@@ -138,8 +138,8 @@ def move_to_trash(dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -
 
     dataset_dir = source_path.parent
 
-    base_path, dataset_offset = split_dataset_base_path(dataset_dir)
-    trash_path = base_path / ".trash" / datetime.now().strftime("%Y%m%d") / dataset_offset
+    base_path, metadata_offset = split_dataset_base_path(source_path)
+    trash_path = base_path / ".trash" / datetime.now().strftime("%Y%m%d") / metadata_offset.parent
 
     if dry_run:
         log.info("dry_run.move_to_trash", dataset_path=str(dataset_dir), trash_path=str(trash_path))
@@ -164,6 +164,9 @@ def split_dataset_base_path(metadata_file: Path) -> Tuple[Path, Path]:
     >>> (base / ds) == p
     True
     """
+    if not metadata_file.name.endswith('.odc-metadata.yaml'):
+        raise ValueError(f"Expected dataset path to be a metadata path, got: {metadata_file}")
+
     product_name = metadata_file.name.split('-')[0]
 
     # The root of the folder structure has the product name.
