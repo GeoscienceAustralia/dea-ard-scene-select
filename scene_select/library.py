@@ -16,23 +16,23 @@ from ruamel import yaml
 _LOG = structlog.get_logger()
 
 
-@define
+@define(hash=True)
 class Level1Product:
-    name: str
+    name: str = field(eq=True, hash=True)
 
     # Examples:
     # /g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2021/2021-01/30S110E-35S115E/S2B_MSIL1C_20210124T023249_N0209_R103_T50JLL_20210124T035242.zip
     # /g/data/da82/AODH/USGS/L1/Landsat/C2/092_079/LC80920792024074/LC08_L1TP_092079_20240314_20240401_02_T1.odc-metadata.yaml
 
-    base_collection_path: Path
+    base_collection_path: Path = field(eq=False, hash=False)
 
     # The metadata, if it's stored separately from the L1 data itself.
     #    (if None, assuming metadata sits alongise the data)
-    separate_metadata_directory: Optional[Path] = None
+    separate_metadata_directory: Optional[Path] = field(eq=False, hash=False, default=None)
 
     # Is this still receiving new data? ie. do we expect ongoing downloads
     #    (false if the satellite is retired, or if a newer collection is available)
-    is_active: bool = False
+    is_active: bool  = field(eq=False, hash=False, default=False)
 
 
 @define(unsafe_hash=True)
@@ -65,6 +65,7 @@ class BaseDataset:
 
 @define(unsafe_hash=True)
 class Level1Dataset(BaseDataset):
+    product: Level1Product = field(eq=False, hash=False)
     # The zip or tar file
     data_path: Path = field(eq=False, hash=False)
 
@@ -128,6 +129,7 @@ class Level1Dataset(BaseDataset):
             dataset_id=str(dataset.id),
             metadata_path=metadata_path,
             data_path=data_path,
+            product=product,
         )
 
 
@@ -172,6 +174,14 @@ class ArdDataset(BaseDataset):
     @property
     def level1_id(self):
         return self.metadata_doc()["lineage"]["level1"][0]
+
+    @classmethod
+    def from_odc(cls, ard_dataset:Dataset):
+        return ArdDataset(
+            dataset_id = str(ard_dataset.id),
+            metadata_path=ard_dataset.local_path,
+            maturity=ard_dataset.metadata.dataset_maturity,
+        )
 
 
 class ArdCollection:

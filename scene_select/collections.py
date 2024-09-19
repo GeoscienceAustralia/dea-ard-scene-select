@@ -97,10 +97,22 @@ ARD_PRODUCTS = {
 }
 
 
-def get_collection(dc: Datacube, prefix: str) -> ArdCollection:
+def get_product(product_name:str) -> ArdProduct:
+    products = {
+        product for product in ARD_PRODUCTS if product.name == product_name
+    }
+    if not products:
+        raise ValueError(f"No products found for {product_name=}")
+    if len(products) > 1:
+        raise RuntimeError(f"Multiple products should never be found for one product name? {product_name=}")
+    [product] = products
+    return product
+
+def get_collection(dc: Datacube, prefix: str=None) -> ArdCollection:
     products = {
         product for product in ARD_PRODUCTS if product.name.startswith(f"ga_{prefix}")
     }
+
     if not products:
         raise ValueError(f"No products found for {prefix=}")
 
