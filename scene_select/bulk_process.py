@@ -49,6 +49,7 @@ class Job:
     replacement_uuids: List[str] = field(eq=False, hash=False)
     target_ard_product: ArdProduct = field(eq=False, hash=False)
 
+
 @click.group("ard-bulk-process", help=__doc__)
 @ui.environment_option
 @ui.config_option
@@ -68,21 +69,30 @@ class Job:
     help="Output package base path (default: work-dir/pkg)",
 )
 @click.option("--workers-per-node", type=int, default=48, help="Workers per node")
+@click.option("-P", "--project", type=str, default="v10", help="NCI project")
 @ui.pass_index(app_name="bulk-reprocess")
 @click.pass_context
-def cli(ctx, index: AbstractIndex,
-        max_count: int,
-        workers_per_node: int,
-        work_dir: Path,
-        pkg_dir: Path):
+def cli(
+    ctx,
+    index: AbstractIndex,
+    max_count: int,
+    workers_per_node: int,
+    work_dir: Path,
+    project: str,
+    pkg_dir: Path,
+):
     ctx.ensure_object(dict)
-    ctx.obj['index'] = index
-    ctx.obj['max_count'] = max_count
-    ctx.obj['workers_per_node'] = workers_per_node
-    ctx.obj['work_dir'] = work_dir
-    ctx.obj['pkg_dir'] = pkg_dir
+    ctx.obj["index"] = index
+    ctx.obj["max_count"] = max_count
+    ctx.obj["workers_per_node"] = workers_per_node
+    ctx.obj["work_dir"] = work_dir
+    ctx.obj["pkg_dir"] = pkg_dir
+    ctx.obj["project"] = project
 
-@cli.command("search-ards", help="""
+
+@cli.command(
+    "search-ards",
+    help="""
 This will search, filter the scenes, and create the ard_pbs script. You can then run the result if it looks good.
 
 The first argument is which "collections" to process. This can be "ls", "s2", or more specific matches
@@ -135,12 +145,14 @@ You can redirect stderr if you want to record logs:
 
     ard-bulk-reprocess s2  --max-count 500 2> bulk-reprocess.jsonl
 
-""")
+""",
+)
 @click.argument("prefix")
 @click.argument("expressions", callback=expression_parse, nargs=-1)
 @click.pass_context
 def cli_search(ctx, prefix: str, expressions: dict):
     import wagl
+
     current_wagl_version = wagl.__version__
     structlog_setup()
 
@@ -150,11 +162,12 @@ def cli_search(ctx, prefix: str, expressions: dict):
             "Sorry, prefix needs to be at least ls or s2, as we can't process multiple sensors in one go (yet)"
         )
 
-    index = ctx.obj['index']
-    max_count = ctx.obj['max_count']
-    work_dir = ctx.obj['work_dir']
-    workers_per_node = ctx.obj['workers_per_node']
-    pkg_dir = ctx.obj['pkg_dir']
+    index = ctx.obj["index"]
+    max_count = ctx.obj["max_count"]
+    work_dir = ctx.obj["work_dir"]
+    workers_per_node = ctx.obj["workers_per_node"]
+    pkg_dir = ctx.obj["pkg_dir"]
+    project = ctx.obj["project"]
 
     with Datacube(index=index) as dc:
         collection = get_collection(dc, prefix)
@@ -167,13 +180,16 @@ def cli_search(ctx, prefix: str, expressions: dict):
         work_dir=work_dir,
         workers_per_node=workers_per_node,
         pkg_dir=pkg_dir,
+        project=project,
         log=log,
     )
 
 
-@cli.command("ard-ids", help='Specify a list of ARD UUIDs to reprocess')
+@cli.command("ard-ids", help="Specify a list of ARD UUIDs to reprocess")
 # Via a text file
-@click.option("-f", "--ids-file", type=click.File("r"), help="File containing UUIDs to process")
+@click.option(
+    "-f", "--ids-file", type=click.File("r"), help="File containing UUIDs to process"
+)
 @click.argument("ids", nargs=-1)
 @click.pass_context
 def cli_search(ctx, ids_file, ids: List[str]):
@@ -185,12 +201,13 @@ def cli_search(ctx, ids_file, ids: List[str]):
 
     log = structlog.get_logger()
 
-    index = ctx.obj['index']
-    max_count = ctx.obj['max_count']
-    work_dir = ctx.obj['work_dir']
-    workers_per_node = ctx.obj['workers_per_node']
-    pkg_dir = ctx.obj['pkg_dir']
+    index = ctx.obj["index"]
+    max_count = ctx.obj["max_count"]
+    work_dir = ctx.obj["work_dir"]
+    workers_per_node = ctx.obj["workers_per_node"]
+    pkg_dir = ctx.obj["pkg_dir"]
     platform = None
+    project = ctx.obj["project"]
 
     with Datacube(index=index) as dc:
         jobs = []
@@ -201,16 +218,18 @@ def cli_search(ctx, ids_file, ids: List[str]):
 
             this_platform = get_platform(odc_ard)
             if platform and (this_platform != platform):
-                raise ValueError(f"All IDs should be of the same platform: {platform} != {this_platform}")
+                raise ValueError(
+                    f"All IDs should be of the same platform: {platform} != {this_platform}"
+                )
             platform = this_platform
 
-            odc_level1:Dataset = odc_ard.sources['level1']
-            [level1_product] = [s for s in ard_product.sources if s.name == odc_level1.product.name]
+            odc_level1: Dataset = odc_ard.sources["level1"]
+            [level1_product] = [
+                s for s in ard_product.sources if s.name == odc_level1.product.name
+            ]
 
             level1_dataset = Level1Dataset.from_odc(odc_level1, level1_product)
-            jobs.append(
-                Job(level1_dataset, [ard_dataset.dataset_id], ard_product)
-            )
+            jobs.append(Job(level1_dataset, [ard_dataset.dataset_id], ard_product))
 
     create_pbs_jobs(
         jobs=jobs,
@@ -218,22 +237,23 @@ def cli_search(ctx, ids_file, ids: List[str]):
         work_dir=work_dir,
         workers_per_node=workers_per_node,
         pkg_dir=pkg_dir,
+        project=project,
         log=log,
     )
 
 
 def get_platform(odc_ard):
-    if odc_ard.metadata.platform.startswith('s'):
-        ourplatform = 's2'
-    elif odc_ard.metadata.platform.startswith('l'):
-        ourplatform = 'ls'
+    if odc_ard.metadata.platform.startswith("s"):
+        ourplatform = "s2"
+    elif odc_ard.metadata.platform.startswith("l"):
+        ourplatform = "ls"
     else:
         raise ValueError(f"Unknown platform: {odc_ard.metadata.platform}")
     return ourplatform
 
 
-def merge_duplicate_level1s(jobs:List[Job]) -> List[Job]:
-    jobs_by_level1_id :Dict[str, List[Job]]= defaultdict(list)
+def merge_duplicate_level1s(jobs: List[Job]) -> List[Job]:
+    jobs_by_level1_id: Dict[str, List[Job]] = defaultdict(list)
     for job in jobs:
         jobs_by_level1_id[job.level1.dataset_id].append(job)
 
@@ -248,13 +268,15 @@ def merge_duplicate_level1s(jobs:List[Job]) -> List[Job]:
                 target_ard_product=first.target_ard_product,
             )
 
+
 def create_pbs_jobs(
     jobs: List[Job],
-    platform:str,
+    platform: str,
     work_dir: Path,
     workers_per_node: int,
     pkg_dir: Path,
     log,
+    project="v10",
 ):
     if not jobs:
         log.info("no_datasets_to_process")
@@ -312,7 +334,7 @@ def create_pbs_jobs(
         log.info("Using separate metadata directory", directory=dirs["yamls-dir"])
 
     ard_args = dict(
-        project="v10",
+        project=project,
         walltime="10:00:00",
         env=environment_file,
         nodes=None,
@@ -383,11 +405,13 @@ def find_jobs_by_odc_ard_search(
             s for s in ard_product.sources if s.name == level1.product.name
         ][0]
         level1_dataset = Level1Dataset.from_odc(level1, level1_product)
-        level1s_to_process.append(Job(
-            level1=level1_dataset,
-            replacement_uuids=[ard_dataset.dataset_id],
-            target_ard_product=ard_product,
-        ))
+        level1s_to_process.append(
+            Job(
+                level1=level1_dataset,
+                replacement_uuids=[ard_dataset.dataset_id],
+                target_ard_product=ard_product,
+            )
+        )
 
         if len(level1s_to_process) >= max_count:
             log.info("reached_max_dataset_count", max_count=max_count)
