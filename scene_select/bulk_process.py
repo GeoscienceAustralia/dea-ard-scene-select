@@ -237,6 +237,7 @@ def cli_search(ctx, ids_file, ids: List[str]):
         work_dir=work_dir,
         workers_per_node=workers_per_node,
         pkg_dir=pkg_dir,
+        max_count=max_count,
         project=project,
         log=log,
     )
@@ -277,6 +278,7 @@ def create_pbs_jobs(
     pkg_dir: Path,
     log,
     project="v10",
+    max_count: int = sys.maxsize,
 ):
     if not jobs:
         log.info("no_datasets_to_process")
@@ -284,6 +286,9 @@ def create_pbs_jobs(
 
     # Check for any duplicate level1s, and join the jobs together (just their uuids to archive)
     jobs = list(merge_duplicate_level1s(jobs))
+    if len(jobs) > max_count:
+        log.info("truncating_to_max_count", max_count=max_count, total_count=len(jobs))
+        jobs = jobs[:max_count]
 
     if platform not in ("ls", "s2"):
         raise ValueError(
