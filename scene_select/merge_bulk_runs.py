@@ -185,9 +185,12 @@ def archive_old_dataset(
         log.warning("dataset.archive.not_found")
         return
 
-    log.info("do.archive_in_index")
-    if not dry_run:
-        index.datasets.archive([old_ard_uuid])
+    if old_dataset.is_archived:
+        log.info("dataset.already_archived", archive_time=old_dataset.archived_time)
+    else:
+        log.info("do.archive_in_index")
+        if not dry_run:
+            index.datasets.archive([old_ard_uuid])
 
     move_to_trash(old_dataset, dry_run=dry_run, log=log)
 
