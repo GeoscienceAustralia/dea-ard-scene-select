@@ -2,7 +2,7 @@
 import logging
 import os
 import sys
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import TextIO
 
 from urllib.parse import urlparse
@@ -170,7 +170,7 @@ def structlog_setup(output: TextIO | None = sys.stderr, verbose=False):
         # Log JSON when run otherwise
         processors = shared_processors + [
             structlog.processors.dict_tracebacks,
-            structlog.processors.JSONRenderer(),
+            structlog.processors.JSONRenderer(default=_lenient_json_default),
         ]
     structlog.configure(
         processors=processors,
@@ -181,3 +181,15 @@ def structlog_setup(output: TextIO | None = sys.stderr, verbose=False):
         logger_factory=structlog.PrintLoggerFactory(file=output),
         cache_logger_on_first_use=False,
     )
+
+
+def _lenient_json_default(o):
+    """
+    A json-dump `default` function that will show
+    pathlib Paths as normal strings
+    """
+
+    if isinstance(o, PurePath):
+        return o.as_posix()
+
+    return repr(o)

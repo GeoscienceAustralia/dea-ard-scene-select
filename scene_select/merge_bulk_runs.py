@@ -2,7 +2,7 @@
 """
 ARD Dataset Merger
 
-This script processes a bulk run of Sentinel-2 ARD data and merges it into a datacube instance.
+This script processes a bulk run of ARD data and merges it into a datacube instance.
 It archives old datasets, moves new datasets into place, and indexes them in the datacube.
 
 Usage:
@@ -14,12 +14,10 @@ Options:
 """
 
 import csv
-import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple, Iterator, Set, NamedTuple
 from uuid import UUID
-
 
 import click
 import structlog
@@ -29,15 +27,17 @@ from datacube.index.hl import Doc2Dataset
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from eodatasets3.prepare.landsat_l1_prepare import normalise_nci_symlinks
+from eodatasets3.utils import default_utc
 from ruamel import yaml
 
+from scene_select.collections import get_product
+from scene_select.library import ArdProduct
 from scene_select.utils import structlog_setup
 
 _LOG = structlog.get_logger()
 
-PRODUCTION_BASE = Path("/g/data/xu18/ga")
-
 UUIDsForPath = Dict[Path, List[UUID]]
+
 
 def load_archive_list(csv_path: Path) -> UUIDsForPath:
     """
@@ -45,7 +45,7 @@ def load_archive_list(csv_path: Path) -> UUIDsForPath:
     that level 1.
     """
     archive_list = {}
-    with csv_path.open('r', newline='') as f:
+    with csv_path.open("r", newline="") as f:
         reader = csv.reader(f)
         for row in reader:
             path, *uuid_list = row
@@ -53,76 +53,141 @@ def load_archive_list(csv_path: Path) -> UUIDsForPath:
     return archive_list
 
 
-def find_source_level1_path(metadata_file:Path) -> Path:
+def find_source_level1_path(metadata_file: Path) -> Path:
     [proc_info_file] = metadata_file.parent.glob("*.proc-info.yaml")
-    with proc_info_file.open('r') as f:
+    with proc_info_file.open("r") as f:
         proc_info = yaml.safe_load(f)
-        level1_path = Path(proc_info['wagl']['source_datasets']['source_level1'])
+        level1_path = Path(proc_info["wagl"]["source_datasets"]["source_level1"])
     return level1_path
+
 
 def normal_path(path: Path) -> Path:
     return normalise_nci_symlinks(path.absolute())
 
-def process_dataset(index: Index, metadata_file: Path, archive_list: UUIDsForPath, dry_run: bool) -> None:
-    log = _LOG.bind(metadata_file=metadata_file)
-    log.info("dataset.processing")
 
-    if not metadata_file.name.endswith('.odc-metadata.yaml'):
+class DatasetFilter(NamedTuple):
+    only_products: Optional[Set[str]] = None
+    only_region_codes: Optional[Set[str]] = None
+    only_time_range: Optional[Tuple[datetime, datetime]] = None
+    only_same_filesystem: bool = True
+
+    def should_process_dataset(
+        self, dataset: Dataset, collection_product: ArdProduct, log
+    ) -> bool:
+        if self.only_products and (dataset.product.name not in self.only_products):
+            log.info("dataset.skip.excluded_product", product=dataset.product.name)
+            return False
+
+        if self.only_region_codes and (
+            dataset.metadata.region_code not in self.only_region_codes
+        ):
+            log.info(
+                "dataset.skip.excluded_region_code",
+                region_code=dataset.metadata.region_code,
+            )
+            return False
+
+        if self.only_time_range:
+            earliest, latest = self.only_time_range
+            if not (
+                default_utc(earliest) <= dataset.center_time <= default_utc(latest)
+            ):
+                log.info(
+                    "dataset.skip.outside_time_range", center_time=dataset.center_time
+                )
+                return False
+
+        if self.only_same_filesystem and not same_filesystem(
+            dataset.local_path, collection_product.base_package_directory
+        ):
+            log.info(
+                "dataset.skip.requires_a_copy", destination=str(dataset.local_path)
+            )
+            return False
+
+        return True
+
+
+def process_dataset(
+    index: Index,
+    *,
+    metadata_file: Path,
+    archive_list: UUIDsForPath,
+    dataset_filter: DatasetFilter = DatasetFilter(),
+    dry_run: bool = False,
+) -> None:
+    log = _LOG.bind(newly_arrived_dataset=metadata_file)
+    log.info("dataset.processing.start")
+
+    if not metadata_file.name.endswith(".odc-metadata.yaml"):
         log.error("dataset.error", error="Expected dataset path to be a metadata path")
         return
 
     dataset = load_dataset(index, metadata_file)
-    source_level1_path= find_source_level1_path(metadata_file)
-
-    if dataset is None:
-        log.error("dataset.error", error="Failed to load dataset")
-        return
+    source_level1_path = find_source_level1_path(metadata_file)
 
     if index.datasets.has(dataset.id):
-        log.info("dataset.exists.skipping", dataset_id=str(dataset.id))
+        log.info("dataset.skip.already_indexed", dataset_id=str(dataset.id))
+        # TODO: mark this somehow? Remove the file?
         return
 
-    _, metadata_offset = split_dataset_base_path(metadata_file)
-    dest_metadata_path = PRODUCTION_BASE / metadata_offset
-    if dest_metadata_path.exists():
-        log.info("dataset.destination.exists.skipping", destination=str(dest_metadata_path))
+    processing_base, metadata_offset = split_dataset_base_path(metadata_file)
+    collection_product = get_product(dataset.product.name)
+    dest_metadata_path = collection_product.base_package_directory / metadata_offset
+
+    if not dataset_filter.should_process_dataset(dataset, collection_product, log):
         return
 
+    # We are processing!
+
+    # 1. Archive and trash the older datasets for the same L1.
     for old_ard_uuid in archive_list.get(source_level1_path, []):
         archive_old_dataset(index, old_ard_uuid, dry_run, log)
 
+    # 2. Move the dataset into place
     move_dataset(metadata_file, dest_metadata_path, dry_run, log)
+
+    # 3. Index it.
+    dataset.uris = [dest_metadata_path.as_uri()]
     index_dataset(index, dataset, dry_run, log)
 
-    log.info("dataset.processing.end", dataset_id=str(dataset.id), target_path=str(dest_metadata_path))
+    log.info(
+        "dataset.processing.end",
+        dataset_id=str(dataset.id),
+        target_path=str(dest_metadata_path),
+    )
 
 
-def load_dataset(index: Index, metadata_file: Path) -> Optional[Dataset]:
-    """Load a dataset from a metadata file."""
-    with metadata_file.open('r') as f:
+def load_dataset(index: Index, metadata_file: Path, with_lineage=True) -> Dataset:
+    """
+    Load a dataset from a metadata file.
+    """
+    with metadata_file.open("r") as f:
         doc = yaml.safe_load(f)
 
-    dataset, error_msg = Doc2Dataset(index)(doc, metadata_file.as_uri())
+    # Note that this fails if the lineage cannot be found.
+    dataset, error_msg = Doc2Dataset(
+        index, verify_lineage=True, skip_lineage=not with_lineage
+    )(doc, metadata_file.as_uri())
     if dataset is None:
         raise ValueError(f"Failed to load dataset: {error_msg}")
     return dataset
 
 
-
-def archive_old_dataset(index: Index, old_ard_uuid: UUID, dry_run: bool, log: structlog.BoundLogger) -> None:
+def archive_old_dataset(
+    index: Index, old_ard_uuid: UUID, dry_run: bool, log: structlog.BoundLogger
+) -> None:
     """Archive an old ARD dataset and move its files to trash."""
     log = log.bind(old_ard_uuid=str(old_ard_uuid))
-    log.info("dataset.archiving")
 
     old_dataset = index.datasets.get(old_ard_uuid)
     if old_dataset is None:
         log.warning("dataset.archive.not_found")
         return
 
+    log.info("do.archive_in_index")
     if not dry_run:
         index.datasets.archive([old_ard_uuid])
-    else:
-        log.info("dry_run.archive", dataset_id=str(old_ard_uuid))
 
     move_to_trash(old_dataset, dry_run=dry_run, log=log)
 
@@ -133,19 +198,69 @@ def move_to_trash(dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -
     if source_path is None:
         raise ValueError("Dataset has no local path")
 
-    if not source_path.name.endswith('.odc-metadata.yaml'):
-        raise ValueError(f"Expected dataset path to be a metadata path, got: {source_path}")
+    if not source_path.name.endswith(".odc-metadata.yaml"):
+        raise ValueError(
+            f"Expected dataset path to be a metadata path, got: {source_path}"
+        )
 
     dataset_dir = source_path.parent
 
     base_path, metadata_offset = split_dataset_base_path(source_path)
-    trash_path = base_path / ".trash" / datetime.now().strftime("%Y%m%d") / metadata_offset.parent
+    trash_path = (
+        base_path
+        / ".trash"
+        / datetime.now().strftime("%Y%m%d")
+        / metadata_offset.parent
+    )
 
-    if dry_run:
-        log.info("dry_run.move_to_trash", dataset_path=str(dataset_dir), trash_path=str(trash_path))
-    else:
+    log.info(
+        "move_to_trash",
+        dataset_path=str(dataset_dir),
+        trash_path=str(trash_path),
+    )
+    if not dry_run:
         trash_path.parent.mkdir(parents=True, exist_ok=True)
         dataset_dir.rename(trash_path)
+
+
+def get_nci_drive(p: Path) -> Path:
+    """
+    What storage area is this on?
+
+    Files should be safely rename'able within a storage area.
+
+    >>> get_nci_drive(Path('/g/data/xu18/ga/ga_ls8c_ard_3/088/083/2024/08/08/ga_ls8c_ard_3-2-1_088083_2024-08-08_final.odc-metadata.yaml'))
+    PosixPath('/g/data/xu18')
+    >>> get_nci_drive(Path('/scratch/v10/lpgs/some-offshore-procs.txt'))
+    PosixPath('/scratch/v10')
+    >>> get_nci_drive(Path('/home/547/lpgs/dea-orchestration'))
+    PosixPath('/home/547/lpgs')
+    """
+    match normalise_nci_symlinks(p.absolute()).parts:
+        case ("/", "g", "data", project, *_):
+            return Path("/g/data", project)
+        case ("/", "scratch", project, *_):
+            return Path("/scratch", project)
+        case ("/", "home", section, user, *_):
+            return Path("/home", section, user)
+        case _:
+            raise ValueError(f"Unknown NCI drive structure: {p}")
+
+
+def same_filesystem(path1: Path, path2: Path) -> bool:
+    """ "
+    Are the two paths on the same filesystem?
+
+    ie. can we rename() one to the other without copying it?
+
+    """
+    # Sadly st_dev is not accurate within lustre.
+    #  os.stat('/g/data/v10/').st_dev == os.stat('/g/data/xu18/').st_dev
+
+    # Instead we'll do a very-nci-specific thing.
+    path1_drive = get_nci_drive(path1)
+    path2_drive = get_nci_drive(path2)
+    return path1_drive == path2_drive
 
 
 def split_dataset_base_path(metadata_file: Path) -> Tuple[Path, Path]:
@@ -164,10 +279,12 @@ def split_dataset_base_path(metadata_file: Path) -> Tuple[Path, Path]:
     >>> (base / ds) == p
     True
     """
-    if not metadata_file.name.endswith('.odc-metadata.yaml'):
-        raise ValueError(f"Expected dataset path to be a metadata path, got: {metadata_file}")
+    if not metadata_file.name.endswith(".odc-metadata.yaml"):
+        raise ValueError(
+            f"Expected dataset path to be a metadata path, got: {metadata_file}"
+        )
 
-    product_name = metadata_file.name.split('-')[0]
+    product_name = metadata_file.name.split("-")[0]
 
     # The root of the folder structure has the product name.
     for folder in metadata_file.parents:
@@ -175,69 +292,165 @@ def split_dataset_base_path(metadata_file: Path) -> Tuple[Path, Path]:
             source_base_folder = folder.parent
             break
     else:
-        raise ValueError(f"Failed to base product name {product_name} in {metadata_file}")
+        raise ValueError(
+            f"Failed to base product name {product_name} in {metadata_file}"
+        )
 
     return source_base_folder, metadata_file.relative_to(source_base_folder)
 
 
-def move_dataset(souce_md_path: Path, dest_md_path: Path, dry_run: bool, log: structlog.BoundLogger) -> None:
+def move_dataset(
+    souce_md_path: Path, dest_md_path: Path, dry_run: bool, log: structlog.BoundLogger
+) -> None:
     """Move a dataset from source to destination."""
-    dest_md_path.parent.mkdir(parents=True, exist_ok=True)
+    source_dataset_dir = souce_md_path.parent
+    dest_dataset_dir = dest_md_path.parent
 
+    # We can only do an atomic rename on the same drive.
+    # The destination doesn't dataset exist yet, so we check its base directory drive.
+    destination_base, _ = split_dataset_base_path(dest_md_path)
+    if not same_filesystem(source_dataset_dir, destination_base):
+        raise ValueError(
+            f"Source and destination are not on the same filesystem. "
+            f"(for now this script has been altered to not do moves, only renames): "
+            f"{source_dataset_dir} != {destination_base}"
+        )
+    log.info(
+        "do.rename_dataset",
+        source=source_dataset_dir,
+        destination=dest_dataset_dir,
+        mkdir=dest_dataset_dir.parent,
+    )
     if not dry_run:
-        shutil.move(str(souce_md_path.parent), str(dest_md_path.parent))
-    else:
-        log.info("dry_run.move_dataset",
-                 source=str(souce_md_path.parent),
-                 destination=str(dest_md_path.parent))
+        dest_dataset_dir.parent.mkdir(parents=True, exist_ok=True)
+        source_dataset_dir.rename(dest_dataset_dir)
 
 
-def index_dataset(index: Index, dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -> None:
+def index_dataset(
+    index: Index, dataset: Dataset, dry_run: bool, log: structlog.BoundLogger
+) -> None:
     """Index a dataset in the datacube."""
+
+    log.info(
+        "do.index_dataset",
+        dataset_id=str(dataset.id),
+        dataset_uris=dataset.uris,
+    )
     if not dry_run:
         index.datasets.add(dataset)
-    else:
-        log.info("dry_run.index_dataset", dataset_id=str(dataset.id))
 
 
 @click.command(help=__doc__)
-@click.argument('bulk_run_dirs', nargs=-1, type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path))
-@click.option('--dry-run', is_flag=True, help="Print actions without performing them")
+@click.argument(
+    "bulk_run_dirs",
+    nargs=-1,
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+)
+@click.option("--dry-run", is_flag=True, help="Print actions without performing them")
 @ui.environment_option
 @ui.config_option
-@ui.pass_index(app_name='ard-dataset-merger')
-def cli(index: Index, bulk_run_dirs: List[Path], dry_run: bool) -> None:
+@click.option(
+    "--only-products",
+    help="Only process specified output products",
+    multiple=True,
+    type=str,
+)
+@click.option(
+    "--only-region-codes",
+    help="Only process specified region codes",
+    multiple=True,
+    type=str,
+)
+@click.option(
+    "--only-region-code-file",
+    help="Only process region codes listed in text file (one per line)",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--only-time-range",
+    help="Only process datasets between these two dates",
+    nargs=2,
+    type=click.DateTime(),
+)
+@click.option(
+    "--only-same-filesystem/--allow-different-filesystems",
+    is_flag=True,
+    default=True,
+    help="Only process datasets that don't require copying between filesystems",
+)
+@ui.pass_index(app_name="ard-dataset-merger")
+def cli(
+    index: Index,
+    bulk_run_dirs: List[Path],
+    dry_run: bool,
+    only_products: Optional[Tuple[str, ...]] = None,
+    only_region_codes: Optional[Tuple[str, ...]] = None,
+    only_region_code_file: Optional[Path] = None,
+    only_time_range: Optional[Tuple[datetime, datetime]] = None,
+    only_same_filesystem: bool = True,
+) -> None:
     """Process a bulk run of ARD data and merge into datacube."""
     structlog_setup()
 
-    _LOG.info("run.start", bulk_run_dir_count=len(bulk_run_dirs), dry_run=dry_run)
+    limit_to_region_codes = None
+    if only_region_codes or only_region_code_file:
+        limit_to_region_codes = set(only_region_codes) if only_region_codes else set()
+        if only_region_code_file:
+            with open(only_region_code_file, "r") as f:
+                limit_to_region_codes.update(line.strip() for line in f.readlines())
+
+    dataset_filter = DatasetFilter(
+        only_products=(set(only_products) if only_products else None),
+        only_region_codes=limit_to_region_codes,
+        only_time_range=only_time_range,
+        only_same_filesystem=only_same_filesystem,
+    )
+
+    _LOG.info("command.start", bulk_run_dir_count=len(bulk_run_dirs), dry_run=dry_run)
     with Datacube(index=index) as dc:
         for bulk_run_dir in bulk_run_dirs:
             bulk_run_dir = bulk_run_dir.resolve()
 
             log = _LOG.bind(bulk_run_dir=bulk_run_dir)
-
-            log.info("run.processing")
-            pkg_dir = bulk_run_dir / "pkg"
-            if not pkg_dir.exists():
-                log.error("run.error", error="pkg directory not found")
-                return
+            log.info("scan.directory.start")
 
             archive_list = load_archive_list(bulk_run_dir / "scene-archive-list.csv")
 
-            for product_dir in pkg_dir.iterdir():
-                if product_dir.is_dir():
-                    for metadata_file in product_dir.rglob("*.odc-metadata.yaml"):
-                        try:
-                            process_dataset(dc.index, metadata_file, archive_list, dry_run)
-                        except Exception:
-                            log.exception(
-                                "run.error",
-                                dataset_path=str(metadata_file)
-                            )
+            for metadata_path in iter_output_datasets(bulk_run_dir, log):
+                if not metadata_path.exists():
+                    log.debug(
+                        "dataset.skip.already_processed", metadata_path=metadata_path
+                    )
+                    continue
 
-            log.info("run.processing.end")
+                try:
+                    process_dataset(
+                        dc.index,
+                        metadata_file=metadata_path,
+                        archive_list=archive_list,
+                        dataset_filter=dataset_filter,
+                        dry_run=dry_run,
+                    )
+                except Exception:
+                    log.exception("run.error", dataset_path=str(metadata_path))
+
+            log.info("scan.directory.end")
 
 
-if __name__ == '__main__':
+def iter_output_datasets(bulk_run_dir: Path, log) -> Iterator[Path]:
+    """Get all reported output datasets for batches that have finished for this bulk-run.
+
+    It will return the metadata path to each dataset.
+    """
+    for batch_dir in bulk_run_dir.glob("batchid-*"):
+        if not (batch_dir / "level-1-final_state-done.txt"):
+            log.info("skipping_unfinished_batch", batch_dir=batch_dir)
+            continue
+        for index_file in batch_dir.glob("*-datasets-to-index.txt"):
+            with open(index_file) as f:
+                for line in f:
+                    yield Path(line.strip())
+
+
+if __name__ == "__main__":
     cli()
