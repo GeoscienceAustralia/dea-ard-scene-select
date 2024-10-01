@@ -205,6 +205,9 @@ def move_to_trash(dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -
         raise ValueError(
             f"Expected dataset path to be a metadata path, got: {source_path}"
         )
+    if not source_path.exists():
+        log.info("dataset.trash.already_gone", source_path=str(source_path))
+        return
 
     dataset_dir = source_path.parent
 
