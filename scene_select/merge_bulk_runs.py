@@ -175,7 +175,10 @@ def load_dataset(index: Index, metadata_file: Path, with_lineage=True) -> Datase
 
 
 def archive_old_dataset(
-    index: Index, old_ard_uuid: UUID, dry_run: bool, log: structlog.BoundLogger
+    index: Index,
+    old_ard_uuid: UUID,
+    dry_run: bool,
+    log: structlog.BoundLogger,
 ) -> None:
     """Archive an old ARD dataset and move its files to trash."""
     log = log.bind(old_ard_uuid=str(old_ard_uuid))
@@ -185,29 +188,59 @@ def archive_old_dataset(
         log.warning("dataset.archive.not_found")
         return
 
-    if old_dataset.is_archived:
+    was_already_archived = old_dataset.is_archived
+    if was_already_archived:
         log.info("dataset.already_archived", archive_time=old_dataset.archived_time)
     else:
         log.info("do.archive_in_index")
         if not dry_run:
             index.datasets.archive([old_ard_uuid])
 
-    move_to_trash(old_dataset, dry_run=dry_run, log=log)
+    move_to_trash(
+        old_dataset,
+        dry_run=dry_run,
+        log=log,
+        # Check that this isn't a different dataset.
+        check_ids_match=was_already_archived,
+    )
 
 
-def move_to_trash(dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -> None:
+def _normalise(path: Path) -> Path:
+    return normalise_nci_symlinks(path.absolute())
+
+
+def move_to_trash(
+    dataset: Dataset,
+    dry_run: bool,
+    check_ids_match: bool,
+    log: structlog.BoundLogger,
+) -> None:
     """Move a dataset to the trash folder."""
     source_path = dataset.local_path
     if source_path is None:
         raise ValueError("Dataset has no local path")
 
+    log = log.bind(metadata_path=source_path)
     if not source_path.name.endswith(".odc-metadata.yaml"):
         raise ValueError(
             f"Expected dataset path to be a metadata path, got: {source_path}"
         )
     if not source_path.exists():
-        log.info("dataset.trash.already_gone", source_path=str(source_path))
+        log.info("dataset.trash.already_gone")
         return
+
+    # Load the yaml file to check if the dataset was different.
+    if check_ids_match:
+        disk_id = _load_dataset_uuid_from_disk(source_path)
+        if disk_id != str(dataset.id):
+            log.warning(
+                "dataset.trash.different_dataset",
+                our_dataset_id=str(dataset.id),
+                disk_dataset_id=disk_id,
+            )
+            # We're still going to trash it, since we're moving a new dataset here.
+        else:
+            log.info("dataset.trash.same_dataset")
 
     dataset_dir = source_path.parent
 
@@ -220,13 +253,22 @@ def move_to_trash(dataset: Dataset, dry_run: bool, log: structlog.BoundLogger) -
     )
 
     log.info(
-        "move_to_trash",
+        "do.move_to_trash",
         dataset_path=str(dataset_dir),
         trash_path=str(trash_path),
     )
     if not dry_run:
         trash_path.parent.mkdir(parents=True, exist_ok=True)
         dataset_dir.rename(trash_path)
+
+
+def _load_dataset_uuid_from_disk(source_path: Path) -> str:
+    """
+    Get the dataset ID from a metadata file. Note that this will be slow so we don't want to do it often...
+    """
+    with source_path.open("r") as f:
+        doc = yaml.safe_load(f)
+    return str(doc["id"])
 
 
 def get_nci_drive(p: Path) -> Path:
