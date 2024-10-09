@@ -98,7 +98,9 @@ class DatasetFilter(NamedTuple):
         if self.only_time_range:
             earliest, latest = self.only_time_range
             if not (
-                default_utc(earliest) <= dataset.center_time <= default_utc(latest)
+                default_utc(earliest)
+                <= default_utc(dataset.center_time)
+                <= default_utc(latest)
             ):
                 log.info(
                     "dataset.skip.outside_time_range", center_time=dataset.center_time
@@ -151,6 +153,7 @@ def process_dataset(
         return False
 
     # We are processing!
+    original_metadata_file = metadata_file
 
     # Move to same filesystem if needed.
     metadata_file = consolidate_filesystem(
@@ -167,6 +170,10 @@ def process_dataset(
     # 3. Index it.
     dataset.uris = [dest_metadata_path.as_uri()]
     index_dataset(index, dataset, dry_run, log)
+
+    # If we had to copy to a different filesystem, we can trash the one on the old filesystem.
+    if metadata_file != original_metadata_file:
+        move_to_trash(original_metadata_file, dry_run, log)
 
     log.info(
         "dataset.processing.end",
@@ -258,11 +265,11 @@ def archive_old_dataset(
             index.datasets.archive([old_ard_uuid])
 
     move_to_trash(
-        old_dataset,
+        old_dataset.local_path,
         dry_run=dry_run,
         log=log,
-        # Check that this isn't a different dataset.
-        check_ids_match=was_already_archived,
+        # If it was already archived, check that this isn't a different dataset.
+        expected_dataset_id=old_dataset.id if was_already_archived else None,
     )
 
 
@@ -271,13 +278,12 @@ def _normalise(path: Path) -> Path:
 
 
 def move_to_trash(
-    dataset: Dataset,
+    source_path: Path,
     dry_run: bool,
-    check_ids_match: bool,
     log: structlog.BoundLogger,
+    expected_dataset_id: Optional[UUID] = None,
 ) -> None:
     """Move a dataset to the trash folder."""
-    source_path = dataset.local_path
     if source_path is None:
         raise ValueError("Dataset has no local path")
 
@@ -291,12 +297,12 @@ def move_to_trash(
         return
 
     # Load the yaml file to check if the dataset was different.
-    if check_ids_match:
+    if expected_dataset_id:
         disk_id = _load_dataset_uuid_from_disk(source_path)
-        if disk_id != str(dataset.id):
+        if disk_id != str(expected_dataset_id):
             log.warning(
                 "dataset.trash.different_dataset",
-                our_dataset_id=str(dataset.id),
+                our_dataset_id=str(expected_dataset_id),
                 disk_dataset_id=disk_id,
             )
             # We're still going to trash it, since we're moving a new dataset here.
