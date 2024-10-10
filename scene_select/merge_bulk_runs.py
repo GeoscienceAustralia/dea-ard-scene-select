@@ -518,7 +518,9 @@ def cli(
     only_same_filesystem: bool = True,
 ) -> None:
     """Process a bulk run of ARD data and merge into datacube."""
-    structlog_setup()
+
+    # The structured logs are our primary output, so we'll go to stdout.
+    structlog_setup(output=sys.stdout)
 
     limit_to_region_codes = None
     if only_region_codes or only_region_code_file:
@@ -572,6 +574,10 @@ def cli(
                     consecutive_failures += 1
 
                     # Wait a bit before retrying
+
+                    # Close the db pool while we're inactive
+                    dc.index.close()
+
                     time.sleep(min((consecutive_failures**3) * 5, 500))
                     if consecutive_failures > max_consecutive_failures:
                         raise RuntimeError(
