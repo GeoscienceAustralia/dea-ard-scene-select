@@ -1,8 +1,9 @@
 """
-    DSNS-231
-       R3.3 Filter out the l1 scene if there is already an ARD scene with the
-       same scene_id, that is un-archived.
+DSNS-231
+   R3.3 Filter out the l1 scene if there is already an ARD scene with the
+   same scene_id, that is un-archived.
 """
+
 from pathlib import Path
 import os
 import json

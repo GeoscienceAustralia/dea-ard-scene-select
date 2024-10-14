@@ -12,15 +12,15 @@ module use /g/data/v10/private/modules/modulefiles
 
 module load ard-scene-select-py3-dea/20200717
 
-# local work dir 
+# local work dir
 #ard-scene-select --workdir scratch/
 
 # local work dir and skipping odc
 #ard-scene-select --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/
 
 
-# local work dir 
-# ard-scene-select --products '["ga_ls5t_level1_3"]' --workdir scratch/ 
+# local work dir
+# ard-scene-select --products '["ga_ls5t_level1_3"]' --workdir scratch/
 
 # setting up a working ard call.  Should fail trying to connect to the db
 ard-scene-select  --usgs-level1-files small_Landsat_Level1_Nci_Files.txt --workdir scratch/  --env prod-wagl.env  --index-datacube-env c3-samples-index-datacube.env --pkgdir  scratch/ --logdir scratch/ --project u46 --walltime 05:00:00 #--run-ard

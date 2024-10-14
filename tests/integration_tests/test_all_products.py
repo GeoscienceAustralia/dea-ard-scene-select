@@ -5,10 +5,7 @@ accuracy on how the function is to work.
 
 """
 
-import shutil
 from pathlib import Path
-import uuid
-import os
 import pytest
 from click.testing import CliRunner
 

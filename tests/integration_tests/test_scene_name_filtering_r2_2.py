@@ -1,10 +1,10 @@
 """
-    DSNS-232
-    R2.2 for landsat - Filter out scenes that do not match the product pattern
-    
+DSNS-232
+R2.2 for landsat - Filter out scenes that do not match the product pattern
+
 """
+
 from pathlib import Path
-from typing import List
 from click.testing import CliRunner
 import pytest
 import os
@@ -54,7 +54,6 @@ pytestmark = pytest.mark.usefixtures("auto_odc_db")
 
 
 def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
-
     cmd_params = [
         "--products",
         '["usgs_ls7e_level1_1"]',
@@ -86,7 +85,7 @@ def test_ard_landsat_scenes_not_matching_product_patterns_r2_2(tmp_path):
 
     assert (
         len(ards_to_process) == 0
-    ), f"Ard entries to process exist when we are not expecting anything to be"
+    ), "Ard entries to process exist when we are not expecting anything to be"
 
     # Use glob to search for the log file
     # within filter-jobid-* directories

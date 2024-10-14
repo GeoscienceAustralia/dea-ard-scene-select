@@ -1,13 +1,9 @@
 #! /usr/bin/env python3
 
-import tempfile
-import shutil
 import datetime
 import pytz
 import re
-import pytest
 import os
-import uuid
 from pathlib import Path
 from click.testing import CliRunner
 from scene_select.ard_scene_select import (

@@ -22,5 +22,5 @@ SSPATH=$PWD/../../
 # echo $PYTHONPATH
 
 #  local code local work dir, ls8
-# 
+#
 time python3 ard_scene_select_messy.py --products '["usgs_ls8c_level1_1"]' --workdir scratch/  --pkgdir  scratch/ --logdir scratch/  --env $PWD/c3-samples-index-datacube.env --project u46 --walltime 10:00:00  --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env #--run-ard  # --products '["usgs_ls8c_level1_1"]' --env /g/data/v10/projects/c3_ard/dea-ard-scene-select/scripts/prod/ard_env/prod-wagl.env
