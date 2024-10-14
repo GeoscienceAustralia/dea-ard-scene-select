@@ -173,11 +173,25 @@ def process_dataset(
     # If there's a dataset already at the destination, but it's not one of the datasets
     # we're about to archive...
     if (not is_removing_destination_path) and dest_metadata_path.exists():
-        # Perhaps this has been newly processed already?
-        log.error(
-            "dataset.skip.existing_dataset_at_path", destination_path=dest_metadata_path
+        old_dataset = index.datasets.get(
+            _load_dataset_uuid_from_disk(dest_metadata_path)
         )
-        return False
+        if old_dataset is None:
+            log.error(
+                "dataset.skip.unknown_dataset_at_path",
+                destination_path=dest_metadata_path,
+            )
+            return False
+        # If it's an archived dataset hanging around, let's add it to the list to trash.
+        if old_dataset.is_archived:
+            old_datasets.append(old_dataset)
+        else:
+            # Perhaps this has been newly processed already?
+            log.error(
+                "dataset.skip.existing_dataset_at_path",
+                destination_path=dest_metadata_path,
+            )
+            return False
 
     # Move our incoming data to same filesystem if needed.
     # (this takes the longest out of every step, so we do it before we start merging/replacing anything.)
@@ -622,8 +636,12 @@ def iter_output_datasets(
     unique_datasets = set()
     has_interrupted_batches = False
     for batch_dir in bulk_run_dir.glob("batchid-*"):
-        if not (batch_dir / "level-1-final_state-done.txt"):
-            log.info("skipping_unfinished_batch", batch_dir=batch_dir)
+        if not (batch_dir / "level-1-final_state-done.txt").exists():
+            log.info(
+                "detected_unfinished_batch",
+                scan_interrupted_batches=scan_interrupted_batches,
+                batch_dir=batch_dir,
+            )
             has_interrupted_batches = True
             continue
         for index_file in batch_dir.glob("*-datasets-to-index.txt"):
