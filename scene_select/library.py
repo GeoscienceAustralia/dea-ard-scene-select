@@ -28,11 +28,13 @@ class Level1Product:
 
     # The metadata, if it's stored separately from the L1 data itself.
     #    (if None, assuming metadata sits alongise the data)
-    separate_metadata_directory: Optional[Path] = field(eq=False, hash=False, default=None)
+    separate_metadata_directory: Optional[Path] = field(
+        eq=False, hash=False, default=None
+    )
 
     # Is this still receiving new data? ie. do we expect ongoing downloads
     #    (false if the satellite is retired, or if a newer collection is available)
-    is_active: bool  = field(eq=False, hash=False, default=False)
+    is_active: bool = field(eq=False, hash=False, default=False)
 
 
 @define(unsafe_hash=True)
@@ -176,9 +178,9 @@ class ArdDataset(BaseDataset):
         return self.metadata_doc()["lineage"]["level1"][0]
 
     @classmethod
-    def from_odc(cls, ard_dataset:Dataset):
+    def from_odc(cls, ard_dataset: Dataset):
         return ArdDataset(
-            dataset_id = str(ard_dataset.id),
+            dataset_id=str(ard_dataset.id),
             metadata_path=ard_dataset.local_path,
             maturity=ard_dataset.metadata.dataset_maturity,
         )
@@ -225,9 +227,10 @@ class ArdCollection:
                 product_start_time, product_end_time = expressions.pop("time")
             else:
                 _LOG.info("finding_product_time_bounds", product_name=product.name)
-                product_start_time, product_end_time = (
-                    self.dc.index.datasets.get_product_time_bounds(product=product.name)
-                )
+                (
+                    product_start_time,
+                    product_end_time,
+                ) = self.dc.index.datasets.get_product_time_bounds(product=product.name)
 
             seen_dataset_ids = set()
 

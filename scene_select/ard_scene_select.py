@@ -6,7 +6,7 @@ import re
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Iterator
 import calendar
 import click
 import json
@@ -379,6 +379,32 @@ def month_as_range(year: int, month: int) -> Range:
     )
 
 
+def _month_iterator(
+    start_time: datetime.date, end_time: datetime.date
+) -> Iterator[Tuple[int, int]]:
+    """
+    Yield every month between the two times as a pair of (year, month) tuples
+
+    Both sides are inclusive.
+    """
+    start_year, start_month = start_time.year, start_time.month
+    end_year, end_month = end_time.year, end_time.month
+
+    current_year, current_month = start_year, start_month
+
+    while (current_year, current_month) <= (end_year, end_month):
+        yield current_year, current_month
+
+        current_month += 1
+        if current_month > 12:
+            current_month = 1
+            current_year += 1
+
+
+MAX_DATE = datetime.date.today()
+MIN_DATE = MAX_DATE - datetime.timedelta(days=40)
+
+
 def l1_filter(
     dc,
     l1_product,
@@ -391,6 +417,8 @@ def l1_filter(
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
+    min_date: datetime.date = MIN_DATE,
+    max_date: datetime.date = MAX_DATE,
 ):
     """return
     @param dc:
@@ -431,103 +459,107 @@ def l1_filter(
         product=l1_product
     )
 
+    if min_date:
+        product_start_time = max(product_start_time, min_date)
+    if max_date:
+        product_end_time = min(product_end_time, max_date)
+
     # Query month-by-month to make DB queries smaller.
     # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
-    for year in range(product_start_time.year, product_end_time.year + 1):
-        for month in range(1, 13):
-            for l1_dataset in dc.index.datasets.search(
-                product=l1_product, time=month_as_range(year, month)
-            ):
-                if sat_key == "ls":
-                    product_id = l1_dataset.metadata.landsat_product_id
-                    choppedsceneid = utils.chopped_scene_id(
-                        l1_dataset.metadata.landsat_scene_id
-                    )
-                elif sat_key == "s2":
-                    product_id = l1_dataset.metadata.sentinel_tile_id
-                    # S2 has no eqivalent to a scene id
-                    # I'm using sentinel_tile_id.  This will work for handling interim to final.
-                    # it will not catch duplicates.
-                    choppedsceneid = l1_dataset.metadata.sentinel_tile_id
-                region_code = l1_dataset.metadata.region_code
-                file_path = utils.calc_file_path(l1_dataset, product_id)
-                # Set up the logging
-                temp_logger = LOGGER.bind(
-                    landsat_scene_id=product_id,
-                    dataset_id=str(l1_dataset.id),
-                    dataset_path=file_path,
+    for year, month in _month_iterator(product_start_time, product_end_time):
+        for l1_dataset in dc.index.datasets.search(
+            product=l1_product, time=month_as_range(year, month)
+        ):
+            if sat_key == "ls":
+                product_id = l1_dataset.metadata.landsat_product_id
+                choppedsceneid = utils.chopped_scene_id(
+                    l1_dataset.metadata.landsat_scene_id
                 )
+            elif sat_key == "s2":
+                product_id = l1_dataset.metadata.sentinel_tile_id
+                # S2 has no eqivalent to a scene id
+                # I'm using sentinel_tile_id.  This will work for handling interim to final.
+                # it will not catch duplicates.
+                choppedsceneid = l1_dataset.metadata.sentinel_tile_id
+            region_code = l1_dataset.metadata.region_code
+            file_path = utils.calc_file_path(l1_dataset, product_id)
+            # Set up the logging
+            temp_logger = LOGGER.bind(
+                landsat_scene_id=product_id,
+                dataset_id=str(l1_dataset.id),
+                dataset_path=file_path,
+            )
 
-                # Filter out if the processing level is too low
-                if l1_product in PROCESSING_PATTERN_MAPPING:
-                    prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
-                    if not re.match(prod_pattern, product_id):
-                        temp_logger.debug(
-                            SCENEREMOVED, **{REASON: "Processing level too low"}
-                        )
-                        continue
-
-                # Filter out if outside area of interest
-                if sat_key is not None and region_code not in region_codes[sat_key]:
-                    kwargs = {
-                        REASON: "Region not in AOI",
-                        "region_code": region_code,
-                    }
-                    temp_logger.debug(SCENEREMOVED, **kwargs)
-                    continue
-
-                ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
-                # Continue here if a maturity level of final cannot be produced
-                # since the ancillary files are not there
-                if filter_ancillary(
-                    l1_dataset, ancill_there, msg, interim_days_wait, temp_logger
-                ):
-                    continue
-
-                # FIXME remove the hard-coded list
-                if exclude_days(days_to_exclude, l1_dataset.time.end):
-                    kwargs = {
-                        DATASETTIMEEND: l1_dataset.time.end,
-                        REASON: "This day is excluded.",
-                    }
-                    temp_logger.info(SCENEREMOVED, **kwargs)
-                    continue
-
-                # Filter out duplicate zips
-                if file_path in files2process:
-                    duplicates += 1
-                    kwargs = {
-                        REASON: "Potential multi-granule duplicate file path removed.",
-                        "duplicate count": duplicates,
-                    }
-                    temp_logger.debug(SCENEREMOVED, **kwargs)
-                    continue
-
-                if filter_reprocessed_scenes(
-                    dc,
-                    l1_dataset,
-                    processed_ard_scene_ids,
-                    find_blocked,
-                    ancill_there,
-                    uuids2archive,
-                    choppedsceneid,
-                    temp_logger,
-                ):
-                    continue
-
-                # WARNING any filter under here will
-                # be executed on interim scenes that it is assumed will
-                # be processed
-
-                # LOGGER.debug("location:pre dataset_with_final_child")
-                # If any child exists that isn't archived
-                if dataset_with_final_child(dc, l1_dataset):
+            # Filter out if the processing level is too low
+            if l1_product in PROCESSING_PATTERN_MAPPING:
+                prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
+                if not re.match(prod_pattern, product_id):
                     temp_logger.debug(
-                        SCENEREMOVED, **{REASON: "Skipping dataset with children"}
+                        SCENEREMOVED, **{REASON: "Processing level too low"}
                     )
                     continue
 
-                files2process.add(file_path)
+            # Filter out if outside area of interest
+            if sat_key is not None and region_code not in region_codes[sat_key]:
+                kwargs = {
+                    REASON: "Region not in AOI",
+                    "region_code": region_code,
+                }
+                temp_logger.debug(SCENEREMOVED, **kwargs)
+                continue
+
+            ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
+            # Continue here if a maturity level of final cannot be produced
+            # since the ancillary files are not there
+            if filter_ancillary(
+                l1_dataset, ancill_there, msg, interim_days_wait, temp_logger
+            ):
+                continue
+
+            # FIXME remove the hard-coded list
+            if exclude_days(days_to_exclude, l1_dataset.time.end):
+                kwargs = {
+                    DATASETTIMEEND: l1_dataset.time.end,
+                    REASON: "This day is excluded.",
+                }
+                temp_logger.info(SCENEREMOVED, **kwargs)
+                continue
+
+            # Filter out duplicate zips
+            if file_path in files2process:
+                duplicates += 1
+                kwargs = {
+                    REASON: "Potential multi-granule duplicate file path removed.",
+                    "duplicate count": duplicates,
+                }
+                temp_logger.debug(SCENEREMOVED, **kwargs)
+                continue
+
+            if filter_reprocessed_scenes(
+                dc,
+                l1_dataset,
+                processed_ard_scene_ids,
+                find_blocked,
+                ancill_there,
+                uuids2archive,
+                choppedsceneid,
+                temp_logger,
+            ):
+                continue
+
+            # WARNING any filter under here will
+            # be executed on interim scenes that it is assumed will
+            # be processed
+
+            # LOGGER.debug("location:pre dataset_with_final_child")
+            # If any child exists that isn't archived
+            if dataset_with_final_child(dc, l1_dataset):
+                temp_logger.debug(
+                    SCENEREMOVED, **{REASON: "Skipping dataset with children"}
+                )
+                continue
+
+            files2process.add(file_path)
 
     return list(files2process), uuids2archive, duplicates
 

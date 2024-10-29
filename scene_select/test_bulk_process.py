@@ -44,4 +44,3 @@ def test_matches_software_expressions():
         dict(wagl_version=Range(None, "1.2.4")),
         log,
     )
-
