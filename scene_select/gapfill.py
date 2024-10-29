@@ -165,6 +165,11 @@ def main():
         action="store_true",
         help="Attempt to fix missing YAMLs and index unindexed files",
     )
+    parser.add_argument(
+        "--max-count",
+        type=int,
+        help="Maximum number of files to fix",
+    )
 
     args = parser.parse_args()
     logger = setup_logging()
@@ -217,12 +222,16 @@ def main():
         for tar in missing_yamls:
             if generate_l1_yaml(tar, logger):
                 fixed_yamls += 1
+            if args.max_count and fixed_yamls >= args.max_count:
+                break
         print(f"Generated {fixed_yamls}/{len(missing_yamls)} missing YAML files")
 
         fixed_indexed = 0
         for yaml in unindexed_yamls:
             if try_index_yaml(yaml, logger):
                 fixed_indexed += 1
+            if args.max_count and fixed_indexed >= args.max_count:
+                break
         print(f"Indexed {fixed_indexed}/{len(unindexed_yamls)} YAML files")
 
 
