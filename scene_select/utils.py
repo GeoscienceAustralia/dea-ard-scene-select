@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import os
+import re
 import sys
 from pathlib import Path, PurePath
 from typing import TextIO
@@ -19,6 +20,8 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 # Logging
 LOG_CONFIG_FILE = "log_config.ini"
 LOG_CONFIG = DATA_DIR.joinpath(LOG_CONFIG_FILE)
+
+EXPECTED_CHOPPED_S2_PATTERN = re.compile(r"S2[A-B]_L1C_[A-Z0-9]{6}_[0-9]{8}T[0-9]{6}")
 
 INSIGNIFICANT_DIGITS_FIX = [
     "--allow-any",
@@ -61,15 +64,70 @@ def calc_local_path(l1_dataset: Dataset) -> str:
 
 def chopped_scene_id(scene_id: str) -> str:
     """
-    Remove the groundstation/version information from a scene id.
-
+    Create a string to uniquely identify an acquisition within the collection.
     >>> chopped_scene_id('LE71800682013283ASA00')
+    'LE71800682013283'
+    >>> chopped_scene_id('S2A_OPER_MSI_L1C_TL_2APS_20240129T005713_A044929_T56JLN_N05.10')
+    'S2A_L1C_T56JLN_20240129T005713'
+    """
+    if scene_id.startswith("S"):
+        return chop_s2_tile_id(scene_id)
+    elif scene_id.startswith("L"):
+        return chopped_ls_scene_id(scene_id)
+    else:
+        raise NotImplementedError(f"Unsupported scene_id format: {scene_id!r}")
+
+
+def chopped_ls_scene_id(scene_id: str) -> str:
+    """
+    Create a string to uniquely identify an LS acquisition within the collection.
+
+    ie. chop off their processing version number.
+
+    >>> chopped_ls_scene_id('LE71800682013283ASA00')
     'LE71800682013283'
     """
     if len(scene_id) != 21:
         raise RuntimeError(f"Unsupported scene_id format: {scene_id!r}")
     capture_id = scene_id[:-5]
     return capture_id
+
+
+def chop_s2_tile_id(sentinel_tile_id: str) -> str:
+    """
+    Create a string to uniquely identify an S2 acquisition within the collection.
+
+    (for instance, we remove processing time, because a reprocessed acquisition will be a duplicate.)
+
+    The chosen fields are based on GA's naming conventions:
+
+        /ga_s2am_ard_3/56/JLN/2024/01/29/20240129T005713/ga_s2am_ard_3-2-1_56JLN_2024-01-29_final.odc-metadata.yaml
+
+    (if it was acquired from the same groundstation, or had the same processing time, it would clash in name, because
+    they are not included.)
+
+    >>> chop_s2_tile_id('S2A_OPER_MSI_L1C_TL_2APS_20240129T005713_A044929_T56JLN_N05.10')
+    'S2A_L1C_T56JLN_20240129T005713'
+    """
+    split_tile_id = sentinel_tile_id.strip().split("_")
+    if len(split_tile_id) != 10:
+        raise NotImplementedError(
+            f"Unexpected sentinel_tile_id format: {sentinel_tile_id!r}"
+        )
+
+    # This all feels dangerous, which is why we check the result with a regexp below.
+    sensor = split_tile_id[0]
+    level = split_tile_id[3]
+    datatake_date = split_tile_id[-4]
+    region_code = split_tile_id[-2]
+
+    code = f"{sensor}_{level}_{region_code}_{datatake_date}"
+
+    # Let's be safe -- loud error if some have a different tile format.
+    if not EXPECTED_CHOPPED_S2_PATTERN.match(code):
+        raise NotImplementedError(f"Unexpected chopped S2 code: {code!r}")
+
+    return code
 
 
 class PythonLiteralOption(click.Option):
@@ -103,7 +161,6 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
             errs  : str output from the database update call
     """
     worked = True
-    cmd_results = {}
 
     dst = new_base_path / current_path.relative_to(current_base_path)
     os.makedirs(dst.parent, exist_ok=True)
