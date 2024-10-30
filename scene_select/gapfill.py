@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import time
+
 import structlog
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from subprocess import check_call
 from typing import Set, Tuple
@@ -123,13 +125,35 @@ def get_corresponding_tar(yaml_path: str) -> str:
     return yaml_path.replace(".odc-metadata.yaml", ".tar")
 
 
-def analyze_paths(fs_paths: Set[str], db_paths: Set[str]) -> Tuple[Set[str], Set[str]]:
+def get_processing_date(yaml_path: str) -> datetime:
+    """
+    Extract acquisition date from filename.
+
+    >>> get_processing_date('/g/data/da82/AODH/USGS/L1/Landsat/C2/084_082/LO80840822019355/LO08_L1TP_084082_20191221_20200924_02_T1.odc-metadata.yaml')
+    datetime.datetime(2020, 9, 24, 0, 0)
+    """
+    filename = Path(yaml_path).name
+    date_str = filename.split("_")[4]
+    return datetime.strptime(date_str, "%Y%m%d")
+
+
+def analyze_paths(
+    fs_paths: Set[str], db_paths: Set[str], start_date: datetime, end_date: datetime
+) -> Tuple[Set[str], Set[str]]:
     """
     Analyze filesystem and database paths to find mismatches.
     Returns: Tuple of (missing_yamls, unindexed_yamls)
     """
     fs_tars = {path for path in fs_paths if path.endswith(".tar")}
     fs_yamls = {path for path in fs_paths if path.endswith(".odc-metadata.yaml")}
+
+    # Filter by date range
+    fs_tars = {
+        path for path in fs_tars if start_date <= get_processing_date(path) <= end_date
+    }
+    fs_yamls = {
+        path for path in fs_yamls if start_date <= get_processing_date(path) <= end_date
+    }
 
     missing_yamls = {
         tar for tar in fs_tars if get_corresponding_yaml(tar) not in fs_yamls
@@ -147,7 +171,7 @@ def write_results_to_file(filename, paths: Set[str]) -> None:
             f.write(f"{path}\n")
 
 
-def main():
+def main(minimum_age_hours=24):
     parser = argparse.ArgumentParser(
         description="Check and fix consistency between filesystem and database metadata"
     )
@@ -167,6 +191,18 @@ def main():
         type=int,
         help="Maximum number of files to fix",
     )
+    parser.add_argument(
+        "--start-date",
+        type=lambda s: datetime.strptime(s, "%Y-%m-%d"),
+        default=(datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d"),
+        help="Start date for processing (YYYY-MM-DD). Defaults to 6 months ago",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=lambda s: datetime.strptime(s, "%Y-%m-%d"),
+        default=datetime.now().strftime("%Y-%m-%d"),
+        help="End date for processing (YYYY-MM-DD). Defaults to today",
+    )
 
     args = parser.parse_args()
     structlog_setup()
@@ -185,11 +221,14 @@ def main():
     fs_paths = generate_filesystem_paths(args.base_path, fs_paths_file)
     db_paths = generate_indexed_paths(db_paths_file)
 
-    # Analyze paths
-    missing_yamls, unindexed_yamls = analyze_paths(fs_paths, db_paths)
+    # Analyze paths with date filtering
+    missing_yamls, unindexed_yamls = analyze_paths(
+        fs_paths, db_paths, args.start_date, args.end_date
+    )
 
     # Report summary results
     print("\nSummary:")
+    print(f"Date range: {args.start_date.date()} to {args.end_date.date()}")
     print(f"Total tar files missing yaml files: {len(missing_yamls)}")
     if missing_yamls:
         print("\nFirst 5 examples of tar files missing yaml files:")
@@ -213,6 +252,8 @@ def main():
         write_results_to_file(unindexed_file, unindexed_yamls)
         print(f"Full list of unindexed yaml files written to: {unindexed_file}")
 
+    now = time.time()
+
     # Fix issues if requested
     if args.fix:
         print("\nAttempting to fix issues...")
@@ -220,6 +261,15 @@ def main():
         fixed_yamls = 0
         fixed_indexed = 0
         for tar_path in missing_yamls:
+            file_age_hours = _seconds_to_hours(now - Path(tar_path).stat().st_mtime)
+            if file_age_hours <= minimum_age_hours:
+                log.info(
+                    "skip.too_recent",
+                    tar_path=tar_path,
+                    file_age_hours=file_age_hours,
+                    minimum_age_hours=minimum_age_hours,
+                )
+                continue
             if generate_l1_yaml(tar_path, log):
                 fixed_yamls += 1
                 expected_yaml = get_corresponding_yaml(tar_path)
@@ -235,6 +285,10 @@ def main():
             if args.max_count and fixed_indexed >= args.max_count:
                 break
         print(f"Indexed {fixed_indexed}/{len(unindexed_yamls)} YAML files")
+
+
+def _seconds_to_hours(seconds):
+    return seconds / (60 * 60)
 
 
 if __name__ == "__main__":
