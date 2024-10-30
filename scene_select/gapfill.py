@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import logging
+import structlog
 from datetime import datetime
 from pathlib import Path
 from subprocess import check_call
@@ -10,14 +10,9 @@ from typing import Set, Tuple
 import psycopg2
 
 from scene_select.collections import index_level1_path
+from scene_select.utils import structlog_setup
 
-
-def setup_logging():
-    """Configure logging"""
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
-    )
-    return logging.getLogger(__name__)
+_LOG = structlog.get_logger()
 
 
 def generate_filesystem_paths(base_path: str, output_file: Path) -> Set[str]:
@@ -26,7 +21,7 @@ def generate_filesystem_paths(base_path: str, output_file: Path) -> Set[str]:
     Returns the loaded paths.
     """
     if not output_file.exists():
-        logging.info(f"Generating filesystem paths file: {output_file}")
+        _LOG.info("scanning_filesystem", output=output_file)
         with output_file.open("w") as f:
             check_call(
                 [
@@ -48,7 +43,7 @@ def generate_indexed_paths(output_file: Path) -> Set[str]:
     Returns the loaded paths.
     """
     if not output_file.exists():
-        logging.info(f"Generating database paths file: {output_file}")
+        _LOG.info("scanning_db", output=output_file)
         conn = psycopg2.connect("")  # Use standard postgres environment variables
 
         with conn.cursor() as cur, output_file.open("w") as f:
@@ -70,13 +65,14 @@ def generate_indexed_paths(output_file: Path) -> Set[str]:
     return {"/" + path.lstrip("/") for path in load_paths(output_file)}
 
 
-def generate_l1_yaml(tar_path: str, logger: logging.Logger) -> bool:
+def generate_l1_yaml(tar_path: str, log) -> bool:
     """
     Generate missing YAML for a tar file using eo3-prepare.
     Returns True if successful.
     """
+    log = log.bind(tar_path=tar_path)
     try:
-        logger.info(f"Generating YAML for {tar_path}")
+        log.info("generate_yaml")
         check_call(
             [
                 "eo3-prepare",
@@ -88,32 +84,33 @@ def generate_l1_yaml(tar_path: str, logger: logging.Logger) -> bool:
         )
         expected_yaml = Path(get_corresponding_yaml(tar_path))
         if not expected_yaml.exists():
-            logger.error(f"Generated YAML does not exist: {expected_yaml}")
+            log.error("expected_yaml", expected_yaml=expected_yaml)
             return False
         return True
-    except Exception as e:
-        logger.error(f"Failed to generate YAML for {tar_path}: {e}")
+    except Exception:
+        log.error("fail_yaml_generate")
         return False
 
 
-def try_index_yaml(yaml_path: str, logger: logging.Logger) -> bool:
+def try_index_yaml(yaml_path: str, log) -> bool:
     """
     Index an unindexed YAML file.
     Returns True if it did so.
     """
+    log = log.bind(yaml_path=yaml_path)
     try:
-        logger.info(f"Indexing {yaml_path}")
-        was_indexed = index_level1_path(Path(yaml_path), logger)
+        log.info("triggering_indexing")
+        was_indexed = index_level1_path(Path(yaml_path), log)
         return was_indexed
     except Exception:
-        logger.exception(f"Failed to index {yaml_path}")
+        log.exception("index_failure")
         return False
 
 
-def load_paths(filename: str) -> Set[str]:
+def load_paths(filename: str, exclude_string: str = "batchDownload") -> Set[str]:
     """Load paths from a file into a set."""
     with open(filename) as f:
-        return {line.strip() for line in f}
+        return {line.strip() for line in f if exclude_string not in line}
 
 
 def get_corresponding_yaml(tar_path: str) -> str:
@@ -172,7 +169,9 @@ def main():
     )
 
     args = parser.parse_args()
-    logger = setup_logging()
+    structlog_setup()
+
+    log = _LOG
 
     # Set up output paths
     date_suffix = datetime.now().strftime("%Y%m%d")
@@ -219,16 +218,19 @@ def main():
         print("\nAttempting to fix issues...")
 
         fixed_yamls = 0
-        for tar in missing_yamls:
-            if generate_l1_yaml(tar, logger):
+        fixed_indexed = 0
+        for tar_path in missing_yamls:
+            if generate_l1_yaml(tar_path, log):
                 fixed_yamls += 1
+                expected_yaml = get_corresponding_yaml(tar_path)
+                if try_index_yaml(expected_yaml, log):
+                    fixed_indexed += 1
             if args.max_count and fixed_yamls >= args.max_count:
                 break
         print(f"Generated {fixed_yamls}/{len(missing_yamls)} missing YAML files")
 
-        fixed_indexed = 0
-        for yaml in unindexed_yamls:
-            if try_index_yaml(yaml, logger):
+        for yaml_path in unindexed_yamls:
+            if try_index_yaml(yaml_path, log):
                 fixed_indexed += 1
             if args.max_count and fixed_indexed >= args.max_count:
                 break
