@@ -12,6 +12,7 @@ import yaml
 from datacube import Datacube
 from datacube.index.hl import Doc2Dataset
 from datacube.model import Range, Dataset
+from eodatasets3.utils import default_utc
 from structlog.typing import WrappedLogger
 
 from scene_select.library import ArdProduct, Level1Product, ArdCollection
@@ -178,7 +179,9 @@ def index_level1_path(metadata_path: Path, d_log: WrappedLogger) -> bool:
                 return False
 
             # Was it processed after our new one? Then stop.
-            if previous_dataset.metadata.creation_time > dataset.metadata.creation_time:
+            if default_utc(previous_dataset.metadata.creation_time) > default_utc(
+                dataset.metadata.creation_time
+            ):
                 d_log.warn(
                     "skip.newer_dataset_exists",
                     previous_dataset_id=previous_dataset.id,
@@ -193,6 +196,6 @@ def index_level1_path(metadata_path: Path, d_log: WrappedLogger) -> bool:
             )
             dc.index.datasets.archive([previous_dataset.id])
 
-        d_log.info("indexing")
+        d_log.info("do_indexing")
         dc.index.datasets.add(dataset)
         return True
