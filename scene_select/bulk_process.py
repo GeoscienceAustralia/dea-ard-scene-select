@@ -19,16 +19,21 @@ from datetime import datetime
 from itertools import chain
 from pathlib import Path
 from textwrap import dedent
-from typing import List, Dict
+from typing import List, Dict, Tuple
+from uuid import UUID
 
 import click
+import datacube.drivers.postgres._schema
 import structlog
 from attr import define, field
 from datacube import Datacube
+from datacube.index import Index
 from datacube.index.abstract import AbstractIndex
 from datacube.model import Range, Dataset
 from datacube.ui import click as ui
 from packaging import version
+from sqlalchemy import func, select
+from sqlalchemy.engine import Engine
 
 from scene_select.collections import get_collection, get_product
 from scene_select.do_ard import calc_node_with_defaults
@@ -151,9 +156,6 @@ You can redirect stderr if you want to record logs:
 @click.argument("expressions", callback=expression_parse, nargs=-1)
 @click.pass_context
 def cli_search(ctx, prefix: str, expressions: dict):
-    import wagl
-
-    current_wagl_version = wagl.__version__
     structlog_setup()
 
     log = structlog.get_logger()
@@ -192,7 +194,7 @@ def cli_search(ctx, prefix: str, expressions: dict):
 )
 @click.argument("ids", nargs=-1)
 @click.pass_context
-def cli_search(ctx, ids_file, ids: List[str]):
+def cli_ard_ids(ctx, ids_file, ids: List[str]):
     structlog_setup()
 
     all_ids = list(ids)
@@ -212,7 +214,7 @@ def cli_search(ctx, ids_file, ids: List[str]):
     with Datacube(index=index) as dc:
         jobs = []
         for ard_id in all_ids:
-            odc_ard = dc.index.datasets.get(ard_id, include_sources=True)
+            odc_ard = dc.index.datasets.get(ard_id, include_sources=False)
             ard_dataset = ArdDataset.from_odc(odc_ard)
             ard_product = get_product(odc_ard.product.name)
 
@@ -223,7 +225,13 @@ def cli_search(ctx, ids_file, ids: List[str]):
                 )
             platform = this_platform
 
-            odc_level1: Dataset = odc_ard.sources["level1"]
+            source_map, remaining = get_dataset_sources(dc.index, odc_ard.id)
+            if remaining > 0:
+                raise ValueError(
+                    f"Found {remaining} sources for {odc_ard.id}: unexpectedly huge provenance?"
+                )
+
+            odc_level1: Dataset = source_map["level1"]
             [level1_product] = [
                 s for s in ard_product.sources if s.name == odc_level1.product.name
             ]
@@ -325,7 +333,10 @@ def create_pbs_jobs(
         dir_path.mkdir(parents=True, exist_ok=True)
 
     level1_products = list(set(l1.level1.product for l1 in jobs))
-    log.info("level1_products", level1_products=[l.name for l in level1_products])
+    log.info(
+        "level1_products",
+        level1_products=[l1_product.name for l1_product in level1_products],
+    )
     separate_metadata_dirs = set(
         product.separate_metadata_directory for product in level1_products
     )
@@ -525,3 +536,61 @@ def matches_software_expressions(
 
 if __name__ == "__main__":
     cli()
+
+
+# The API `dc.index.datasets.get(ard_id, include_sources=True)` is extremely slow at NCI — we're manually
+# doing a non-recurvsive query here to avoid issues.
+
+
+def alchemy_engine(index: Index) -> Engine:
+    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
+    # We could create our own from config, but there's no api for getting the ODC config for the index either.
+    # pylint: disable=protected-access
+    return index.datasets._db._engine
+
+
+def get_dataset_sources(
+    index: Index, dataset_id: UUID, limit=None
+) -> Tuple[Dict[str, Dataset], int]:
+    """
+    Get the direct source datasets of a dataset, but without loading the whole upper provenance tree.
+
+    This is a lighter alternative to doing `index.datasets.get(include_source=True)`
+
+    A limit can also be specified.
+
+    Returns a source dict and how many more sources exist beyond the limit.
+    """
+    dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
+    query = select(
+        [dataset_source.c.source_dataset_ref, dataset_source.c.classifier]
+    ).where(dataset_source.c.dataset_ref == dataset_id)
+    if limit:
+        # We add one to detect if there are more records after out limit.
+        query = query.limit(limit + 1)
+
+    engine = alchemy_engine(index)
+    dataset_classifier = engine.execute(query).fetchall()
+
+    if not dataset_classifier:
+        return {}, 0
+
+    remaining_records = 0
+    if limit and len(dataset_classifier) > limit:
+        dataset_classifier = dataset_classifier[:limit]
+        remaining_records = (
+            engine.execute(
+                select(func.count())
+                .select_from(dataset_source)
+                .where(dataset_source.c.dataset_ref == dataset_id)
+            ).scalar()
+            - limit
+        )
+
+    classifier = dict(dataset_classifier)
+    return {
+        classifier[d.id]: d
+        for d in (
+            index.datasets.bulk_get(dataset_id for dataset_id, _ in dataset_classifier)
+        )
+    }, remaining_records
