@@ -54,7 +54,9 @@ def generate_indexed_paths(output_file: Path) -> Set[str]:
                 COPY (
                     SELECT uri_body
                     FROM agdc.dataset_location
+                    inner join agdc.dataset d on d.id = dataset_location.dataset_ref
                     WHERE uri_scheme = 'file'
+                    and d.archived is null
                     AND uri_body LIKE '///g/data/da82/AODH/USGS/L1/Landsat/C2%'
                 ) TO STDOUT
             """,
