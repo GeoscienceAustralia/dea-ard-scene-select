@@ -12,6 +12,7 @@ import click
 import json
 
 from datacube.model import Range
+from eodatasets3.utils import default_utc
 
 try:
     import datacube
@@ -31,6 +32,8 @@ from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
 from scene_select import utils
 
 AOI_FILE = "Australian_AOI.json"
+# AOI_FILE = "Australian_AOI_mainland.json"
+# AOI_FILE = "Australian_AOI_with_islands.json"
 
 PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
@@ -50,6 +53,7 @@ REASON = "reason"
 MSG = "message"
 PRODUCTID = "landsat_product_id"
 
+HARD_SCENE_LIMIT = 10000
 
 # No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
 ARD_PARENT_PRODUCT_MAPPING = {
@@ -63,6 +67,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls9c_level1_2": "ga_ls9c_ard_3",
     "esa_s2am_level1_0": "ga_s2am_ard_3",
     "esa_s2bm_level1_0": "ga_s2bm_ard_3",
+    "esa_s2cm_level1_0": "ga_s2cm_ard_3",
 }
 
 L9_C2_PATTERN = (
@@ -157,7 +162,7 @@ L5_PATTERN = (
     r"(?P<extension>)$"
 )
 
-S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-B])_"
+S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-C])_"
 
 PROCESSING_PATTERN_MAPPING = {
     "ga_ls5t_level1_3": L5_PATTERN,
@@ -170,6 +175,7 @@ PROCESSING_PATTERN_MAPPING = {
     "usgs_ls9c_level1_2": L9_C2_PATTERN,
     "esa_s2am_level1_0": S2_PATTERN,
     "esa_s2bm_level1_0": S2_PATTERN,
+    "esa_s2cm_level1_0": S2_PATTERN,
 }
 
 
@@ -401,8 +407,8 @@ def _month_iterator(
             current_year += 1
 
 
-MAX_DATE = datetime.date.today()
-MIN_DATE = MAX_DATE - datetime.timedelta(days=40)
+MAX_DATE = default_utc(datetime.datetime.utcnow())
+MIN_DATE = MAX_DATE - datetime.timedelta(days=60)
 
 
 def l1_filter(
@@ -417,8 +423,8 @@ def l1_filter(
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
-    min_date: datetime.date = MIN_DATE,
-    max_date: datetime.date = MAX_DATE,
+    min_date: datetime.datetime = MIN_DATE,
+    max_date: datetime.datetime = MAX_DATE,
 ):
     """return
     @param dc:
@@ -610,6 +616,7 @@ def l1_scenes_to_process(
     uuids2archive_combined = []
     paths_to_process = []
 
+    scene_limit = min(scene_limit, HARD_SCENE_LIMIT)
     with datacube.Datacube(app="ard-scene-select", config=config) as dc:
         for product in products:
             files2process, uuids2archive, duplicates = l1_filter(
