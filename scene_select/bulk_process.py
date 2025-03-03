@@ -35,7 +35,7 @@ from packaging import version
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 
-from scene_select.collections import get_collection, get_product
+from scene_select.collections import get_collection, get_product, get_product_for_level1
 from scene_select.do_ard import calc_node_with_defaults
 from scene_select.library import Level1Dataset, ArdProduct, ArdCollection, ArdDataset
 from scene_select.scene_filters import parse_expressions, GreaterThan, LessThan
@@ -246,6 +246,122 @@ def cli_ard_ids(ctx, ids_file, ids: List[str]):
         workers_per_node=workers_per_node,
         pkg_dir=pkg_dir,
         max_count=max_count,
+        project=project,
+        log=log,
+    )
+
+
+@cli.command(
+    "level1-ids",
+    help="Specify a list of Level 1 UUIDs to process (will check for ARDs to replace)",
+)
+@click.option(
+    "-f",
+    "--ids-file",
+    type=click.File("r"),
+    help="File containing Level 1 UUIDs to process",
+)
+@click.argument("ids", nargs=-1)
+@click.pass_context
+def cli_level1_ids(ctx, ids_file, ids: List[str]):
+    structlog_setup()
+
+    all_ids = list(ids)
+    if ids_file:
+        for id_line in ids_file.readlines():
+            all_ids.append(id_line.strip())
+
+    log = structlog.get_logger()
+
+    index = ctx.obj["index"]
+    max_count = ctx.obj["max_count"]
+    work_dir = ctx.obj["work_dir"]
+    workers_per_node = ctx.obj["workers_per_node"]
+    pkg_dir = ctx.obj["pkg_dir"]
+    platform = None
+    project = ctx.obj["project"]
+
+    with Datacube(index=index) as dc:
+        jobs = []
+        for level1_id in all_ids:
+            log_ctx = log.bind(level1_id=level1_id)
+
+            # Get the Level 1 dataset
+            odc_level1 = dc.index.datasets.get(level1_id)
+            if not odc_level1:
+                log_ctx.warning("level1_dataset_not_found")
+                continue
+
+            # Determine platform
+            this_platform = get_platform(odc_level1)
+            if platform and (this_platform != platform):
+                raise ValueError(
+                    f"All IDs should be of the same platform: {platform} != {this_platform}"
+                )
+            platform = this_platform
+
+            # Find all derived ARD datasets
+            derived_ard_uuids = []
+            ard_product = None
+
+            for child_dataset in dc.index.datasets.get_derived(odc_level1.id):
+                # Only check for ARD products
+                if "_ard_" not in child_dataset.product.name:
+                    continue
+
+                # Record the expected product of our ards
+                if ard_product is None:
+                    ard_product = get_product(child_dataset.product.name)
+
+                derived_ard_uuids.append(str(child_dataset.id))
+
+            # If we didn't find any ARD products, we need to determine which to use
+            if ard_product is None:
+                log_ctx.info("no_existing_ard_datasets_found")
+                ard_product = get_product_for_level1(odc_level1.product.name)
+                if not ard_product:
+                    raise ValueError(
+                        f"No ARD product found for level1 {odc_level1.product.name}!"
+                    )
+            else:
+                log_ctx.info("found_ard_datasets", count=len(derived_ard_uuids))
+
+            # Get the appropriate level1 product definition
+            level1_product = [
+                s for s in ard_product.sources if s.name == odc_level1.product.name
+            ]
+            if not level1_product:
+                log_ctx.error(
+                    "level1_product_not_in_ard_sources",
+                    level1=odc_level1.product.name,
+                    ard=ard_product.name,
+                )
+                continue
+            level1_product = level1_product[0]
+            level1_dataset = Level1Dataset.from_odc(odc_level1, level1_product)
+
+            jobs.append(
+                Job(
+                    level1=level1_dataset,
+                    replacement_uuids=derived_ard_uuids,
+                    target_ard_product=ard_product,
+                )
+            )
+
+            if len(jobs) >= max_count:
+                log.info("reached_max_count", max_count=max_count)
+                break
+
+    if not jobs:
+        log.info("no_datasets_to_process")
+        return
+
+    create_pbs_jobs(
+        jobs=jobs,
+        platform=platform,
+        work_dir=work_dir,
+        workers_per_node=workers_per_node,
+        pkg_dir=pkg_dir,
         project=project,
         log=log,
     )

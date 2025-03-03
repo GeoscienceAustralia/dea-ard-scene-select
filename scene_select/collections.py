@@ -119,6 +119,26 @@ def get_product(product_name: str) -> ArdProduct:
     return product
 
 
+def get_product_for_level1(level1_product_name: str):
+    def _source_names(product):
+        return (p.name for p in product.sources)
+
+    # Find the product that has this level1 as a source.
+    products = {
+        product
+        for product in ARD_PRODUCTS
+        if level1_product_name in _source_names(product)
+    }
+    if not products:
+        raise ValueError(f"No products found with source {level1_product_name=}")
+    if len(products) > 1:
+        raise RuntimeError(
+            f"Multiple products should never be found for one product name? {level1_product_name=}"
+        )
+    [product] = products
+    return product
+
+
 def get_collection(dc: Datacube, prefix: str = None) -> ArdCollection:
     products = {
         product for product in ARD_PRODUCTS if product.name.startswith(f"ga_{prefix}")
