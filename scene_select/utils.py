@@ -21,7 +21,7 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 LOG_CONFIG_FILE = "log_config.ini"
 LOG_CONFIG = DATA_DIR.joinpath(LOG_CONFIG_FILE)
 
-EXPECTED_CHOPPED_S2_PATTERN = re.compile(r"S2[A-B]_L1C_[A-Z0-9]{6}_[0-9]{8}T[0-9]{6}")
+EXPECTED_CHOPPED_S2_PATTERN = re.compile(r"S2[A-C]_L1C_[A-Z0-9]{6}_[0-9]{8}T[0-9]{6}")
 
 INSIGNIFICANT_DIGITS_FIX = [
     "--allow-any",
@@ -131,20 +131,32 @@ def chop_s2_tile_id(sentinel_tile_id: str) -> str:
 
 
 class PythonLiteralOption(click.Option):
-    """Load click value representing a Python list."""
+    """
+    Load click value representing a Python list.
+
+    This previously required the entire python list syntax, but this is considered legacy. It's an
+    escaping nightmare.
+
+    Instead, separate values by comma.
+    """
 
     def type_cast_value(self, ctx, value):
-        try:
-            value = str(value)
-            assert value.count("[") == 1
-            assert value.count("]") == 1
-            list_str = value.replace('"', "'").split("[")[1].split("]")[0]
-            l_items = [item.strip().strip("'") for item in list_str.split(",")]
-            if l_items == [""]:
-                l_items = []
-            return l_items
-        except Exception:
-            raise click.BadParameter(value)
+        value = str(value)
+        if "[" not in value:
+            # Assume simple comma-separated items.
+            return [item.strip() for item in value.split(",")]
+        else:
+            # This is considered legacy, but included for now for backwards compatibility.
+            try:
+                assert value.count("[") == 1
+                assert value.count("]") == 1
+                list_str = value.replace('"', "'").split("[")[1].split("]")[0]
+                l_items = [item.strip().strip("'") for item in list_str.split(",")]
+                if l_items == [""]:
+                    l_items = []
+                return l_items
+            except Exception:
+                raise click.BadParameter(value)
 
 
 def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
