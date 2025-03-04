@@ -3,17 +3,15 @@
 import datetime
 from functools import lru_cache
 from pathlib import Path
+from typing import Tuple
 
-try:
-    import tables  # This is needed when testing locally
-except ModuleNotFoundError:
-    pass
 import h5py
 import numpy
 import pandas
 import structlog
 
 LOG = structlog.get_logger()
+
 MODIS_START_DATE = datetime.datetime(2002, 7, 1)
 DEFAULT_MODIS_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061"
 DEFAULT_VIIRS_I_PATH = "/g/data/v10/eoancillarydata-2/BRDF/VNP43IA1.001"  # viirs_i_path
@@ -102,7 +100,15 @@ class AncillaryFiles:
         else:
             return False, f"VIIRS BRDF data for {ymd} does not exist."
 
-    def ancillary_files(self, acquisition_datetime):
+    def is_ancil_there(
+        self, acquisition_datetime: datetime.datetime
+    ) -> Tuple[bool, str]:
+        """
+        Return: (is_ancil_there, message)
+        """
+
+        # TODO: Shouldn't it normalise the time to utc?
+
         if not self.wv_file_exists(acquisition_datetime.year):
             return (
                 False,

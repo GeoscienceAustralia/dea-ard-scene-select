@@ -47,6 +47,6 @@ t_start = time.time()
 for _ in range(1000):
     a_date = random_date(d_start, d_end)
     # datetime.datetime(2001, 12, 31, tzinfo=pytz.UTC)
-    af_ob.ancillary_files(a_date)
+    af_ob.is_ancil_there(a_date)
 t_end = time.time()
 print(t_end - t_start)

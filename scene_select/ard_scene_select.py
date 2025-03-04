@@ -6,12 +6,13 @@ import re
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict, Iterator
+from typing import List, Tuple, Dict, Iterator
 import calendar
 import click
 import json
 
-from datacube.model import Range
+from datacube import Datacube
+from datacube.model import Range, Dataset
 from eodatasets3.utils import default_utc
 
 try:
@@ -28,8 +29,8 @@ from scene_select.check_ancillary import (
     DEFAULT_USE_VIIRS_AFTER,
 )
 from scene_select.dass_logs import LOGGER, LogMainFunction
-from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
-from scene_select import utils
+from scene_select.do_ard import generate_ard_job, ODC_FILTERED_FILE
+from scene_select import utils, collections
 
 AOI_FILE = "Australian_AOI.json"
 # AOI_FILE = "Australian_AOI_mainland.json"
@@ -55,20 +56,6 @@ PRODUCTID = "landsat_product_id"
 
 HARD_SCENE_LIMIT = 10000
 
-# No such product - "ga_ls8c_level1_3": "ga_ls8c_ard_3",
-ARD_PARENT_PRODUCT_MAPPING = {
-    "ga_ls5t_level1_3": "ga_ls5t_ard_3",
-    "ga_ls7e_level1_3": "ga_ls7e_ard_3",
-    "usgs_ls5t_level1_1": "ga_ls5t_ard_3",
-    "usgs_ls7e_level1_1": "ga_ls7e_ard_3",
-    "usgs_ls7e_level1_2": "ga_ls7e_ard_3",
-    "usgs_ls8c_level1_1": "ga_ls8c_ard_3",
-    "usgs_ls8c_level1_2": "ga_ls8c_ard_3",
-    "usgs_ls9c_level1_2": "ga_ls9c_ard_3",
-    "esa_s2am_level1_0": "ga_s2am_ard_3",
-    "esa_s2bm_level1_0": "ga_s2bm_ard_3",
-    "esa_s2cm_level1_0": "ga_s2cm_ard_3",
-}
 
 L9_C2_PATTERN = (
     r"^(?P<sensor>LC)"
@@ -214,52 +201,51 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    if product in ARD_PARENT_PRODUCT_MAPPING:  # and sat_key == "ls":
-        processed_ard_scene_ids = {}
-        if sat_key == "ls":
-            scene_id = "landsat_scene_id"
-        elif sat_key == "s2":
-            scene_id = "sentinel_tile_id"
-        for result in dc.index.datasets.search_returning(
-            (scene_id, "dataset_maturity", "id"),
-            product=ARD_PARENT_PRODUCT_MAPPING[product],
-        ):
-            if sat_key == "ls":
-                chopped_id = utils.chopped_scene_id(result.landsat_scene_id)
-            elif sat_key == "s2":
-                chopped_id = result.sentinel_tile_id
-            else:
-                raise RuntimeError(f"Unsupported sat_key: {sat_key!r}")
-            if chopped_id in processed_ard_scene_ids:
-                # The same chopped scene id has multiple scenes
-                old_uuid = processed_ard_scene_ids[chopped_id]["id"]
-                LOGGER.warning(
-                    MANYSCENES,
-                    landsat_scene_id=chopped_id,
-                    old_uuid=old_uuid,
-                    new_uuid=result.id,
-                )
-            processed_ard_scene_ids[chopped_id] = {
-                "dataset_maturity": result.dataset_maturity,
-                "id": result.id,
-            }
-    else:
+    ard_product = collections.get_product_for_level1(product)
+    if not ard_product:
         # scene select has its own mapping for l1 product to ard product
         # (ARD_PARENT_PRODUCT_MAPPING).
         # If there is a l1 product that is not in this mapping this warning
         # is logged.
         # This uses the l1 product to ard mapping to filter out
         # updated l1 scenes that have been processed using the old l1 scene.
-        if product not in ARD_PARENT_PRODUCT_MAPPING:
+        LOGGER.warning(
+            "THE ARD ODC product name after ARD processing is not known.",
+            product=product,
+        )
+        return None
+
+    processed_ard_scene_ids = {}
+    if sat_key == "ls":
+        scene_id = "landsat_scene_id"
+    elif sat_key == "s2":
+        scene_id = "sentinel_tile_id"
+    else:
+        raise ValueError(f"Unknown satellite key {sat_key}")
+
+    for result in dc.index.datasets.search_returning(
+        (scene_id, "dataset_maturity", "id"),
+        product=ard_product.name,
+    ):
+        chopped_id = utils.chopped_scene_id(result.landsat_scene_id)
+        if chopped_id in processed_ard_scene_ids:
+            # The same chopped scene id has multiple scenes
+            old_uuid = processed_ard_scene_ids[chopped_id]["id"]
             LOGGER.warning(
-                "THE ARD ODC product name after ARD processing is not known.",
-                product=product,
+                MANYSCENES,
+                landsat_scene_id=chopped_id,
+                old_uuid=old_uuid,
+                new_uuid=result.id,
             )
-        processed_ard_scene_ids = None
+        processed_ard_scene_ids[chopped_id] = {
+            "dataset_maturity": result.dataset_maturity,
+            "id": result.id,
+        }
+
     return processed_ard_scene_ids
 
 
-def exclude_days(days_to_exclude: List, checkdatetime):
+def should_we_filter_due_to_day_excluded(days_to_exclude: List, checkdatetime):
     """
     days_to_exclude format example;
     '["2020-08-09:2020-08-30", "2020-09-02:2020-09-05"]'
@@ -291,45 +277,49 @@ def get_aoi_sat_key(region_codes: Dict, product: str):
     return aoi_sat_key
 
 
-def filter_ancillary(l1_dataset, ancill_there, msg, interim_days_wait, temp_logger):
-    # filter out due to ancillary
-    # not being there
-    filter_out = False
-    if ancill_there is False:
-        days_ago = datetime.datetime.now(
-            l1_dataset.time.end.tzinfo
-        ) - datetime.timedelta(days=interim_days_wait)
-        if days_ago > l1_dataset.time.end:
-            # If the ancillary files take too long to turn up
-            # process anyway
-            kwargs = {
-                "days_ago": str(days_ago),
-                "dataset.time.end": str(l1_dataset.time.end),
-            }
-            temp_logger.debug(f"{msg} Processing to interim", **kwargs)
-        else:
-            kwargs = {
-                REASON: "ancillary files not ready",
-                "days_ago": str(days_ago),
-                "dataset.time.end": str(l1_dataset.time.end),
-                MSG: (f"Not ready: {msg}"),
-            }
-            temp_logger.info(SCENEREMOVED, **kwargs)
-            filter_out = True
-    return filter_out
+def should_we_filter_due_to_ancil(
+    l1_dataset: Dataset,
+    ancill_there: bool,
+    msg: str,
+    interim_days_wait: int,
+    temp_logger,
+) -> bool:
+    if ancill_there:
+        return False
+
+    days_ago = datetime.datetime.now(l1_dataset.time.end.tzinfo) - datetime.timedelta(
+        days=interim_days_wait
+    )
+    if days_ago > l1_dataset.time.end:
+        # If the ancillary files take too long to turn up
+        # process anyway
+        kwargs = {
+            "days_ago": str(days_ago),
+            "dataset.time.end": str(l1_dataset.time.end),
+        }
+        temp_logger.debug(f"{msg} Processing to interim", **kwargs)
+        return False
+    else:
+        kwargs = {
+            REASON: "ancillary files not ready",
+            "days_ago": str(days_ago),
+            "dataset.time.end": str(l1_dataset.time.end),
+            MSG: (f"Not ready: {msg}"),
+        }
+        temp_logger.info(SCENEREMOVED, **kwargs)
+        return True
 
 
-def filter_reprocessed_scenes(
-    dc,
-    l1_dataset,
-    processed_ard_scene_ids,
-    find_blocked,
-    ancill_there,
-    uuids2archive,
-    choppedsceneid,
+def should_we_filter_because_processed_already(
+    dc: Datacube,
+    l1_dataset: Dataset,
+    processed_ard_scene_ids: dict[str, dict],
+    find_blocked: bool,
+    ancill_there: bool,
+    uuids2archive: list[str],
+    choppedsceneid: str,
     temp_logger,
 ):
-    filter_out = False
     # Do the data with child filter here
     # It will slow things down
     # But any chopped_scene_id in processed_ard_scene_ids
@@ -339,36 +329,37 @@ def filter_reprocessed_scenes(
             temp_logger.debug(
                 SCENEREMOVED, **{REASON: "Skipping dataset with children"}
             )
-            filter_out = True
+            return True
 
-    if processed_ard_scene_ids and not filter_out:
-        if choppedsceneid in processed_ard_scene_ids:
-            kwargs = {}
-            produced_ard = processed_ard_scene_ids[choppedsceneid]
-            if find_blocked:
-                kwargs[REASON] = "Potential blocked reprocessed scene."
-                kwargs["Blocking_ard_scene_id"] = str(produced_ard["id"])
-                # Since all dataset with final childs
-                # have been filtered out
-            else:
-                kwargs[REASON] = "The scene has been processed"
-                # Since dataset with final childs have not been
-                # filtered out we don't know why there is
-                # an ard there.
+    if choppedsceneid not in (processed_ard_scene_ids or {}):
+        return False
 
-            if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
-                # lets build a list of ARD uuid's to delete
-                uuids2archive.append(str(produced_ard["id"]))
+    kwargs = {}
+    produced_ard = processed_ard_scene_ids[choppedsceneid]
+    if find_blocked:
+        kwargs[REASON] = "Potential blocked reprocessed scene."
+        kwargs["Blocking_ard_scene_id"] = str(produced_ard["id"])
+        # Since all dataset with final childs
+        # have been filtered out
+    else:
+        kwargs[REASON] = "The scene has been processed"
+        # Since dataset with final childs have not been
+        # filtered out we don't know why there is
+        # an ard there.
 
-                temp_logger.debug(
-                    SCENEADDED, **{REASON: "Interim scene is being processed to final"}
-                )
-            else:
-                temp_logger.debug(SCENEREMOVED, **kwargs)
-                # Continue for everything except interim
-                # so it doesn't get processed
-                filter_out = True
-    return filter_out
+    if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
+        # lets build a list of ARD uuid's to delete
+        uuids2archive.append(str(produced_ard["id"]))
+
+        temp_logger.debug(
+            SCENEADDED, **{REASON: "Interim scene is being processed to final"}
+        )
+        return False
+    else:
+        temp_logger.debug(SCENEREMOVED, **kwargs)
+        # Continue for everything except interim
+        # so it doesn't get processed
+        return True
 
 
 def month_as_range(year: int, month: int) -> Range:
@@ -407,13 +398,9 @@ def _month_iterator(
             current_year += 1
 
 
-MAX_DATE = default_utc(datetime.datetime.utcnow())
-MIN_DATE = MAX_DATE - datetime.timedelta(days=60)
-
-
-def l1_filter(
-    dc,
-    l1_product,
+def find_to_process(
+    dc: Datacube,
+    l1_product_name: str,
     brdfdir: Path,
     i_viirsdir: Path,
     m_viirsdir: Path,
@@ -423,9 +410,9 @@ def l1_filter(
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
-    min_date: datetime.datetime = MIN_DATE,
-    max_date: datetime.datetime = MAX_DATE,
-):
+    min_date: datetime.datetime,
+    max_date: datetime.datetime,
+) -> Tuple[list[str], list[str], int]:
     """return
     @param dc:
     @param l1_product: l1 product
@@ -441,15 +428,15 @@ def l1_filter(
     # R0913: Too many arguments
     # R0914: Too many local variables
 
-    sat_key = get_aoi_sat_key(region_codes, l1_product)
+    sat_key = get_aoi_sat_key(region_codes, l1_product_name)
 
     # This is used to block reprocessing of reprocessed l1's
-    processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product, sat_key)
+    processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product_name, sat_key)
 
     # Don't crash on unknown l1 products
-    if l1_product not in PROCESSING_PATTERN_MAPPING:
+    if l1_product_name not in PROCESSING_PATTERN_MAPPING:
         msg = " not known to scene select processing filtering. Disabling processing filtering."
-        LOGGER.warn(l1_product + msg)
+        LOGGER.warn(l1_product_name + msg)
 
     ancillary_ob = AncillaryFiles(
         brdf_dir=brdfdir,
@@ -462,7 +449,7 @@ def l1_filter(
     duplicates = 0
     uuids2archive = []
     product_start_time, product_end_time = dc.index.datasets.get_product_time_bounds(
-        product=l1_product
+        product=l1_product_name
     )
 
     if min_date:
@@ -474,7 +461,7 @@ def l1_filter(
     # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
     for year, month in _month_iterator(product_start_time, product_end_time):
         for l1_dataset in dc.index.datasets.search(
-            product=l1_product, time=month_as_range(year, month)
+            product=l1_product_name, time=month_as_range(year, month)
         ):
             if sat_key == "ls":
                 product_id = l1_dataset.metadata.landsat_product_id
@@ -483,13 +470,16 @@ def l1_filter(
                 )
             elif sat_key == "s2":
                 product_id = l1_dataset.metadata.sentinel_tile_id
-                # S2 has no eqivalent to a scene id
+                # S2 has no equivalent to a scene id
                 # I'm using sentinel_tile_id.  This will work for handling interim to final.
                 # it will not catch duplicates.
                 choppedsceneid = l1_dataset.metadata.sentinel_tile_id
+            else:
+                raise ValueError("Unknown satellite key")
+
             region_code = l1_dataset.metadata.region_code
             file_path = utils.calc_file_path(l1_dataset, product_id)
-            # Set up the logging
+
             temp_logger = LOGGER.bind(
                 landsat_scene_id=product_id,
                 dataset_id=str(l1_dataset.id),
@@ -497,8 +487,8 @@ def l1_filter(
             )
 
             # Filter out if the processing level is too low
-            if l1_product in PROCESSING_PATTERN_MAPPING:
-                prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product]
+            if l1_product_name in PROCESSING_PATTERN_MAPPING:
+                prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product_name]
                 if not re.match(prod_pattern, product_id):
                     temp_logger.debug(
                         SCENEREMOVED, **{REASON: "Processing level too low"}
@@ -514,16 +504,19 @@ def l1_filter(
                 temp_logger.debug(SCENEREMOVED, **kwargs)
                 continue
 
-            ancill_there, msg = ancillary_ob.ancillary_files(l1_dataset.time.end)
+            ancill_there, msg = ancillary_ob.is_ancil_there(l1_dataset.time.end)
+
             # Continue here if a maturity level of final cannot be produced
             # since the ancillary files are not there
-            if filter_ancillary(
+            if should_we_filter_due_to_ancil(
                 l1_dataset, ancill_there, msg, interim_days_wait, temp_logger
             ):
                 continue
 
             # FIXME remove the hard-coded list
-            if exclude_days(days_to_exclude, l1_dataset.time.end):
+            if should_we_filter_due_to_day_excluded(
+                days_to_exclude, l1_dataset.time.end
+            ):
                 kwargs = {
                     DATASETTIMEEND: l1_dataset.time.end,
                     REASON: "This day is excluded.",
@@ -541,7 +534,7 @@ def l1_filter(
                 temp_logger.debug(SCENEREMOVED, **kwargs)
                 continue
 
-            if filter_reprocessed_scenes(
+            if should_we_filter_because_processed_already(
                 dc,
                 l1_dataset,
                 processed_ard_scene_ids,
@@ -590,66 +583,6 @@ def _get_path_date(path: str) -> str:
 
     # If the filename doesn't follow that pattern, just sort it last
     return "00000000"
-
-
-def l1_scenes_to_process(
-    outfile: Path,
-    products: List[str],
-    brdfdir: Path,
-    i_viirsdir: Path,
-    m_viirsdir: Path,
-    wvdir: Path,
-    use_viirs_after: datetime.datetime,
-    region_codes: Dict,
-    scene_limit: int,
-    interim_days_wait: int,
-    days_to_exclude: List,
-    find_blocked: bool,
-    config: Optional[Path] = None,
-) -> Tuple[int, List[str]]:
-    """Writes all the files returned from datacube for level1 to a file."""
-    # pylint: disable=R0913
-    # R0913: Too many arguments
-    # pylint: disable=R0914
-    # R0914: Too many local variables
-    duplicate_count = 0
-    uuids2archive_combined = []
-    paths_to_process = []
-
-    scene_limit = min(scene_limit, HARD_SCENE_LIMIT)
-    with datacube.Datacube(app="ard-scene-select", config=config) as dc:
-        for product in products:
-            files2process, uuids2archive, duplicates = l1_filter(
-                dc,
-                product,
-                brdfdir=brdfdir,
-                i_viirsdir=i_viirsdir,
-                m_viirsdir=m_viirsdir,
-                use_viirs_after=use_viirs_after,
-                wvdir=wvdir,
-                region_codes=region_codes,
-                interim_days_wait=interim_days_wait,
-                days_to_exclude=days_to_exclude,
-                find_blocked=find_blocked,
-            )
-            uuids2archive_combined += uuids2archive
-            paths_to_process.extend(files2process)
-            duplicate_count += duplicates
-
-    # If we stopped above as soon as we reached the limit we could end up in a situation where
-    # only the first product is ever processed.
-
-    # Sort files so most recent acquisitions are processed first.
-    # This is to avoid a backlog holding up recent acquisitions
-    paths_to_process.sort(key=_get_path_date, reverse=True)
-
-    # TODO: the old code reduced written records by the duplicate count, seemingly for multi-granule to be counted
-    #       multiple times. But it also had a comment saying it wouldn't work well with multi-granule...
-    l1_count = min(len(paths_to_process), scene_limit)
-    with open(outfile, "w") as fid:
-        for path in paths_to_process[:l1_count]:
-            fid.write(str(path) + "\n")
-    return l1_count, uuids2archive_combined
 
 
 @click.command()
@@ -832,7 +765,7 @@ def scene_select(
     days_to_exclude: list,
     run_ard: bool,
     find_blocked: bool,
-    **ard_click_params: dict,
+    **ard_click_params,
 ):
     """
     The keys for ard_click_params;
@@ -850,9 +783,8 @@ def scene_select(
 
     :return: Nothing
     """
-    # pylint: disable=R0913, R0914
-    # R0913: Too many arguments
-    # R0914: Too many local variables
+    default_max_date = default_utc(datetime.datetime.now(datetime.UTC))
+    default_min_date = default_max_date - datetime.timedelta(days=60)
 
     logdir = Path(logdir).resolve()
     # If we write a file we write it in the job dir
@@ -877,30 +809,67 @@ def scene_select(
     # So put it in the ard parameter dictionary
     ard_click_params["logdir"] = logdir
 
-    if not usgs_level1_files:
-        usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
-        l1_count, uuids2archive = l1_scenes_to_process(
-            usgs_level1_files,
-            products=products,
-            brdfdir=Path(brdfdir).resolve(),
-            i_viirsdir=Path(i_viirsdir).resolve(),
-            m_viirsdir=Path(m_viirsdir).resolve(),
-            use_viirs_after=use_viirs_after,
-            wvdir=Path(wvdir).resolve(),
-            region_codes=load_aoi(allowed_codes),
-            config=config,
-            scene_limit=scene_limit,
-            interim_days_wait=interim_days_wait,
-            days_to_exclude=days_to_exclude,
-            find_blocked=find_blocked,
-        )
-    else:
+    if usgs_level1_files:
         uuids2archive = []
         l1_count = sum(1 for _ in open(usgs_level1_files))
+        generate_ard_job(
+            ard_click_params,
+            l1_count,
+            Path(usgs_level1_files).resolve(),
+            uuids2archive,
+            jobdir,
+            run_ard,
+        )
+    else:
+        usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
+        duplicate_count = 0
+        uuids2archive_combined = []
+        paths_to_process = []
 
-    do_ard(
-        ard_click_params, l1_count, usgs_level1_files, uuids2archive, jobdir, run_ard
-    )
+        scene_limit = min(scene_limit, HARD_SCENE_LIMIT)
+        with datacube.Datacube(app="ard-scene-select", config=config) as dc:
+            for l1_product_name in products:
+                files2process, uuids2archive, duplicates = find_to_process(
+                    dc,
+                    l1_product_name,
+                    brdfdir=Path(brdfdir).resolve(),
+                    i_viirsdir=Path(i_viirsdir).resolve(),
+                    m_viirsdir=Path(m_viirsdir).resolve(),
+                    use_viirs_after=use_viirs_after,
+                    wvdir=Path(wvdir).resolve(),
+                    region_codes=load_aoi(allowed_codes),
+                    interim_days_wait=interim_days_wait,
+                    days_to_exclude=days_to_exclude,
+                    find_blocked=find_blocked,
+                    min_date=default_min_date,
+                    max_date=default_max_date,
+                )
+                uuids2archive_combined += uuids2archive
+                paths_to_process.extend(files2process)
+                duplicate_count += duplicates
+
+        # If we stopped above as soon as we reached the limit we could end up in a situation where
+        # only the first product is ever processed.
+
+        # Sort files so most recent acquisitions are processed first.
+        # This is to avoid a backlog holding up recent acquisitions
+        paths_to_process.sort(key=_get_path_date, reverse=True)
+
+        # TODO: the old code reduced written records by the duplicate count, seemingly for multi-granule to be counted
+        #       multiple times. But it also had a comment saying it wouldn't work well with multi-granule...
+        l1_count = min(len(paths_to_process), scene_limit)
+        with open(usgs_level1_files, "w") as fid:
+            for path in paths_to_process[:l1_count]:
+                fid.write(str(path) + "\n")
+
+        generate_ard_job(
+            ard_click_params,
+            l1_count,
+            usgs_level1_files,
+            uuids2archive_combined,
+            jobdir,
+            run_ard,
+        )
 
     LOGGER.info("info", jobdir=str(jobdir))
 

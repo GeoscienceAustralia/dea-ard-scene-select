@@ -99,7 +99,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
     return pbs
 
 
-def do_ard(
+def generate_ard_job(
     ard_click_params: dict,
     l1_count: int,
     usgs_level1_files: Path,

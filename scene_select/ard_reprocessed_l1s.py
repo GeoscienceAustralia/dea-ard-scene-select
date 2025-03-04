@@ -11,7 +11,7 @@ import uuid
 
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select import utils
-from scene_select.do_ard import do_ard
+from scene_select.do_ard import generate_ard_job
 
 import datacube
 from datacube.model import Range, Dataset
@@ -150,7 +150,7 @@ def find_blocked(dc: Datacube, product: str, scene_limit: int) -> List[BlockResu
             continue
         [blocked_l1] = blocked_l1s
         # this is the yaml file
-        blocked_l1_local_path = blocked_l1.local_path
+        # blocked_l1_local_path = blocked_l1.local_path
         blocked_l1_zip_path = Path(
             utils.calc_file_path(blocked_l1, blocked_l1.metadata.landsat_product_id)
         )
@@ -402,7 +402,7 @@ def ard_reprocessed_l1s(
     )
     l1_count = len(l1_zips)
     usgs_level1_files = None
-    do_ard(
+    generate_ard_job(
         ard_click_params,
         l1_count,
         usgs_level1_files,

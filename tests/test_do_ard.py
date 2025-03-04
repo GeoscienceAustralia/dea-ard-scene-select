@@ -3,7 +3,7 @@
 import os
 
 from scene_select.do_ard import (
-    do_ard,
+    generate_ard_job,
     ARCHIVE_FILE,
     ODC_FILTERED_FILE,
     PBS_ARD_FILE,
@@ -76,7 +76,7 @@ def test_do_ard(tmp_path):
     jobdir = tmp_path / "jobdir"
     jobdir.mkdir()
     run_ard = False
-    do_ard(
+    generate_ard_job(
         ard_click_params,
         l1_count,
         usgs_level1_files,
