@@ -6,7 +6,7 @@ import re
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
-from typing import List, Tuple, Dict, Iterator
+from typing import List, Tuple, Dict, Iterator, TypedDict
 import calendar
 import click
 import json
@@ -36,134 +36,120 @@ AOI_FILE = "Australian_AOI.json"
 # AOI_FILE = "Australian_AOI_mainland.json"
 # AOI_FILE = "Australian_AOI_with_islands.json"
 
-PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
-FMT2 = "filter-jobid-{jobid}"
-
-# Logging
-GEN_LOG_FILE = "ard_scene_select.log"
-
-# LOGGER events
-SCENEREMOVED = "scene removed"
-SCENEADDED = "scene added"
-SUMMARY = "summary"
-MANYSCENES = "Multiple identical ARD scene ids"
-
-# LOGGER keys
-DATASETTIMEEND = "dataset_time_end"
-REASON = "reason"
-MSG = "message"
-PRODUCTID = "landsat_product_id"
 
 HARD_SCENE_LIMIT = 10000
 
 
-L9_C2_PATTERN = (
-    r"^(?P<sensor>LC)"
-    r"(?P<satellite>09)_"
-    r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
-    r"(?P<wrsPath>[0-9]{3})"
-    r"(?P<wrsRow>[0-9]{3})_"
-    r"(?P<acquisitionDate>[0-9]{8})_"
-    r"(?P<processingDate>[0-9]{8})_"
-    r"(?P<collectionNumber>02)_"
-    r"(?P<collectionCategory>T1|T2)"
-    r"(?P<extension>)$"
-)
+def _make_patterns():
+    L9_C2_PATTERN = (
+        r"^(?P<sensor>LC)"
+        r"(?P<satellite>09)_"
+        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>02)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
 
-# landsat 8 filename pattern is configured to match only
-# processing level L1TP and L1GT for acquisition containing
-# both the TIRS and OLI sensors with .tar extension.
-L8_C1_PATTERN = (
-    r"^(?P<sensor>LC)"
-    r"(?P<satellite>08)_"
-    r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
-    r"(?P<wrsPath>[0-9]{3})"
-    r"(?P<wrsRow>[0-9]{3})_"
-    r"(?P<acquisitionDate>[0-9]{8})_"
-    r"(?P<processingDate>[0-9]{8})_"
-    r"(?P<collectionNumber>01)_"
-    r"(?P<collectionCategory>T1|T2)"
-    r"(?P<extension>)$"
-)
+    # landsat 8 filename pattern is configured to match only
+    # processing level L1TP and L1GT for acquisition containing
+    # both the TIRS and OLI sensors with .tar extension.
+    L8_C1_PATTERN = (
+        r"^(?P<sensor>LC)"
+        r"(?P<satellite>08)_"
+        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>01)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    L8_C2_PATTERN = (
+        r"^(?P<sensor>LC)"
+        r"(?P<satellite>08)_"
+        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>02)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+    # L1TP and L1GT are all ortho-rectified with DEM.
+    # The only difference is L1GT was processed without Ground Control Points
+    # - but because LS8 orbit is very accurate so LS8 L1GT products with orbital
+    # info is ~90% within one pixel.
+    # (From Lan-Wei)
+    # Therefore we use L1GT for ls8 but not ls7 or ls5.
+
+    # landsat 7 filename pattern is configured to match only
+    # processing level L1TP with .tar extension.
+    L7_C1_PATTERN = (
+        r"^(?P<sensor>LE)"
+        r"(?P<satellite>07)_"
+        r"(?P<processingCorrectionLevel>L1TP)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>01)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    L7_C2_PATTERN = (
+        r"^(?P<sensor>LE)"
+        r"(?P<satellite>07)_"
+        r"(?P<processingCorrectionLevel>L1TP)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>02)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    # landsat 5 filename is configured to match only
+    # processing level L1TP with .tar extension.
+    L5_PATTERN = (
+        r"^(?P<sensor>LT)"
+        r"(?P<satellite>05)_"
+        r"(?P<processingCorrectionLevel>L1TP)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>01)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-C])_"
+
+    return {
+        "ga_ls5t_level1_3": L5_PATTERN,
+        "ga_ls7e_level1_3": L7_C1_PATTERN,
+        "usgs_ls5t_level1_1": L5_PATTERN,
+        "usgs_ls7e_level1_1": L7_C1_PATTERN,
+        "usgs_ls7e_level1_2": L7_C2_PATTERN,
+        "usgs_ls8c_level1_1": L8_C1_PATTERN,
+        "usgs_ls8c_level1_2": L8_C2_PATTERN,
+        "usgs_ls9c_level1_2": L9_C2_PATTERN,
+        "esa_s2am_level1_0": S2_PATTERN,
+        "esa_s2bm_level1_0": S2_PATTERN,
+        "esa_s2cm_level1_0": S2_PATTERN,
+    }
 
 
-L8_C2_PATTERN = (
-    r"^(?P<sensor>LC)"
-    r"(?P<satellite>08)_"
-    r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
-    r"(?P<wrsPath>[0-9]{3})"
-    r"(?P<wrsRow>[0-9]{3})_"
-    r"(?P<acquisitionDate>[0-9]{8})_"
-    r"(?P<processingDate>[0-9]{8})_"
-    r"(?P<collectionNumber>02)_"
-    r"(?P<collectionCategory>T1|T2)"
-    r"(?P<extension>)$"
-)
-# L1TP and L1GT are all ortho-rectified with DEM.
-# The only difference is L1GT was processed without Ground Control Points
-# - but because LS8 orbit is very accurate so LS8 L1GT products with orbital
-# info is ~90% within one pixel.
-# (From Lan-Wei)
-# Therefore we use L1GT for ls8 but not ls7 or ls5.
-
-# landsat 7 filename pattern is configured to match only
-# processing level L1TP with .tar extension.
-L7_C1_PATTERN = (
-    r"^(?P<sensor>LE)"
-    r"(?P<satellite>07)_"
-    r"(?P<processingCorrectionLevel>L1TP)_"
-    r"(?P<wrsPath>[0-9]{3})"
-    r"(?P<wrsRow>[0-9]{3})_"
-    r"(?P<acquisitionDate>[0-9]{8})_"
-    r"(?P<processingDate>[0-9]{8})_"
-    r"(?P<collectionNumber>01)_"
-    r"(?P<collectionCategory>T1|T2)"
-    r"(?P<extension>)$"
-)
-
-L7_C2_PATTERN = (
-    r"^(?P<sensor>LE)"
-    r"(?P<satellite>07)_"
-    r"(?P<processingCorrectionLevel>L1TP)_"
-    r"(?P<wrsPath>[0-9]{3})"
-    r"(?P<wrsRow>[0-9]{3})_"
-    r"(?P<acquisitionDate>[0-9]{8})_"
-    r"(?P<processingDate>[0-9]{8})_"
-    r"(?P<collectionNumber>02)_"
-    r"(?P<collectionCategory>T1|T2)"
-    r"(?P<extension>)$"
-)
-
-# landsat 5 filename is configured to match only
-# processing level L1TP with .tar extension.
-L5_PATTERN = (
-    r"^(?P<sensor>LT)"
-    r"(?P<satellite>05)_"
-    r"(?P<processingCorrectionLevel>L1TP)_"
-    r"(?P<wrsPath>[0-9]{3})"
-    r"(?P<wrsRow>[0-9]{3})_"
-    r"(?P<acquisitionDate>[0-9]{8})_"
-    r"(?P<processingDate>[0-9]{8})_"
-    r"(?P<collectionNumber>01)_"
-    r"(?P<collectionCategory>T1|T2)"
-    r"(?P<extension>)$"
-)
-
-S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-C])_"
-
-PROCESSING_PATTERN_MAPPING = {
-    "ga_ls5t_level1_3": L5_PATTERN,
-    "ga_ls7e_level1_3": L7_C1_PATTERN,
-    "usgs_ls5t_level1_1": L5_PATTERN,
-    "usgs_ls7e_level1_1": L7_C1_PATTERN,
-    "usgs_ls7e_level1_2": L7_C2_PATTERN,
-    "usgs_ls8c_level1_1": L8_C1_PATTERN,
-    "usgs_ls8c_level1_2": L8_C2_PATTERN,
-    "usgs_ls9c_level1_2": L9_C2_PATTERN,
-    "esa_s2am_level1_0": S2_PATTERN,
-    "esa_s2bm_level1_0": S2_PATTERN,
-    "esa_s2cm_level1_0": S2_PATTERN,
-}
+PROCESSING_PATTERN_MAPPING = _make_patterns()
 
 
 def load_aoi(file_name: str) -> Dict:
@@ -179,41 +165,40 @@ def load_aoi(file_name: str) -> Dict:
     return data
 
 
-def dataset_with_final_child(dc, dataset):
+def does_have_a_mature_child(dc: Datacube, dataset: Dataset) -> bool:
     """
     If any child exists that isn't archived, with a dataset_maturity of 'final'
     :param dc:
     :param dataset:
     :return:
     """
-    ds_w_child = []
     for child_dataset in dc.index.datasets.get_derived(dataset.id):
         if (
             not child_dataset.is_archived
             and child_dataset.metadata.dataset_maturity == "final"
         ):
-            ds_w_child.append(child_dataset)
-    return any(ds_w_child)
+            return True
+    return False
 
 
-def calc_processed_ard_scene_ids(dc, product, sat_key):
+class ARDSceneInfo(TypedDict):
+    dataset_maturity: str
+    id: str
+
+
+ChoppedSceneId = str
+
+
+def create_table_of_processed_ards(
+    dc: Datacube, product_name: str, sat_key: str
+) -> Dict[ChoppedSceneId, ARDSceneInfo]:
     """
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    ard_product = collections.get_product_for_level1(product)
+    ard_product = collections.get_product_for_level1(product_name)
     if not ard_product:
-        # scene select has its own mapping for l1 product to ard product
-        # (ARD_PARENT_PRODUCT_MAPPING).
-        # If there is a l1 product that is not in this mapping this warning
-        # is logged.
-        # This uses the l1 product to ard mapping to filter out
-        # updated l1 scenes that have been processed using the old l1 scene.
-        LOGGER.warning(
-            "THE ARD ODC product name after ARD processing is not known.",
-            product=product,
-        )
-        return None
+        raise ValueError(f"Product {product_name!r} is not a known ARD product")
 
     processed_ard_scene_ids = {}
     if sat_key == "ls":
@@ -232,7 +217,7 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
             # The same chopped scene id has multiple scenes
             old_uuid = processed_ard_scene_ids[chopped_id]["id"]
             LOGGER.warning(
-                MANYSCENES,
+                "Multiple identical ARD scene ids",
                 landsat_scene_id=chopped_id,
                 old_uuid=old_uuid,
                 new_uuid=result.id,
@@ -245,7 +230,9 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
     return processed_ard_scene_ids
 
 
-def should_we_filter_due_to_day_excluded(days_to_exclude: List, checkdatetime):
+def should_we_filter_due_to_day_excluded(
+    days_to_exclude: List, checkdatetime: datetime
+):
     """
     days_to_exclude format example;
     '["2020-08-09:2020-08-30", "2020-09-02:2020-09-05"]'
@@ -286,27 +273,27 @@ def should_we_filter_due_to_ancil(
 ) -> bool:
     if ancill_there:
         return False
-
     days_ago = datetime.datetime.now(l1_dataset.time.end.tzinfo) - datetime.timedelta(
         days=interim_days_wait
     )
     if days_ago > l1_dataset.time.end:
         # If the ancillary files take too long to turn up
         # process anyway
-        kwargs = {
-            "days_ago": str(days_ago),
-            "dataset.time.end": str(l1_dataset.time.end),
-        }
-        temp_logger.debug(f"{msg} Processing to interim", **kwargs)
+        temp_logger.debug(
+            "processing.too_old",
+            message=f"No ancil, but the scene is too old to keep waiting: {msg}",
+            days_ago=str(days_ago),
+            dataset_time_end=str(l1_dataset.time.end),
+        )
         return False
     else:
-        kwargs = {
-            REASON: "ancillary files not ready",
-            "days_ago": str(days_ago),
-            "dataset.time.end": str(l1_dataset.time.end),
-            MSG: (f"Not ready: {msg}"),
-        }
-        temp_logger.info(SCENEREMOVED, **kwargs)
+        temp_logger.info(
+            "filtering.no_ancil_yet",
+            reason="ancillary files not ready",
+            days_ago=str(days_ago),
+            dataset_time_end=str(l1_dataset.time.end),
+            message=f"Not ready: {msg}",
+        )
         return True
 
 
@@ -325,10 +312,8 @@ def should_we_filter_because_processed_already(
     # But any chopped_scene_id in processed_ard_scene_ids
     # will now be a blocked reprocessed scene
     if find_blocked:
-        if dataset_with_final_child(dc, l1_dataset):
-            temp_logger.debug(
-                SCENEREMOVED, **{REASON: "Skipping dataset with children"}
-            )
+        if does_have_a_mature_child(dc, l1_dataset):
+            temp_logger.debug("filtering", reason="Skipping dataset with children")
             return True
 
     if choppedsceneid not in (processed_ard_scene_ids or {}):
@@ -337,12 +322,12 @@ def should_we_filter_because_processed_already(
     kwargs = {}
     produced_ard = processed_ard_scene_ids[choppedsceneid]
     if find_blocked:
-        kwargs[REASON] = "Potential blocked reprocessed scene."
-        kwargs["Blocking_ard_scene_id"] = str(produced_ard["id"])
+        kwargs["reason"] = "Potential blocked reprocessed scene."
+        kwargs["blocking_ard_scene_id"] = str(produced_ard["id"])
         # Since all dataset with final childs
         # have been filtered out
     else:
-        kwargs[REASON] = "The scene has been processed"
+        kwargs["reason"] = "The scene has been processed"
         # Since dataset with final childs have not been
         # filtered out we don't know why there is
         # an ard there.
@@ -352,11 +337,11 @@ def should_we_filter_because_processed_already(
         uuids2archive.append(str(produced_ard["id"]))
 
         temp_logger.debug(
-            SCENEADDED, **{REASON: "Interim scene is being processed to final"}
+            "scene added", reason="Interim scene is being processed to final"
         )
         return False
     else:
-        temp_logger.debug(SCENEREMOVED, **kwargs)
+        temp_logger.debug("filtering", **kwargs)
         # Continue for everything except interim
         # so it doesn't get processed
         return True
@@ -427,11 +412,12 @@ def find_to_process(
     # pylint: disable=R0913, R0914
     # R0913: Too many arguments
     # R0914: Too many local variables
-
     sat_key = get_aoi_sat_key(region_codes, l1_product_name)
 
     # This is used to block reprocessing of reprocessed l1's
-    processed_ard_scene_ids = calc_processed_ard_scene_ids(dc, l1_product_name, sat_key)
+    processed_ard_scene_ids = create_table_of_processed_ards(
+        dc, l1_product_name, sat_key
+    )
 
     # Don't crash on unknown l1 products
     if l1_product_name not in PROCESSING_PATTERN_MAPPING:
@@ -480,7 +466,7 @@ def find_to_process(
             region_code = l1_dataset.metadata.region_code
             file_path = utils.calc_file_path(l1_dataset, product_id)
 
-            temp_logger = LOGGER.bind(
+            log = LOGGER.bind(
                 landsat_scene_id=product_id,
                 dataset_id=str(l1_dataset.id),
                 dataset_path=file_path,
@@ -490,18 +476,14 @@ def find_to_process(
             if l1_product_name in PROCESSING_PATTERN_MAPPING:
                 prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product_name]
                 if not re.match(prod_pattern, product_id):
-                    temp_logger.debug(
-                        SCENEREMOVED, **{REASON: "Processing level too low"}
-                    )
+                    log.debug("filtering", reason="Processing level too low")
                     continue
 
             # Filter out if outside area of interest
             if sat_key is not None and region_code not in region_codes[sat_key]:
-                kwargs = {
-                    REASON: "Region not in AOI",
-                    "region_code": region_code,
-                }
-                temp_logger.debug(SCENEREMOVED, **kwargs)
+                log.debug(
+                    "filtering", reason="Region not in AOI", region_code=region_code
+                )
                 continue
 
             ancill_there, msg = ancillary_ob.is_ancil_there(l1_dataset.time.end)
@@ -509,7 +491,7 @@ def find_to_process(
             # Continue here if a maturity level of final cannot be produced
             # since the ancillary files are not there
             if should_we_filter_due_to_ancil(
-                l1_dataset, ancill_there, msg, interim_days_wait, temp_logger
+                l1_dataset, ancill_there, msg, interim_days_wait, log
             ):
                 continue
 
@@ -517,21 +499,21 @@ def find_to_process(
             if should_we_filter_due_to_day_excluded(
                 days_to_exclude, l1_dataset.time.end
             ):
-                kwargs = {
-                    DATASETTIMEEND: l1_dataset.time.end,
-                    REASON: "This day is excluded.",
-                }
-                temp_logger.info(SCENEREMOVED, **kwargs)
+                log.info(
+                    "filtering",
+                    dataset_time_end=l1_dataset.time.end,
+                    reason="This day is excluded.",
+                )
                 continue
 
             # Filter out duplicate zips
             if file_path in files2process:
                 duplicates += 1
-                kwargs = {
-                    REASON: "Potential multi-granule duplicate file path removed.",
-                    "duplicate count": duplicates,
-                }
-                temp_logger.debug(SCENEREMOVED, **kwargs)
+                log.debug(
+                    "filtering",
+                    reason="Potential multi-granule duplicate file path removed.",
+                    duplicate_count=duplicates,
+                )
                 continue
 
             if should_we_filter_because_processed_already(
@@ -542,7 +524,7 @@ def find_to_process(
                 ancill_there,
                 uuids2archive,
                 choppedsceneid,
-                temp_logger,
+                log,
             ):
                 continue
 
@@ -552,10 +534,8 @@ def find_to_process(
 
             # LOGGER.debug("location:pre dataset_with_final_child")
             # If any child exists that isn't archived
-            if dataset_with_final_child(dc, l1_dataset):
-                temp_logger.debug(
-                    SCENEREMOVED, **{REASON: "Skipping dataset with children"}
-                )
+            if does_have_a_mature_child(dc, l1_dataset):
+                log.debug("filtering", reason="Skipping dataset with children")
                 continue
 
             files2process.add(file_path)
@@ -612,7 +592,7 @@ def _get_path_date(path: str) -> str:
     type=list,
     help="List the ODC products to be processed. e.g."
     ' \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
-    default=PRODUCTS,
+    default='["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
 )
 @click.option(
     "--workdir",
@@ -791,13 +771,13 @@ def scene_select(
     # set up the scene select job dir in the log dir
     if jobdir is None:
         logdir = Path(logdir).resolve()
-        jobdir = logdir.joinpath(FMT2.format(jobid=uuid.uuid4().hex[0:6]))
+        jobdir = logdir.joinpath(f"filter-jobid-{uuid.uuid4().hex[0:6]}")
     else:
         jobdir = Path(jobdir).resolve()
     jobdir.mkdir(exist_ok=True)
 
     if not stop_logging:
-        gen_log_file = jobdir.joinpath(GEN_LOG_FILE).resolve()
+        gen_log_file = jobdir.joinpath("ard_scene_select.log").resolve()
         fileConfig(
             log_config,
             disable_existing_loggers=False,
