@@ -57,7 +57,9 @@ def load_archive_list(csv_path: Path) -> UUIDsForPath:
         reader = csv.reader(f)
         for row in reader:
             path, *uuid_list = row
-            archive_list[normal_path(Path(path))] = [UUID(uuid) for uuid in uuid_list]
+            archive_list[normal_path(Path(path))] = [
+                UUID(uuid) for uuid in uuid_list if uuid.strip()
+            ]
     return archive_list
 
 
