@@ -85,12 +85,12 @@ def test_ard_landsat_unfiltered_scenes_r1_1(tmpdir):
 
     # There's only ever 1 copy of scenes_to_ARD_process.txt after
     # successfully processing
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. List of entries to process is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. List of entries to process is not available - {matching_files}"
+    )
     ards_to_process = get_list_from_file(matching_files[0])
 
     expected_files = get_expected_file_paths(DATASETS)
-    assert Counter(ards_to_process) == Counter(
-        expected_files
-    ), "Lists do not have the same contents."
+    assert Counter(ards_to_process) == Counter(expected_files), (
+        "Lists do not have the same contents."
+    )

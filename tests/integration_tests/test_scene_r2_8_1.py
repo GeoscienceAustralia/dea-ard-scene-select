@@ -84,9 +84,9 @@ def test_scene_filtering_r2_8_1(tmp_path):
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
     # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. Log is not available - {matching_files}"
+    )
 
     found_log_line = False
     with open(matching_files[0], encoding="utf-8") as ard_log_file:

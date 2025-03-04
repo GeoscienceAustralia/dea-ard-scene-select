@@ -89,9 +89,9 @@ def test_interim_prod_r3_1(tmp_path):
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
     # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. Log is not available - {matching_files}"
+    )
 
     assert matching_files and matching_files[0] is not None, (
         "Scene select failed. List of entries to process is not available -",
@@ -114,9 +114,9 @@ def test_interim_prod_r3_1(tmp_path):
                     break
             except json.JSONDecodeError as error_string:
                 print(f"Error decoding JSON: {error_string} in line:{line}")
-    assert (
-        found_log_line
-    ), "Landsat scene still selected despite its date is being excluded"
+    assert found_log_line, (
+        "Landsat scene still selected despite its date is being excluded"
+    )
 
     # Use glob to search for the scenes_to_ARD_process.txt file
     # within filter-jobid-* directories
@@ -130,6 +130,6 @@ def test_interim_prod_r3_1(tmp_path):
     )
     ards_to_process = get_list_from_file(matching_files[0])
     expected_files = get_expected_file_paths(DATASETS)
-    assert Counter(ards_to_process) == Counter(
-        expected_files
-    ), "Lists do not have the same contents."
+    assert Counter(ards_to_process) == Counter(expected_files), (
+        "Lists do not have the same contents."
+    )

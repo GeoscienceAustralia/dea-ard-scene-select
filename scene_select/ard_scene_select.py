@@ -582,8 +582,7 @@ def _get_path_date(path: str) -> str:
 @click.option(
     "--config",
     type=click.Path(dir_okay=False, file_okay=True),
-    help="Full path to a datacube config text file."
-    " This describes the ODC database.",
+    help="Full path to a datacube config text file. This describes the ODC database.",
     default=None,
 )
 @click.option(

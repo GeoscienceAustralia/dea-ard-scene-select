@@ -89,9 +89,9 @@ def test_scene_filtering_r2_8_2(tmp_path):
         text=True,
         check=True,
     )
-    assert (
-        result.returncode == 0
-    ), f"The manual dataset addition failed: {result.stderr}"
+    assert result.returncode == 0, (
+        f"The manual dataset addition failed: {result.stderr}"
+    )
 
     yamldir = generate_yamldir_value()
     cmd_params = [
@@ -109,9 +109,9 @@ def test_scene_filtering_r2_8_2(tmp_path):
         args=cmd_params,
     )
 
-    assert (
-        result.exit_code == 0
-    ), f"The scene_select process failed to execute: {result.output}"
+    assert result.exit_code == 0, (
+        f"The scene_select process failed to execute: {result.output}"
+    )
     assert result.output != "", f" the result output is {result.output}"
 
     # Use glob to search for the log file
@@ -119,9 +119,9 @@ def test_scene_filtering_r2_8_2(tmp_path):
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
     # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. Log is not available - {matching_files}"
+    )
 
     found_log_line = False
     with open(matching_files[0], encoding="utf-8") as ard_log_file:

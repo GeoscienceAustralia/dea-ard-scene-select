@@ -146,9 +146,9 @@ def test_scene_select_with_explicit_jobdir(tmp_path):
         scene_select,
         cmd_params,
     )
-    assert (
-        result.exit_code == 0
-    ), f"Scene_select process failed to execute  {result.output}"
+    assert result.exit_code == 0, (
+        f"Scene_select process failed to execute  {result.output}"
+    )
 
     # Depending on the type of error, the info on the
     # error will either be in result.exception or result.output.
@@ -156,14 +156,14 @@ def test_scene_select_with_explicit_jobdir(tmp_path):
     # result.exception will capture errors with expected arguments.
     # This usually traps process related errors such as
     # missing arguments.
-    assert (
-        result.exception is None
-    ), f" Exception thrown in {result.exception}/{result.output}"
+    assert result.exception is None, (
+        f" Exception thrown in {result.exception}/{result.output}"
+    )
 
     # Assert that the file exists
-    assert os.path.exists(
-        custom_jobdir
-    ), f"Failed: Custom job directory, '{custom_jobdir}' does not exist"
+    assert os.path.exists(custom_jobdir), (
+        f"Failed: Custom job directory, '{custom_jobdir}' does not exist"
+    )
 
 
 def test_scene_select_no_explicit_jobdir(tmp_path):
@@ -185,9 +185,9 @@ def test_scene_select_no_explicit_jobdir(tmp_path):
         scene_select,
         cmd_params,
     )
-    assert (
-        result.exit_code == 0
-    ), f"Scene_select process failed to execute  {result.output}"
+    assert result.exit_code == 0, (
+        f"Scene_select process failed to execute  {result.output}"
+    )
 
     # Depending on the type of error, the info on the
     # error will either be in result.exception or result.output.
@@ -195,6 +195,6 @@ def test_scene_select_no_explicit_jobdir(tmp_path):
     # result.exception will capture errors with expected arguments.
     # This usually traps process related errors such as
     # missing arguments.
-    assert (
-        result.exception is None
-    ), f" Exception thrown in {result.exception}/{result.output}"
+    assert result.exception is None, (
+        f" Exception thrown in {result.exception}/{result.output}"
+    )

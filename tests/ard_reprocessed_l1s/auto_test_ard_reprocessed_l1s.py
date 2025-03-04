@@ -173,9 +173,9 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
         "ga_ls9c_ard_3-2-1_092081_2022-06-21_final.odc-metadata.yaml"
     )
 
-    assert os.path.isfile(
-        fname_06_21
-    ), f"The yaml file, '{fname_06_21}' has been moved, for a different scene"
+    assert os.path.isfile(fname_06_21), (
+        f"The yaml file, '{fname_06_21}' has been moved, for a different scene"
+    )
 
     new_dir_06_27 = MOVED_PATH.joinpath(
         "ga_ls9c_ard_3", "102", "076", "2022", "06", "27"
@@ -184,15 +184,15 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
         "ga_ls9c_ard_3-2-1_102076_2022-06-27_final.odc-metadata.yaml"
     )
 
-    assert os.path.isfile(
-        yaml_fname_06_27
-    ), f"The yaml file, '{yaml_fname_06_27}' has been moved"
+    assert os.path.isfile(yaml_fname_06_27), (
+        f"The yaml file, '{yaml_fname_06_27}' has been moved"
+    )
 
     ard_dataset = odc_test_db.index.datasets.get(ARD_ID_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
-    assert str(local_path) == str(
-        yaml_fname_06_27
-    ), "The OCD ARD path has not been updated"
+    assert str(local_path) == str(yaml_fname_06_27), (
+        "The OCD ARD path has not been updated"
+    )
 
     # uuids have been written to an archive file
     filename = jobdir.joinpath(ARCHIVE_FILE)
@@ -226,9 +226,9 @@ def test_ard_reprocessed_l1s(archive, odc_test_db: datacube.Datacube, tmpdir):
         "LC09_L1TP_102076_20220627_20220802_02_T1.tar",
     )
 
-    assert os.path.isfile(
-        filename
-    ), f"ard to be processed reference file {filename} does not exist"
+    assert os.path.isfile(filename), (
+        f"ard to be processed reference file {filename} does not exist"
+    )
 
     # Note, these tars do not exixt in the test data
     assert sorted([str(a_l1_tar), str(b_l1_tar)]) == sorted(temp), (
@@ -272,9 +272,9 @@ def test_move_blocked(odc_test_db: datacube.Datacube):
     file_paths = get_file_paths_for_test_move_blocked()
 
     # Check the yaml file initial position
-    assert os.path.isfile(
-        file_paths["old_yaml_fname_06_27"]
-    ), "The old ARD yaml file is not found in the expected location"
+    assert os.path.isfile(file_paths["old_yaml_fname_06_27"]), (
+        "The old ARD yaml file is not found in the expected location"
+    )
 
     # Test the move_blocked function
     # for a 'normal' case
@@ -300,9 +300,9 @@ def test_move_blocked(odc_test_db: datacube.Datacube):
     # Assert the dir has been moved
 
     # The yaml file has been moved
-    assert os.path.isfile(
-        file_paths["yaml_fname_06_27"]
-    ), "The new yaml file is not found in the expected (new) location"
+    assert os.path.isfile(file_paths["yaml_fname_06_27"]), (
+        "The new yaml file is not found in the expected (new) location"
+    )
 
     #  There should be one l1 zip
     assert len(l1_zips) == 1, "Wrong count of level 1 zip file"
@@ -312,9 +312,9 @@ def test_move_blocked(odc_test_db: datacube.Datacube):
     ard_dataset = odc_test_db.index.datasets.get(ARD_ID_06_27)
     local_path = Path(ard_dataset.local_path).resolve()
 
-    assert str(local_path) == str(
-        file_paths["yaml_fname_06_27"]
-    ), "The OCD ARD path has not been updated"
+    assert str(local_path) == str(file_paths["yaml_fname_06_27"]), (
+        "The OCD ARD path has not been updated"
+    )
 
     # Check that trying to move a dir that is already moved
     # doesn't cause an error
@@ -333,14 +333,14 @@ def test_move_blocked(odc_test_db: datacube.Datacube):
     )
 
     # Assert the dir ... is still there
-    assert os.path.isfile(
-        file_paths["yaml_fname_06_27"]
-    ), "The yaml file should still persist but it is not"
+    assert os.path.isfile(file_paths["yaml_fname_06_27"]), (
+        "The yaml file should still persist but it is not"
+    )
     # There is 1 l1, so it will be reprocessed
-    assert (
-        len(l1_zips) == 1
-    ), "No reprocessing will occur because there is no level 1 data"
+    assert len(l1_zips) == 1, (
+        "No reprocessing will occur because there is no level 1 data"
+    )
     # The blocking ard will be archived
-    assert (
-        len(uuids2archive) == 1
-    ), "No archival occuring because no blocking ard is detected"
+    assert len(uuids2archive) == 1, (
+        "No archival occuring because no blocking ard is detected"
+    )

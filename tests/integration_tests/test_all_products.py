@@ -71,9 +71,9 @@ def test_using_auto_odc_db(tmp_path):
         scene_select,
         cmd_params,
     )
-    assert (
-        result.exit_code == 0
-    ), f"Scene_select process failed to execute  {result.output}"
+    assert result.exit_code == 0, (
+        f"Scene_select process failed to execute  {result.output}"
+    )
 
     # Depending on the type of error, the info on the
     # error will either be in result.exception or result.output.
@@ -81,6 +81,6 @@ def test_using_auto_odc_db(tmp_path):
     # result.exception will capture errors with expected arguments.
     # This usually traps process related errors such as
     # missing arguments.
-    assert (
-        result.exception is None
-    ), f" Exception thrown in {result.exception}/{result.output}"
+    assert result.exception is None, (
+        f" Exception thrown in {result.exception}/{result.output}"
+    )

@@ -68,9 +68,9 @@ def test_s2_normal_operation_r1_1(tmp_path):
         text=True,
         check=True,
     )
-    assert (
-        result.returncode == 0
-    ), f"The manual dataset addition failed: {result.stderr}"
+    assert result.returncode == 0, (
+        f"The manual dataset addition failed: {result.stderr}"
+    )
 
     yamldir = generate_yamldir_value()
 
@@ -89,9 +89,9 @@ def test_s2_normal_operation_r1_1(tmp_path):
         args=cmd_params,
     )
 
-    assert (
-        result.exit_code == 0
-    ), f"The scene_select process failed to execute: {result.output}"
+    assert result.exit_code == 0, (
+        f"The scene_select process failed to execute: {result.output}"
+    )
     assert result.output != "", f" the result output is {result.output}"
 
     # Use glob to search for the scenes_to_ARD_process.txt file
@@ -106,15 +106,15 @@ def test_s2_normal_operation_r1_1(tmp_path):
     )
 
     ards_to_process = get_list_from_file(matching_files[0])
-    assert (
-        len(ards_to_process) == 1
-    ), "Expected only 1 zip files to process but this has not been the case"
+    assert len(ards_to_process) == 1, (
+        "Expected only 1 zip files to process but this has not been the case"
+    )
 
     expected_file = (
         "/g/data/u46/users/dsg547/test_data/c3/s2_autogen/zip/15S140E-20S145E"
         + "/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.zip"
     )
 
-    assert (
-        ards_to_process[0] == expected_file
-    ), "The generated ard file path is not what is expected"
+    assert ards_to_process[0] == expected_file, (
+        "The generated ard file path is not what is expected"
+    )

@@ -245,8 +245,7 @@ def move_blocked(
 @click.option(
     "--config",
     type=PathPath(dir_okay=False, file_okay=True),
-    help="Full path to a datacube config text file."
-    " This describes the ODC database.",
+    help="Full path to a datacube config text file. This describes the ODC database.",
     default=None,
 )
 @click.option(

@@ -83,9 +83,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
         text=True,
         check=True,
     )
-    assert (
-        result.returncode == 0
-    ), f"The manual dataset addition failed: {result.stderr}"
+    assert result.returncode == 0, (
+        f"The manual dataset addition failed: {result.stderr}"
+    )
 
     yamldir = generate_yamldir_value()
     cmd_params = [
@@ -115,9 +115,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
     # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. Log is not available - {matching_files}"
+    )
 
     found_log_line = False
     with open(matching_files[0]) as ard_log_file:
@@ -139,9 +139,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
                 print(f"Error decoding JSON: {error_string} in line:{line}")
     assert found_log_line, "Interim scene not processed to final as expected"
 
-    assert (
-        result.exit_code == 0
-    ), f"The scene_select process failed to execute: {result.output}"
+    assert result.exit_code == 0, (
+        f"The scene_select process failed to execute: {result.output}"
+    )
     assert result.output != "", f" the result output is {result.output}"
 
     # Use glob to search for the scenes_to_ARD_process.txt file
@@ -156,9 +156,9 @@ def test_s2_normal_operation_r3_2(tmp_path):
     )
 
     ards_to_process = get_list_from_file(matching_files[0])
-    assert (
-        len(ards_to_process) == 1
-    ), "Expected only 1 zip files to process but this has not been the case"
+    assert len(ards_to_process) == 1, (
+        "Expected only 1 zip files to process but this has not been the case"
+    )
 
     expected_file = (
         "/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2020/"
@@ -166,6 +166,6 @@ def test_s2_normal_operation_r3_2(tmp_path):
         + "S2A_MSIL1C_20200801T011731_N0209_R088_T52JFL_20200801T081631.zip"
     )
 
-    assert (
-        ards_to_process[0] == expected_file
-    ), "The generated ard file path is not what is expected"
+    assert ards_to_process[0] == expected_file, (
+        "The generated ard file path is not what is expected"
+    )

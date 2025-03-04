@@ -107,9 +107,9 @@ def test_scene_r3_3(odc_test_db: datacube.Datacube, tmp_path):
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
     # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. Log is not available - {matching_files}"
+    )
 
     found_log_line = False
 

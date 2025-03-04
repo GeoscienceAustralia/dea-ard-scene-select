@@ -102,9 +102,9 @@ def test_scene_filtering_within_excluded_days_r2_5(tmp_path):
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
     # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. Log is not available - {matching_files}"
+    )
 
     found_log_line = False
     with open(matching_files[0], encoding="utf-8") as ard_log_file:
@@ -116,6 +116,6 @@ def test_scene_filtering_within_excluded_days_r2_5(tmp_path):
                     break
             except json.JSONDecodeError as error_string:
                 print(f"Error decoding JSON: {error_string}")
-    assert (
-        found_log_line
-    ), "Landsat scene still selected despite its date is being excluded"
+    assert found_log_line, (
+        "Landsat scene still selected despite its date is being excluded"
+    )

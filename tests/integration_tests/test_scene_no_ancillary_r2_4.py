@@ -75,26 +75,26 @@ def test_ard_landsat_scenes_no_acillary_r2_4(tmp_path):
 
     # There's only ever 1 copy of scenes_to_ARD_process.txt after
     # successfully processing
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. List of entries to process is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. List of entries to process is not available - {matching_files}"
+    )
     ards_to_process = get_list_from_file(matching_files[0])
 
     # Given that the run should have no ards to process, we expect
     # an empty scenes_to_ARD_process.txt file.
 
-    assert (
-        len(ards_to_process) == 0
-    ), "Ard entries to process exist when we are not expecting anything to be there"
+    assert len(ards_to_process) == 0, (
+        "Ard entries to process exist when we are not expecting anything to be there"
+    )
 
     # Use glob to search for the log file
     # within filter-jobid-* directories
     matching_files = list(Path(tmp_path).glob("filter-jobid-*/" + GEN_LOG_FILE))
 
     # There's only ever 1 copy of this file
-    assert (
-        matching_files and matching_files[0] is not None
-    ), f"Scene select failed. Log is not available - {matching_files}"
+    assert matching_files and matching_files[0] is not None, (
+        f"Scene select failed. Log is not available - {matching_files}"
+    )
 
     found_log_line = False
     with open(matching_files[0], encoding="utf-8") as ard_log_file:

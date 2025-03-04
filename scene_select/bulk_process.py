@@ -437,7 +437,7 @@ def create_pbs_jobs(
     # And a list of ARDs to archive (folder and uuid)?
     with scene_archive_path.open("w") as fid:
         for job in jobs:
-            fid.write(f'{job.level1.data_path},{",".join(job.replacement_uuids)}\n')
+            fid.write(f"{job.level1.data_path},{','.join(job.replacement_uuids)}\n")
 
     dirs = dict(
         workdir=job_directory / "run",
