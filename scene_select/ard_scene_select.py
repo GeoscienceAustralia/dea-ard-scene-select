@@ -1,34 +1,21 @@
 #!/usr/bin/env python3
 
 import datetime
+import json
 import os
 import re
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
-from typing import List, Tuple, Dict, Iterator, TypedDict
-import calendar
-import click
-import json
+from typing import List, Tuple, Dict, TypedDict
 
+import click
+import structlog
 from datacube import Datacube
-from datacube.model import Range, Dataset
+from datacube.model import Dataset
 from eodatasets3.utils import default_utc
 
-try:
-    import datacube
-except (ImportError, AttributeError):
-    print("Could not import Datacube")
-
-from scene_select.check_ancillary import (
-    DEFAULT_MODIS_DIR,
-    WV_DIR,
-    AncillaryFiles,
-    DEFAULT_VIIRS_I_PATH,
-    DEFAULT_VIIRS_M_PATH,
-    DEFAULT_USE_VIIRS_AFTER,
-)
-from scene_select.dass_logs import LOGGER, LogMainFunction
+from scene_select.check_ancillary import AncillaryFiles
 from scene_select.do_ard import generate_ard_job, ODC_FILTERED_FILE
 from scene_select import utils, collections
 
@@ -38,6 +25,8 @@ AOI_FILE = "Australian_AOI.json"
 
 
 HARD_SCENE_LIMIT = 10000
+
+_LOG = structlog.get_logger()
 
 
 def _make_patterns():
@@ -152,8 +141,10 @@ def _make_patterns():
 PROCESSING_PATTERN_MAPPING = _make_patterns()
 
 
-def load_aoi(file_name: str) -> Dict:
-    """load a file of region codes."""
+def load_aoi(file_name: str) -> Dict[str, set[str]]:
+    """
+    load the expected set of region codes for each sat_key ("ls" and "s2")
+    """
 
     with open(file_name, "r") as f:
         data = json.load(f)
@@ -216,7 +207,7 @@ def create_table_of_processed_ards(
         if chopped_id in processed_ard_scene_ids:
             # The same chopped scene id has multiple scenes
             old_uuid = processed_ard_scene_ids[chopped_id]["id"]
-            LOGGER.warning(
+            _LOG.warning(
                 "Multiple identical ARD scene ids",
                 landsat_scene_id=chopped_id,
                 old_uuid=old_uuid,
@@ -255,10 +246,10 @@ def should_we_filter_due_to_day_excluded(
     return False
 
 
-def get_aoi_sat_key(region_codes: Dict, product: str):
+def get_aoi_sat_key(region_codes: Dict, product_name: str):
     aoi_sat_key = None
     for key in region_codes.keys():
-        if key in product:
+        if key in product_name:
             aoi_sat_key = key
             continue
     return aoi_sat_key
@@ -347,72 +338,18 @@ def should_we_filter_because_processed_already(
         return True
 
 
-def month_as_range(year: int, month: int) -> Range:
-    """
-    >>> month_as_range(2024, 2)
-    Range(begin=datetime.datetime(2024, 2, 1, 0, 0), end=datetime.datetime(2024, 2, 29, 23, 59, 59, 999999))
-    >>> month_as_range(2023, 12)
-    Range(begin=datetime.datetime(2023, 12, 1, 0, 0), end=datetime.datetime(2023, 12, 31, 23, 59, 59, 999999))
-    """
-    week_day, number_of_days = calendar.monthrange(year, month)
-    return Range(
-        datetime.datetime(year, month, 1),
-        datetime.datetime(year, month, number_of_days, 23, 59, 59, 999999),
-    )
-
-
-def _month_iterator(
-    start_time: datetime.date, end_time: datetime.date
-) -> Iterator[Tuple[int, int]]:
-    """
-    Yield every month between the two times as a pair of (year, month) tuples
-
-    Both sides are inclusive.
-    """
-    start_year, start_month = start_time.year, start_time.month
-    end_year, end_month = end_time.year, end_time.month
-
-    current_year, current_month = start_year, start_month
-
-    while (current_year, current_month) <= (end_year, end_month):
-        yield current_year, current_month
-
-        current_month += 1
-        if current_month > 12:
-            current_month = 1
-            current_year += 1
-
-
 def find_to_process(
     dc: Datacube,
     l1_product_name: str,
-    brdfdir: Path,
-    i_viirsdir: Path,
-    m_viirsdir: Path,
-    use_viirs_after: datetime.datetime,
-    wvdir: Path,
-    region_codes: Dict,
+    ancil_config: AncillaryFiles,
+    region_codes_per_sat_key: Dict[str, set[str]],
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
     min_date: datetime.datetime,
     max_date: datetime.datetime,
 ) -> Tuple[list[str], list[str], int]:
-    """return
-    @param dc:
-    @param l1_product: l1 product
-    @param brdfdir:
-    @param wvdir:
-    @param region_codes:
-    @param interim_days_wait:
-    @param days_to_exclude:
-    @param find_blocked:
-    @return: a list of file paths to ARD process
-    """
-    # pylint: disable=R0913, R0914
-    # R0913: Too many arguments
-    # R0914: Too many local variables
-    sat_key = get_aoi_sat_key(region_codes, l1_product_name)
+    sat_key = get_aoi_sat_key(region_codes_per_sat_key, l1_product_name)
 
     # This is used to block reprocessing of reprocessed l1's
     processed_ard_scene_ids = create_table_of_processed_ards(
@@ -422,15 +359,8 @@ def find_to_process(
     # Don't crash on unknown l1 products
     if l1_product_name not in PROCESSING_PATTERN_MAPPING:
         msg = " not known to scene select processing filtering. Disabling processing filtering."
-        LOGGER.warn(l1_product_name + msg)
+        _LOG.warn(l1_product_name + msg)
 
-    ancillary_ob = AncillaryFiles(
-        brdf_dir=brdfdir,
-        viirs_i_path=i_viirsdir,
-        viirs_m_path=m_viirsdir,
-        wv_dir=wvdir,
-        use_viirs_after=use_viirs_after,
-    )
     files2process = set({})
     duplicates = 0
     uuids2archive = []
@@ -445,9 +375,9 @@ def find_to_process(
 
     # Query month-by-month to make DB queries smaller.
     # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
-    for year, month in _month_iterator(product_start_time, product_end_time):
+    for year, month in utils.iterate_months(product_start_time, product_end_time):
         for l1_dataset in dc.index.datasets.search(
-            product=l1_product_name, time=month_as_range(year, month)
+            product=l1_product_name, time=utils.month_as_range(year, month)
         ):
             if sat_key == "ls":
                 product_id = l1_dataset.metadata.landsat_product_id
@@ -466,7 +396,7 @@ def find_to_process(
             region_code = l1_dataset.metadata.region_code
             file_path = utils.calc_file_path(l1_dataset, product_id)
 
-            log = LOGGER.bind(
+            log = _LOG.bind(
                 landsat_scene_id=product_id,
                 dataset_id=str(l1_dataset.id),
                 dataset_path=file_path,
@@ -480,13 +410,16 @@ def find_to_process(
                     continue
 
             # Filter out if outside area of interest
-            if sat_key is not None and region_code not in region_codes[sat_key]:
+            if (
+                sat_key is not None
+                and region_code not in region_codes_per_sat_key[sat_key]
+            ):
                 log.debug(
                     "filtering", reason="Region not in AOI", region_code=region_code
                 )
                 continue
 
-            ancill_there, msg = ancillary_ob.is_ancil_there(l1_dataset.time.end)
+            ancill_there, msg = ancil_config.is_ancil_there(l1_dataset.time.end)
 
             # Continue here if a maturity level of final cannot be produced
             # since the ancillary files are not there
@@ -589,7 +522,7 @@ def _get_path_date(path: str) -> str:
     "--products",
     cls=utils.PythonLiteralOption,
     type=list,
-    help="List the ODC products to be processed. e.g."
+    help="List the ODC L1 products to be processed. e.g."
     ' \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
     default='["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
 )
@@ -600,42 +533,11 @@ def _get_path_date(path: str) -> str:
     default=Path.cwd(),
 )
 @click.option(
-    "--brdfdir",
-    type=click.Path(file_okay=False),
-    help="The home directory of BRDF data used by scene select.",
-    default=DEFAULT_MODIS_DIR,
-)
-@click.option(
-    "--i-viirsdir",
-    type=click.Path(file_okay=False),
-    help="The home directory of VIIRS data, band I.",
-    default=DEFAULT_VIIRS_I_PATH,
-)
-@click.option(
-    "--m-viirsdir",
-    type=click.Path(file_okay=False),
-    help="The home directory of VIIRS data, band M.",
-    default=DEFAULT_VIIRS_M_PATH,
-)
-@click.option(
-    "--use-viirs-after",
-    type=click.DateTime(formats=["%Y-%m-%d"]),
-    default=str(DEFAULT_USE_VIIRS_AFTER.strftime("%Y-%m-%d")),
-    help="Use VIIRS data, not MODIS, for BRDF calcs's after this date."
-    " Format: YYYY-MM-DD",
-)
-@click.option(
-    "--wvdir",
-    type=click.Path(file_okay=False),
-    help="The home directory of water vapour data used by scene select.",
-    default=WV_DIR,
-)
-@click.option(
     "--scene-limit",
     default=1000,
     type=int,
-    help="Safety limit: Maximum number of scenes to process in a run. \
-Does not work for multigranule zip files.",
+    help="Safety limit: Maximum number of scenes to process in a run. "
+    "multigranule zip files may exceed this limit.",
 )
 @click.option(
     "--interim-days-wait",
@@ -657,20 +559,20 @@ Does not work for multigranule zip files.",
     "--run-ard",
     default=False,
     is_flag=True,
-    help="Produce ARD scenes by executing the ard_pbs script.",
+    help="Submit these as ARD jobs to PBS.",
 )
 # These are passed on to ard processing
 @click.option(
     "--test",
     default=False,
     is_flag=True,
-    help="Test job execution (Don't submit the job to the PBS queue).",
+    help="Test job execution (Run `ard-pbs` but tell it not to submit the job).",
 )
 @click.option(
     "--log-config",
     type=click.Path(dir_okay=False, file_okay=True, exists=True),
     default=utils.DATA_DIR.joinpath(utils.LOG_CONFIG_FILE),
-    help="full path to the logging configuration file",
+    help="full path to a logging configuration file",
 )
 @click.option(
     "--yamls-dir",
@@ -724,7 +626,7 @@ Does not work for multigranule zip files.",
     is_flag=True,
     help="Find l1 scenes with no children that are not getting processed.",
 )
-@LogMainFunction()
+@utils.LogAnyErrors(_LOG)
 def scene_select(
     usgs_level1_files: str,
     allowed_codes: str,
@@ -732,11 +634,6 @@ def scene_select(
     products: list,
     logdir: str,
     jobdir: str,
-    brdfdir: str,
-    i_viirsdir: str,
-    m_viirsdir: str,
-    use_viirs_after: datetime.datetime,
-    wvdir: str,
     stop_logging: bool,
     log_config: str,
     scene_limit: int,
@@ -746,30 +643,16 @@ def scene_select(
     find_blocked: bool,
     **ard_click_params,
 ):
-    """
-    The keys for ard_click_params;
-        test: bool,
-        workdir: click.Path,
-        pkgdir: click.Path,
-        env: click.Path,
-        workers: int,
-        nodes: int,
-        memory: int,
-        jobfs: int,
-        project: str,
-        walltime: str,
-        email: str
+    utils.structlog_setup()
 
-    :return: Nothing
-    """
     default_max_date = default_utc(datetime.datetime.now(datetime.UTC))
     default_min_date = default_max_date - datetime.timedelta(days=60)
 
     logdir = Path(logdir).resolve()
+
     # If we write a file we write it in the job dir
     # set up the scene select job dir in the log dir
     if jobdir is None:
-        logdir = Path(logdir).resolve()
         jobdir = logdir.joinpath(f"filter-jobid-{uuid.uuid4().hex[0:6]}")
     else:
         jobdir = Path(jobdir).resolve()
@@ -782,7 +665,7 @@ def scene_select(
             disable_existing_loggers=False,
             defaults={"genlogfilename": str(gen_log_file)},
         )
-    LOGGER.info("scene_select", **locals())
+    _LOG.info("scene_select", **locals())
 
     # logdir is used both  by scene select and ard
     # So put it in the ard parameter dictionary
@@ -804,19 +687,16 @@ def scene_select(
         duplicate_count = 0
         uuids2archive_combined = []
         paths_to_process = []
+        ancil_config = AncillaryFiles()
 
         scene_limit = min(scene_limit, HARD_SCENE_LIMIT)
-        with datacube.Datacube(app="ard-scene-select", config=config) as dc:
+        with Datacube(app="ard-scene-select", config=config) as dc:
             for l1_product_name in products:
                 files2process, uuids2archive, duplicates = find_to_process(
                     dc,
                     l1_product_name,
-                    brdfdir=Path(brdfdir).resolve(),
-                    i_viirsdir=Path(i_viirsdir).resolve(),
-                    m_viirsdir=Path(m_viirsdir).resolve(),
-                    use_viirs_after=use_viirs_after,
-                    wvdir=Path(wvdir).resolve(),
-                    region_codes=load_aoi(allowed_codes),
+                    ancil_config=ancil_config,
+                    region_codes_per_sat_key=load_aoi(allowed_codes),
                     interim_days_wait=interim_days_wait,
                     days_to_exclude=days_to_exclude,
                     find_blocked=find_blocked,
@@ -850,7 +730,7 @@ def scene_select(
             run_ard,
         )
 
-    LOGGER.info("info", jobdir=str(jobdir))
+    _LOG.info("info", jobdir=str(jobdir))
 
 
 if __name__ == "__main__":

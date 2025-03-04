@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
+import functools
 import logging
 import os
 import re
 import sys
+import traceback
 from pathlib import Path, PurePath
 from typing import TextIO
 
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 from subprocess import Popen, PIPE
-
+import datetime
+from typing import Tuple, Iterator
+import calendar
 import click
+
+from datacube.model import Range, Dataset
 import structlog
 
-from datacube.model import Dataset
 
 DATA_DIR = Path(__file__).parent.joinpath("data")
 
@@ -262,3 +267,65 @@ def _lenient_json_default(o):
         return o.as_posix()
 
     return repr(o)
+
+
+def month_as_range(year: int, month: int) -> Range:
+    """
+    >>> month_as_range(2024, 2)
+    Range(begin=datetime.datetime(2024, 2, 1, 0, 0), end=datetime.datetime(2024, 2, 29, 23, 59, 59, 999999))
+    >>> month_as_range(2023, 12)
+    Range(begin=datetime.datetime(2023, 12, 1, 0, 0), end=datetime.datetime(2023, 12, 31, 23, 59, 59, 999999))
+    """
+    week_day, number_of_days = calendar.monthrange(year, month)
+    return Range(
+        datetime.datetime(year, month, 1),
+        datetime.datetime(year, month, number_of_days, 23, 59, 59, 999999),
+    )
+
+
+def iterate_months(
+    start_time: datetime.date, end_time: datetime.date
+) -> Iterator[Tuple[int, int]]:
+    """
+    Yield every month between the two times as a pair of (year, month) tuples
+
+    Both sides are inclusive.
+    """
+    start_year, start_month = start_time.year, start_time.month
+    end_year, end_month = end_time.year, end_time.month
+
+    current_year, current_month = start_year, start_month
+
+    while (current_year, current_month) <= (end_year, end_month):
+        yield current_year, current_month
+
+        current_month += 1
+        if current_month > 12:
+            current_month = 1
+            current_year += 1
+
+
+class LogAnyErrors:
+    """
+    Catch any exceptions from the main function and include in logs.
+    """
+
+    def __init__(self, logger):
+        self.logger = logger
+
+    def __call__(self, fn):
+        @functools.wraps(fn)
+        def decorated(*args, **kwargs):
+            try:
+                result = fn(*args, **kwargs)
+                return result
+            except Exception as ex:
+                self.logger(
+                    "exception",
+                    exception=ex.__str__(),
+                    traceback=traceback.format_exc().splitlines(),
+                )
+                raise ex
+            return result
+
+        return decorated

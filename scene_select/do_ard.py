@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 import math
-from scene_select.dass_logs import LOGGER
 from pathlib import Path
 import subprocess
 import os
 import stat
+
+import structlog
+
+_LOG = structlog.get_logger()
 
 ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
@@ -112,12 +115,12 @@ def generate_ard_job(
     This function assumes a l1 zip file has been written to the jobdir.
     Though if you specify l1_zips in a list, and usgs_level1_files is None,
       it will write the file."""
-    LOGGER.info("do_ard", **locals())
+    _LOG.info("do_ard", **locals())
     try:
         calc_node_with_defaults(ard_click_params, l1_count)
     except ValueError as err:
         print(err.args)
-        LOGGER.warning("ValueError", message=err.args)
+        _LOG.warning("ValueError", message=err.args)
 
     if l1_zips is not None:
         assert usgs_level1_files is None
@@ -145,4 +148,4 @@ def generate_ard_job(
     if run_ard is True:
         subprocess.run([script_path], check=True)
 
-    LOGGER.info("info", jobdir=str(jobdir))
+    _LOG.info("info", jobdir=str(jobdir))

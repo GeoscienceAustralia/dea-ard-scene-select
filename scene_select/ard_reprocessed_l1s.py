@@ -9,7 +9,8 @@ import click
 from datetime import timedelta, datetime
 import uuid
 
-from scene_select.dass_logs import LOGGER, LogMainFunction
+import structlog
+
 from scene_select import utils
 from scene_select.do_ard import generate_ard_job
 
@@ -23,6 +24,8 @@ PRODUCT = "ga_ls9c_ard_3"
 DIR_TEMPLATE = "reprocess-jobid-{jobid}"
 LOG_FILE = "reprocessing.log"
 THIS_TASK = "archive_and_move_for_reprocessing"
+
+_LOG = structlog.get_logger()
 
 
 class PathPath(click.Path):
@@ -71,7 +74,7 @@ def find_newer_level1_datasets(dc: Datacube, level1_dataset: Dataset) -> List[Da
         if not utils.chopped_scene_id(previous_scene_id) == utils.chopped_scene_id(
             blocking_scene_id
         ):
-            LOGGER.info(
+            _LOG.info(
                 "skipped l1 pairs with different chopped scene ids",
                 blocking_scene_id=blocking_scene_id,
                 other_l1_id=previous_dataset.id,
@@ -84,7 +87,7 @@ def find_newer_level1_datasets(dc: Datacube, level1_dataset: Dataset) -> List[Da
         previous_date = landsat_date(previous_product_id)
         blocking_date = landsat_date(blocking_product_id)
         if previous_date < blocking_date:
-            LOGGER.info(
+            _LOG.info(
                 "skipped l1 pairs with blocked processing date less than blocking date",
                 blocking_l1_id=blocking_scene_id,
                 blocked_l1_id=previous_dataset.id,
@@ -92,7 +95,7 @@ def find_newer_level1_datasets(dc: Datacube, level1_dataset: Dataset) -> List[Da
             )
             continue
 
-        LOGGER.info(
+        _LOG.info(
             "l1 pairs",
             blocking_scene_id=blocking_scene_id,
             blocked_l1_id=previous_dataset.id,
@@ -143,7 +146,7 @@ def find_blocked(dc: Datacube, product: str, scene_limit: int) -> List[BlockResu
 
         # Two or more blocked l1s is a problem
         if len(blocked_l1s) > 1:
-            LOGGER.error(
+            _LOG.error(
                 "multiple blocked l1s. Ignore this group of l1s",
                 dataset_id=l1_ds.id,
             )
@@ -156,7 +159,7 @@ def find_blocked(dc: Datacube, product: str, scene_limit: int) -> List[BlockResu
         )
         blocking_ard_path = ard_dataset.local_path
         # pprint.pprint (blocked_l1[0].metadata_doc)
-        LOGGER.info(
+        _LOG.info(
             "Found_blocked_l1",
             blocked_l1_zip_path=blocked_l1_zip_path,
             blocking_ard_path=blocking_ard_path,
@@ -171,7 +174,7 @@ def find_blocked(dc: Datacube, product: str, scene_limit: int) -> List[BlockResu
         )
 
         if len(blocked_scenes) >= scene_limit:
-            LOGGER.info(
+            _LOG.info(
                 "scene_limit reached",
                 len_blocked_scenes=str(len(blocked_scenes)),
                 scene_limit=str(scene_limit),
@@ -196,7 +199,7 @@ def move_blocked(
             # If it is then we don't need to move it
             # But it still needs to be archived and reprocessed
             if str(new_base_path) in str(current_path):
-                LOGGER.warning(
+                _LOG.warning(
                     "blocked ARD already in new location",
                     current_path=current_path,
                     new_base_path=new_base_path,
@@ -210,7 +213,7 @@ def move_blocked(
             if not Path(current_path).parent.exists():
                 # If it is not then assume we don't need to move it
                 # But it still needs to be archived and reprocessed
-                LOGGER.warning(
+                _LOG.warning(
                     "blocked ARD location incorrect",
                     current_path=current_path,
                     new_base_path=new_base_path,
@@ -227,12 +230,12 @@ def move_blocked(
                     current_base_path,
                     new_base_path,
                 )
-                LOGGER.info("scene_move", **odc_update_results)
+                _LOG.info("scene_move", **odc_update_results)
             if worked:
                 l1_zips.append(scene["blocked_l1_zip_path"])
                 uuids2archive.append(scene["blocking_ard_id"])
 
-                LOGGER.info(
+                _LOG.info(
                     "To reprocess",
                     blocking_ard_path=scene["blocking_ard_path"],
                     blocked_l1_zip_path=scene["blocked_l1_zip_path"],
@@ -337,7 +340,7 @@ Does not work for multigranule zip files.",
 @click.option("--nodes", help="The number of nodes to request.")
 @click.option("--memory", help="The memory in GB to request per node.")
 @click.option("--jobfs", help="The jobfs memory in GB to request per node.")
-@LogMainFunction()
+@utils.LogAnyErrors(_LOG)
 def ard_reprocessed_l1s(
     current_base_path: Path,
     new_base_path: Path,
@@ -366,6 +369,7 @@ def ard_reprocessed_l1s(
 
     :return: list of scenes to ARD process
     """
+
     # pylint: disable=R0913, R0914
     # R0913: Too many arguments
     # R0914: Too many local variables
@@ -390,7 +394,7 @@ def ard_reprocessed_l1s(
     # So put it in the ard parameter dictionary
     ard_click_params["logdir"] = logdir
 
-    LOGGER.info("reprocessed_l1s", **locals())
+    _LOG.info("reprocessed_l1s", **locals())
     dc = datacube.Datacube(app=THIS_TASK)
 
     # identify the blocking ARD uuids and locations
