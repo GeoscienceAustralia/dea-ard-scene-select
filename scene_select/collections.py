@@ -104,6 +104,18 @@ ARD_PRODUCTS = {
             )
         ],
     ),
+    ArdProduct(
+        "ga_s2cm_ard_3",
+        base_package_directory=Path("/g/data/ka08/ga"),
+        sources=[
+            Level1Product(
+                "esa_s2cm_level1_0",
+                base_collection_path=Path("/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C"),
+                separate_metadata_directory=Path("/g/data/ka08/ga/l1c_metadata"),
+                is_active=True,
+            )
+        ],
+    ),
 }
 
 
