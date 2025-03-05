@@ -5,12 +5,33 @@ from pathlib import Path
 import subprocess
 import os
 import stat
+from typing import TypedDict, Optional
 
 import structlog
 
 _LOG = structlog.get_logger()
 
-ODC_FILTERED_FILE = "scenes_to_ARD_process.txt"
+
+class ArdParameters(TypedDict, total=False):
+    walltime: Optional[str]  # Job walltime in `hh:mm:ss` format
+    email: Optional[str]  # Notification email address
+    project: str  # Project code to run under, default="v10"
+    logdir: Optional[str]  # The base logging and scripts output directory
+    jobdir: Optional[str]  # The start ard processing directory
+    pkgdir: Optional[str]  # The base output packaged directory
+    yamls_dir: Optional[
+        str
+    ]  # folder to find yaml files (if they aren't in same location as data)
+    env: Optional[str]  # Environment script to source
+    index_datacube_env: Optional[str]  # Path to the datacube indexing environment
+    workers: Optional[int]  # The number of workers to request per node (1-48)
+    nodes: Optional[str]  # The number of nodes to request
+    memory: Optional[str]  # The memory in GB to request per node
+    jobfs: Optional[str]  # The jobfs memory in GB to request per node
+    nodes: Optional[int]  # The number of nodes to request
+
+
+ODC_FILTERED_FILE = "level1_scenes_for_ard.txt"
 ARCHIVE_FILE = "uuid_to_archive.txt"
 PBS_ARD_FILE = "run_ard_pbs.sh"
 PBS_JOB = """#!/bin/bash
@@ -23,7 +44,7 @@ ard_pbs --level1-list {scene_list} {ard_args}
 """
 
 
-def calc_node_with_defaults(ard_click_params, count_all_scenes_list):
+def calc_node_with_defaults(ard_click_params: ArdParameters, count_all_scenes_list):
     # Estimate the number of nodes needed
 
     hours_per_granule = 7.5
@@ -45,15 +66,20 @@ def calc_node_with_defaults(ard_click_params, count_all_scenes_list):
         raise ValueError("wall time <= hours per granule")
 
 
-def _calc_nodes_req(granule_count, walltime, workers, hours_per_granule=7.5):
+def _calc_nodes_req(
+    granule_count: int, walltime: str, workers: int, hours_per_granule=7.5
+) -> int:
     """Provides estimation of the number of nodes required to process granule count
 
-    >>> _calc_nodes_req(400, '20:59', 28)
-    2
+    >>> _calc_nodes_req(400, '20:59:00', 28)
+    6
     >>> _calc_nodes_req(800, '20:00', 28)
-    3
+    11
+    >>> _calc_nodes_req(800, '20:00', 48)
+    7
     """
-    hours, _, _ = (int(x) for x in walltime.split(":"))
+    hours, mins, *secs = (float(x) for x in walltime.split(":"))
+    hours = hours + (mins / 60.0)
     # to avoid divide by zero errors
     if hours == 0:
         hours = 1
@@ -103,7 +129,7 @@ def make_ard_pbs(level1_list, **ard_click_params):
 
 
 def generate_ard_job(
-    ard_click_params: dict,
+    ard_click_params: ArdParameters,
     l1_count: int,
     usgs_level1_files: Path,
     uuids2archive: list,

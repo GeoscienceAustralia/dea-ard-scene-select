@@ -4,140 +4,27 @@ import datetime
 import json
 import os
 import re
-import uuid
 from pathlib import Path
-from typing import List, Tuple, Dict, TypedDict
+from typing import List, Tuple, Dict
+from typing import TypedDict
 
 import click
 import structlog
 from datacube import Datacube
+from datacube.index.abstract import AbstractIndex
 from datacube.model import Dataset
+from datacube.ui import click as ui
 from eodatasets3.utils import default_utc
 
 from scene_select import utils, collections
 from scene_select.check_ancillary import AncillaryFiles
-from scene_select.do_ard import generate_ard_job, ODC_FILTERED_FILE
-
-AOI_FILE = "Australian_AOI.json"
-# AOI_FILE = "Australian_AOI_mainland.json"
-# AOI_FILE = "Australian_AOI_with_islands.json"
-
+from scene_select.collections import PROCESSING_PATTERN_MAPPING, get_collection
+from scene_select.do_ard import generate_ard_job, ODC_FILTERED_FILE, ArdParameters
+from scene_select.library import ArdProduct
 
 HARD_SCENE_LIMIT = 10000
 
 _LOG = structlog.get_logger()
-
-
-def _make_patterns():
-    L9_C2_PATTERN = (
-        r"^(?P<sensor>LC)"
-        r"(?P<satellite>09)_"
-        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
-        r"(?P<wrsPath>[0-9]{3})"
-        r"(?P<wrsRow>[0-9]{3})_"
-        r"(?P<acquisitionDate>[0-9]{8})_"
-        r"(?P<processingDate>[0-9]{8})_"
-        r"(?P<collectionNumber>02)_"
-        r"(?P<collectionCategory>T1|T2)"
-        r"(?P<extension>)$"
-    )
-
-    # landsat 8 filename pattern is configured to match only
-    # processing level L1TP and L1GT for acquisition containing
-    # both the TIRS and OLI sensors with .tar extension.
-    L8_C1_PATTERN = (
-        r"^(?P<sensor>LC)"
-        r"(?P<satellite>08)_"
-        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
-        r"(?P<wrsPath>[0-9]{3})"
-        r"(?P<wrsRow>[0-9]{3})_"
-        r"(?P<acquisitionDate>[0-9]{8})_"
-        r"(?P<processingDate>[0-9]{8})_"
-        r"(?P<collectionNumber>01)_"
-        r"(?P<collectionCategory>T1|T2)"
-        r"(?P<extension>)$"
-    )
-
-    L8_C2_PATTERN = (
-        r"^(?P<sensor>LC)"
-        r"(?P<satellite>08)_"
-        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
-        r"(?P<wrsPath>[0-9]{3})"
-        r"(?P<wrsRow>[0-9]{3})_"
-        r"(?P<acquisitionDate>[0-9]{8})_"
-        r"(?P<processingDate>[0-9]{8})_"
-        r"(?P<collectionNumber>02)_"
-        r"(?P<collectionCategory>T1|T2)"
-        r"(?P<extension>)$"
-    )
-    # L1TP and L1GT are all ortho-rectified with DEM.
-    # The only difference is L1GT was processed without Ground Control Points
-    # - but because LS8 orbit is very accurate so LS8 L1GT products with orbital
-    # info is ~90% within one pixel.
-    # (From Lan-Wei)
-    # Therefore we use L1GT for ls8 but not ls7 or ls5.
-
-    # landsat 7 filename pattern is configured to match only
-    # processing level L1TP with .tar extension.
-    L7_C1_PATTERN = (
-        r"^(?P<sensor>LE)"
-        r"(?P<satellite>07)_"
-        r"(?P<processingCorrectionLevel>L1TP)_"
-        r"(?P<wrsPath>[0-9]{3})"
-        r"(?P<wrsRow>[0-9]{3})_"
-        r"(?P<acquisitionDate>[0-9]{8})_"
-        r"(?P<processingDate>[0-9]{8})_"
-        r"(?P<collectionNumber>01)_"
-        r"(?P<collectionCategory>T1|T2)"
-        r"(?P<extension>)$"
-    )
-
-    L7_C2_PATTERN = (
-        r"^(?P<sensor>LE)"
-        r"(?P<satellite>07)_"
-        r"(?P<processingCorrectionLevel>L1TP)_"
-        r"(?P<wrsPath>[0-9]{3})"
-        r"(?P<wrsRow>[0-9]{3})_"
-        r"(?P<acquisitionDate>[0-9]{8})_"
-        r"(?P<processingDate>[0-9]{8})_"
-        r"(?P<collectionNumber>02)_"
-        r"(?P<collectionCategory>T1|T2)"
-        r"(?P<extension>)$"
-    )
-
-    # landsat 5 filename is configured to match only
-    # processing level L1TP with .tar extension.
-    L5_PATTERN = (
-        r"^(?P<sensor>LT)"
-        r"(?P<satellite>05)_"
-        r"(?P<processingCorrectionLevel>L1TP)_"
-        r"(?P<wrsPath>[0-9]{3})"
-        r"(?P<wrsRow>[0-9]{3})_"
-        r"(?P<acquisitionDate>[0-9]{8})_"
-        r"(?P<processingDate>[0-9]{8})_"
-        r"(?P<collectionNumber>01)_"
-        r"(?P<collectionCategory>T1|T2)"
-        r"(?P<extension>)$"
-    )
-
-    S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-C])_"
-
-    return {
-        "ga_ls5t_level1_3": L5_PATTERN,
-        "ga_ls7e_level1_3": L7_C1_PATTERN,
-        "usgs_ls5t_level1_1": L5_PATTERN,
-        "usgs_ls7e_level1_1": L7_C1_PATTERN,
-        "usgs_ls7e_level1_2": L7_C2_PATTERN,
-        "usgs_ls8c_level1_1": L8_C1_PATTERN,
-        "usgs_ls8c_level1_2": L8_C2_PATTERN,
-        "usgs_ls9c_level1_2": L9_C2_PATTERN,
-        "esa_s2am_level1_0": S2_PATTERN,
-        "esa_s2bm_level1_0": S2_PATTERN,
-        "esa_s2cm_level1_0": S2_PATTERN,
-    }
-
-
-PROCESSING_PATTERN_MAPPING = _make_patterns()
 
 
 def load_aoi(file_name: str) -> Dict[str, set[str]]:
@@ -155,14 +42,11 @@ def load_aoi(file_name: str) -> Dict[str, set[str]]:
     return data
 
 
-def does_have_a_mature_child(dc: Datacube, dataset: Dataset) -> bool:
+def does_have_a_mature_child(index: AbstractIndex, dataset: Dataset) -> bool:
     """
     If any child exists that isn't archived, with a dataset_maturity of 'final'
-    :param dc:
-    :param dataset:
-    :return:
     """
-    for child_dataset in dc.index.datasets.get_derived(dataset.id):
+    for child_dataset in index.datasets.get_derived(dataset.id):
         if (
             not child_dataset.is_archived
             and child_dataset.metadata.dataset_maturity == "final"
@@ -180,15 +64,13 @@ ChoppedSceneId = str
 
 
 def create_table_of_processed_ards(
-    dc: Datacube, product_name: str, sat_key: str
+    index: AbstractIndex, ard_product: ArdProduct
 ) -> Dict[ChoppedSceneId, SceneInfo]:
     """
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    ard_product = collections.get_ard_for_level1(product_name)
-    if not ard_product:
-        raise ValueError(f"Product {product_name!r} is not a known ARD product")
+    sat_key = ard_product.constellation_code
 
     processed_ard_scene_ids = {}
     if sat_key == "ls":
@@ -198,11 +80,11 @@ def create_table_of_processed_ards(
     else:
         raise ValueError(f"Unknown satellite key {sat_key}")
 
-    for result in dc.index.datasets.search_returning(
+    for scene_id, dataset_maturity, dataset_uuid in index.datasets.search_returning(
         (scene_id, "dataset_maturity", "id"),
         product=ard_product.name,
     ):
-        chopped_id = utils.chopped_scene_id(result.landsat_scene_id)
+        chopped_id = utils.chopped_scene_id(scene_id)
         if chopped_id in processed_ard_scene_ids:
             # The same chopped scene id has multiple scenes
             old_uuid = processed_ard_scene_ids[chopped_id]["id"]
@@ -210,10 +92,10 @@ def create_table_of_processed_ards(
                 "duplicate_ards",
                 landsat_scene_id=chopped_id,
                 old_uuid=old_uuid,
-                new_uuid=result.id,
+                new_uuid=dataset_uuid,
             )
         processed_ard_scene_ids[chopped_id] = SceneInfo(
-            id=result.id, dataset_maturity=result.dataset_maturity
+            id=dataset_uuid, dataset_maturity=dataset_maturity
         )
 
     return processed_ard_scene_ids
@@ -242,15 +124,6 @@ def should_we_filter_due_to_day_excluded(
         if start <= checkdatetime <= end:
             return True
     return False
-
-
-def get_aoi_sat_key(region_codes: Dict, product_name: str):
-    aoi_sat_key = None
-    for key in region_codes.keys():
-        if key in product_name:
-            aoi_sat_key = key
-            continue
-    return aoi_sat_key
 
 
 def should_we_filter_due_to_ancil(
@@ -287,7 +160,7 @@ def should_we_filter_due_to_ancil(
 
 
 def should_we_filter_because_processed_already(
-    dc: Datacube,
+    index: AbstractIndex,
     l1_dataset: Dataset,
     processed_ard_scene_ids: dict[str, dict],
     find_blocked: bool,
@@ -301,7 +174,7 @@ def should_we_filter_because_processed_already(
     # But any chopped_scene_id in processed_ard_scene_ids
     # will now be a blocked reprocessed scene
     if find_blocked:
-        if does_have_a_mature_child(dc, l1_dataset):
+        if does_have_a_mature_child(index, l1_dataset):
             temp_logger.debug("filtering", reason="Skipping dataset with children")
             return True
 
@@ -333,8 +206,7 @@ def should_we_filter_because_processed_already(
 
 
 def find_to_process(
-    dc: Datacube,
-    l1_product_name: str,
+    collection: collections.ArdCollection,
     ancil_config: AncillaryFiles,
     region_codes_per_sat_key: Dict[str, set[str]],
     interim_days_wait: int,
@@ -342,137 +214,148 @@ def find_to_process(
     find_blocked: bool,
     min_date: datetime.datetime,
     max_date: datetime.datetime,
+    only_active_products=True,
 ) -> Tuple[list[str], list[str], int]:
-    sat_key = get_aoi_sat_key(region_codes_per_sat_key, l1_product_name)
-
-    # This is used to block reprocessing of reprocessed l1's
-    processed_ard_scene_ids = create_table_of_processed_ards(
-        dc, l1_product_name, sat_key
-    )
-
-    # Don't crash on unknown l1 products
-    if l1_product_name not in PROCESSING_PATTERN_MAPPING:
-        msg = " not known to scene select processing filtering. Disabling processing filtering."
-        _LOG.warn(l1_product_name + msg)
+    sat_key = collection.constellation_code
 
     files2process = set({})
     duplicates = 0
     uuids2archive = []
-    product_start_time, product_end_time = dc.index.datasets.get_product_time_bounds(
-        product=l1_product_name
-    )
+    index = collection.dc.index
 
-    if min_date:
-        product_start_time = max(product_start_time, min_date)
-    if max_date:
-        product_end_time = min(product_end_time, max_date)
+    for ard_product in collection.ard_products:
+        for level1_product in ard_product.sources:
+            if only_active_products and not level1_product.is_active:
+                continue
 
-    # Query month-by-month to make DB queries smaller.
-    # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
-    for year, month in utils.iterate_months(product_start_time, product_end_time):
-        for l1_dataset in dc.index.datasets.search(
-            product=l1_product_name, time=utils.month_as_range(year, month)
-        ):
-            if sat_key == "ls":
-                product_id = l1_dataset.metadata.landsat_product_id
-                choppedsceneid = utils.chopped_scene_id(
-                    l1_dataset.metadata.landsat_scene_id
-                )
-            elif sat_key == "s2":
-                product_id = l1_dataset.metadata.sentinel_tile_id
-                choppedsceneid = utils.chopped_scene_id(
-                    l1_dataset.metadata.sentinel_tile_id
-                )
-            else:
-                raise ValueError("Unknown satellite key")
-
-            region_code = l1_dataset.metadata.region_code
-            file_path = utils.calc_file_path(l1_dataset, product_id)
-
-            log = _LOG.bind(
-                landsat_scene_id=product_id,
-                dataset_id=str(l1_dataset.id),
-                dataset_path=file_path,
+            l1_product_name = level1_product.name
+            # This is used to block reprocessing of reprocessed l1's
+            processed_ard_scene_ids = create_table_of_processed_ards(
+                index, l1_product_name
             )
 
-            # Filter out if the processing level is too low
-            if l1_product_name in PROCESSING_PATTERN_MAPPING:
-                prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product_name]
-                if not re.match(prod_pattern, product_id):
-                    log.debug(
-                        "filtering.low_processing_level",
-                        reason="Processing level too low",
+            # Don't crash on unknown l1 products
+            if l1_product_name not in PROCESSING_PATTERN_MAPPING:
+                msg = " not known to scene select processing filtering. Disabling processing filtering."
+                _LOG.warn(l1_product_name + msg)
+
+            product_start_time, product_end_time = (
+                index.datasets.get_product_time_bounds(product=l1_product_name)
+            )
+
+            if min_date:
+                product_start_time = max(product_start_time, min_date)
+            if max_date:
+                product_end_time = min(product_end_time, max_date)
+
+            # Query month-by-month to make DB queries smaller.
+            # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
+            for year, month in utils.iterate_months(
+                product_start_time, product_end_time
+            ):
+                for l1_dataset in index.datasets.search(
+                    product=l1_product_name, time=utils.month_as_range(year, month)
+                ):
+                    if sat_key == "ls":
+                        product_id = l1_dataset.metadata.landsat_product_id
+                        choppedsceneid = utils.chopped_scene_id(
+                            l1_dataset.metadata.landsat_scene_id
+                        )
+                    elif sat_key == "s2":
+                        product_id = l1_dataset.metadata.sentinel_tile_id
+                        choppedsceneid = utils.chopped_scene_id(
+                            l1_dataset.metadata.sentinel_tile_id
+                        )
+                    else:
+                        raise ValueError("Unknown satellite key")
+
+                    region_code = l1_dataset.metadata.region_code
+                    file_path = utils.calc_file_path(l1_dataset, product_id)
+
+                    log = _LOG.bind(
+                        landsat_scene_id=product_id,
+                        dataset_id=str(l1_dataset.id),
+                        dataset_path=file_path,
                     )
-                    continue
 
-            # Filter out if outside area of interest
-            if (
-                sat_key is not None
-                and region_code not in region_codes_per_sat_key[sat_key]
-            ):
-                log.debug(
-                    "filtering.outside_aoi",
-                    reason="Region not in AOI",
-                    region_code=region_code,
-                )
-                continue
+                    # Filter out if the processing level is too low
+                    if l1_product_name in PROCESSING_PATTERN_MAPPING:
+                        prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product_name]
+                        if not re.match(prod_pattern, product_id):
+                            log.debug(
+                                "filtering.low_processing_level",
+                                reason="Processing level too low",
+                            )
+                            continue
 
-            ancill_there, msg = ancil_config.is_ancil_there(l1_dataset.time.end)
+                    # Filter out if outside area of interest
+                    if (
+                        sat_key is not None
+                        and region_code not in region_codes_per_sat_key[sat_key]
+                    ):
+                        log.debug(
+                            "filtering.outside_aoi",
+                            reason="Region not in AOI",
+                            region_code=region_code,
+                        )
+                        continue
 
-            # Continue here if a maturity level of final cannot be produced
-            # since the ancillary files are not there
-            if should_we_filter_due_to_ancil(
-                l1_dataset, ancill_there, msg, interim_days_wait, log
-            ):
-                continue
+                    ancill_there, msg = ancil_config.is_ancil_there(l1_dataset.time.end)
 
-            # FIXME remove the hard-coded list
-            if should_we_filter_due_to_day_excluded(
-                days_to_exclude, l1_dataset.time.end
-            ):
-                log.info(
-                    "filtering.excluded_day",
-                    dataset_time_end=l1_dataset.time.end,
-                    reason="This day is excluded.",
-                )
-                continue
+                    # Continue here if a maturity level of final cannot be produced
+                    # since the ancillary files are not there
+                    if should_we_filter_due_to_ancil(
+                        l1_dataset, ancill_there, msg, interim_days_wait, log
+                    ):
+                        continue
 
-            # Filter out duplicate zips
-            if file_path in files2process:
-                duplicates += 1
-                log.debug(
-                    "filtering.multi_file_path",
-                    reason="Potential multi-granule duplicate file path removed.",
-                    duplicate_count=duplicates,
-                )
-                continue
+                    # FIXME remove the hard-coded list
+                    if should_we_filter_due_to_day_excluded(
+                        days_to_exclude, l1_dataset.time.end
+                    ):
+                        log.info(
+                            "filtering.excluded_day",
+                            dataset_time_end=l1_dataset.time.end,
+                            reason="This day is excluded.",
+                        )
+                        continue
 
-            if should_we_filter_because_processed_already(
-                dc,
-                l1_dataset,
-                processed_ard_scene_ids,
-                find_blocked,
-                ancill_there,
-                uuids2archive,
-                choppedsceneid,
-                log,
-            ):
-                continue
+                    # Filter out duplicate zips
+                    if file_path in files2process:
+                        duplicates += 1
+                        log.debug(
+                            "filtering.multi_file_path",
+                            reason="Potential multi-granule duplicate file path removed.",
+                            duplicate_count=duplicates,
+                        )
+                        continue
 
-            # WARNING any filter under here will
-            # be executed on interim scenes that it is assumed will
-            # be processed
+                    if should_we_filter_because_processed_already(
+                        index,
+                        l1_dataset,
+                        processed_ard_scene_ids,
+                        find_blocked,
+                        ancill_there,
+                        uuids2archive,
+                        choppedsceneid,
+                        log,
+                    ):
+                        continue
 
-            # LOGGER.debug("location:pre dataset_with_final_child")
-            # If any child exists that isn't archived
-            if does_have_a_mature_child(dc, l1_dataset):
-                log.debug(
-                    "filtering.has_mature_children",
-                    reason="Skipping dataset with children",
-                )
-                continue
+                    # WARNING any filter under here will
+                    # be executed on interim scenes that it is assumed will
+                    # be processed
 
-            files2process.add(file_path)
+                    # LOGGER.debug("location:pre dataset_with_final_child")
+                    # If any child exists that isn't archived
+                    if does_have_a_mature_child(index, l1_dataset):
+                        log.debug(
+                            "filtering.has_mature_children",
+                            reason="Skipping dataset with children",
+                        )
+                        continue
+
+                    files2process.add(file_path)
 
     return list(files2process), uuids2archive, duplicates
 
@@ -500,33 +383,9 @@ def _get_path_date(path: str) -> str:
 
 
 @click.command()
-@click.option(
-    "--usgs-level1-files",
-    type=click.Path(dir_okay=False, file_okay=True),
-    help="full path to a text file containing all "
-    "the level-1 USGS/ESA entries to be filtered",
-)
-@click.option(
-    "--allowed-codes",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    default=utils.DATA_DIR.joinpath(AOI_FILE),
-    help="full path to a json file containing path/row and "
-    "MGRS tiles to act as a area of interest filter",
-)
-@click.option(
-    "--config",
-    type=click.Path(dir_okay=False, file_okay=True),
-    help="Full path to a datacube config text file. This describes the ODC database.",
-    default=None,
-)
-@click.option(
-    "--products",
-    cls=utils.PythonLiteralOption,
-    type=list,
-    help="List the ODC L1 products to be processed. e.g."
-    ' \'["ga_ls5t_level1_3", "usgs_ls8c_level1_1"]\'',
-    default='["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]',
-)
+@ui.environment_option
+@ui.config_option
+@click.argument("prefix")
 @click.option(
     "--workdir",
     type=click.Path(file_okay=False, writable=True),
@@ -542,7 +401,7 @@ def _get_path_date(path: str) -> str:
 )
 @click.option(
     "--interim-days-wait",
-    default=40,
+    default=23,
     type=int,
     help="Maxi days to wait for ancillary data before processing ARD to "
     "an interim maturity level.",
@@ -552,8 +411,8 @@ def _get_path_date(path: str) -> str:
     cls=utils.PythonLiteralOption,
     type=list,
     help="List of ranges of dates to not process, "
-    "as (start date: end date) with format (yyyy-mm-dd:yyyy-mm-dd). e.g."
-    ' \'["2019-12-22:2019-12-25", "2020-08-09:2020-09-03"]\'',
+    "as (start date: end date) with format (yyyy-mm-dd:yyyy-mm-dd). e.g. "
+    "'2019-12-22:2019-12-25,2020-08-09:2020-09-03'",
     default=[],
 )
 @click.option(
@@ -570,161 +429,117 @@ def _get_path_date(path: str) -> str:
     help="Test job execution (Run `ard-pbs` but tell it not to submit the job).",
 )
 @click.option(
-    "--log-config",
-    type=click.Path(dir_okay=False, file_okay=True, exists=True),
-    default=utils.DATA_DIR.joinpath(utils.LOG_CONFIG_FILE),
-    help="full path to a logging configuration file",
-)
-@click.option(
-    "--yamls-dir",
-    type=click.Path(file_okay=False),
-    default="",
-    help="The base directory for level-1 dataset documents.",
-)
-@click.option("--stop-logging", default=False, is_flag=True, help="No logs.")
-@click.option("--walltime", help="Job walltime in `hh:mm:ss` format.")
-@click.option("--email", help="Notification email address.")
-@click.option("--project", default="v10", help="Project code to run under.")
-@click.option(
-    "--logdir",
-    type=click.Path(file_okay=False, writable=True),
-    help="The base logging and scripts output directory.",
-)
-@click.option(
-    "--jobdir",
-    type=click.Path(file_okay=False, writable=True),
-    help="The start ard processing directory. Will be made if it does not exist.",
-)
-@click.option(
-    "--pkgdir",
-    type=click.Path(file_okay=False, writable=True),
-    help="The base output packaged directory.",
-)
-@click.option(
-    "--env",
-    type=click.Path(exists=True, readable=True),
-    help="Environment script to source.",
-)
-@click.option(
-    "--index-datacube-env",
-    type=click.Path(exists=True, readable=True),
-    help="Path to the datacube indexing environment. "
-    "Add this to index the ARD results.  "
-    "If this option is not defined the ARD results "
-    "will not be automatically indexed.",
-)
-@click.option(
-    "--workers",
-    type=click.IntRange(1, 48),
-    help="The number of workers to request per node.",
-)
-@click.option("--nodes", help="The number of nodes to request.")
-@click.option("--memory", help="The memory in GB to request per node.")
-@click.option("--jobfs", help="The jobfs memory in GB to request per node.")
-@click.option(
     "--find-blocked",
     default=False,
     is_flag=True,
     help="Find l1 scenes with no children that are not getting processed.",
 )
 @utils.LogAnyErrors(_LOG)
+@ui.pass_index(app_name="scene-select")
 def scene_select(
-    usgs_level1_files: str,
+    index: AbstractIndex,
     allowed_codes: str,
-    config: str,
-    products: list,
-    logdir: str,
-    jobdir: str,
-    stop_logging: bool,
-    log_config: str,
+    prefix: str,
     scene_limit: int,
     interim_days_wait: int,
     days_to_exclude: list,
     run_ard: bool,
     find_blocked: bool,
-    **ard_click_params,
 ):
+    only_active_products = True
+    with Datacube(index=index) as dc:
+        collection = get_collection(dc, prefix)
+
+    constellation_code = collection.constellation_code
+
+    run_date = datetime.datetime.now()
+    jobdir = Path(
+        f"/g/data/v10/work/{constellation_code}-submit-ard/{run_date:%Y-%m}/{run_date:%d-%H%M%S}"
+    )
+    scene_select_jobdir = jobdir / "scene-select"
+    logdir = Path(
+        f"/g/data/v10/logs/{constellation_code}-submit-ard/{run_date:%Y-%m}/{run_date:%d-%H%M%S}"
+    )
+    jobdir.mkdir(exist_ok=True, parents=True)
+    logdir.mkdir(exist_ok=True, parents=True)
+
+    # Create the ArdClickParameters instance with calculated paths
+    ard_params = ArdParameters(
+        walltime="10:00:00",
+        project="v10",
+        logdir=logdir.as_posix(),
+        jobdir=jobdir.as_posix(),
+        pkgdir="/g/data/xu18/ga",
+        env=f"/g/data/v10/work/landsat_downloads/landsat-downloader/config/dass-prod-wagl-{constellation_code}.env",
+        index_datacube_env="/g/data/v10/work/landsat_downloads/landsat-downloader/config/dass-index-datacube.env",
+    )
+
+    # This was on the old scene-select airflow. Not sure why.
+    if constellation_code == "s2":
+        days_to_exclude.append("2015-01-01:2022-08-18")
+
     default_max_date = default_utc(datetime.datetime.now(datetime.UTC))
     default_min_date = default_max_date - datetime.timedelta(days=60)
 
-    logdir = Path(logdir).resolve()
-
-    # If we write a file we write it in the job dir
-    # set up the scene select job dir in the log dir
-    if jobdir is None:
-        jobdir = logdir.joinpath(f"filter-jobid-{uuid.uuid4().hex[0:6]}")
-    else:
-        jobdir = Path(jobdir).resolve()
-    jobdir.mkdir(exist_ok=True)
-
-    if not stop_logging:
-        gen_log_file = jobdir.joinpath("ard_scene_select.log").resolve()
-        utils.structlog_setup(gen_log_file.open("a"))
+    gen_log_file = logdir.joinpath("ard_scene_select.jsonl").resolve()
+    utils.structlog_setup(gen_log_file.open("a"))
 
     _LOG.info("scene_select", **locals())
 
-    # logdir is used both  by scene select and ard
-    # So put it in the ard parameter dictionary
-    ard_click_params["logdir"] = logdir
+    ancil_config = collections.ANCILLARY_COLLECTION
 
-    if usgs_level1_files:
-        uuids2archive = []
-        l1_count = sum(1 for _ in open(usgs_level1_files))
-        generate_ard_job(
-            ard_click_params,
-            l1_count,
-            Path(usgs_level1_files).resolve(),
-            uuids2archive,
-            jobdir,
-            run_ard,
-        )
-    else:
-        usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
-        duplicate_count = 0
-        uuids2archive_combined = []
-        paths_to_process = []
-        ancil_config = collections.ANCILLARY_COLLECTION
+    scene_limit = min(scene_limit, HARD_SCENE_LIMIT)
 
-        scene_limit = min(scene_limit, HARD_SCENE_LIMIT)
-        with Datacube(app="ard-scene-select", config=config) as dc:
-            for l1_product_name in products:
-                files2process, uuids2archive, duplicates = find_to_process(
-                    dc,
-                    l1_product_name,
-                    ancil_config=ancil_config,
-                    region_codes_per_sat_key=load_aoi(allowed_codes),
-                    interim_days_wait=interim_days_wait,
-                    days_to_exclude=days_to_exclude,
-                    find_blocked=find_blocked,
-                    min_date=default_min_date,
-                    max_date=default_max_date,
-                )
-                uuids2archive_combined += uuids2archive
-                paths_to_process.extend(files2process)
-                duplicate_count += duplicates
+    files2process, uuids2archive, duplicates = find_to_process(
+        collection=collection,
+        ancil_config=ancil_config,
+        region_codes_per_sat_key=load_aoi(allowed_codes),
+        interim_days_wait=interim_days_wait,
+        days_to_exclude=days_to_exclude,
+        find_blocked=find_blocked,
+        min_date=default_min_date,
+        max_date=default_max_date,
+    )
 
-        # If we stopped above as soon as we reached the limit we could end up in a situation where
-        # only the first product is ever processed.
+    # If we stopped above as soon as we reached the limit we could end up in a situation where
+    # only the first product is ever processed.
 
-        # Sort files so most recent acquisitions are processed first.
-        # This is to avoid a backlog holding up recent acquisitions
-        paths_to_process.sort(key=_get_path_date, reverse=True)
+    # Sort files so most recent acquisitions are processed first.
+    # This is to avoid a backlog holding up recent acquisitions
+    files2process.sort(key=_get_path_date, reverse=True)
 
-        # TODO: the old code reduced written records by the duplicate count, seemingly for multi-granule to be counted
-        #       multiple times. But it also had a comment saying it wouldn't work well with multi-granule...
-        l1_count = min(len(paths_to_process), scene_limit)
-        with open(usgs_level1_files, "w") as fid:
-            for path in paths_to_process[:l1_count]:
-                fid.write(str(path) + "\n")
+    # TODO: the old code reduced written records by the duplicate count, seemingly for multi-granule to be counted
+    #       multiple times. But it also had a comment saying it wouldn't work well with multi-granule...
+    l1_count = min(len(files2process), scene_limit)
 
-        generate_ard_job(
-            ard_click_params,
-            l1_count,
-            usgs_level1_files,
-            uuids2archive_combined,
-            jobdir,
-            run_ard,
-        )
+    level1_list_file = jobdir.joinpath(ODC_FILTERED_FILE)
+    with level1_list_file.open("w") as fid:
+        for path in files2process[:l1_count]:
+            fid.write(str(path) + "\n")
+
+    # Check for separate yaml dirs in our products
+    yaml_dirs = set(
+        [
+            l1_product.separate_metadata_directory
+            for l1_product in collection.iter_level1_products()
+        ]
+    )
+    yaml_dirs.remove(None)
+    if yaml_dirs:
+        if len(yaml_dirs) > 1:
+            raise ValueError(
+                "Multiple yaml directories found. For our given constellation?"
+            )
+        ard_params["yamls_dir"] = yaml_dirs.pop().as_posix()
+
+    generate_ard_job(
+        ard_params,
+        l1_count,
+        level1_list_file,
+        uuids2archive,
+        jobdir,
+        run_ard,
+    )
 
     _LOG.info("info", jobdir=str(jobdir))
 

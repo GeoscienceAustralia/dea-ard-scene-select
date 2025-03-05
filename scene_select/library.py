@@ -16,10 +16,20 @@ from ruamel import yaml
 _LOG = structlog.get_logger()
 
 
-@define(hash=True)
-class Level1Product:
+@define
+class BaseProduct:
     name: str = field(eq=True, hash=True)
 
+    @property
+    def constellation_code(self) -> str:
+        """
+        Is this an 'ls' or 's2' product?
+        """
+        return _get_constellation_code_for_product(self.name)
+
+
+@define(hash=True)
+class Level1Product(BaseProduct):
     # Examples:
     # /g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2021/2021-01/30S110E-35S115E/S2B_MSIL1C_20210124T023249_N0209_R103_T50JLL_20210124T035242.zip
     # /g/data/da82/AODH/USGS/L1/Landsat/C2/092_079/LC80920792024074/LC08_L1TP_092079_20240314_20240401_02_T1.odc-metadata.yaml
@@ -38,8 +48,7 @@ class Level1Product:
 
 
 @define(unsafe_hash=True)
-class ArdProduct:
-    name: str = field(eq=True, hash=True)
+class ArdProduct(BaseProduct):
     base_package_directory: Path = field(eq=False, hash=False)
 
     # Source level1s
@@ -146,6 +155,33 @@ def zip_uri_to_path(uri: str) -> Path:
     return Path(uri.split("!")[0][len(prefix) :])
 
 
+def _get_constellation_code_for_product(product_name: str) -> str:
+    """
+    >>> _get_constellation_code_for_product('ga_ls5t_level1_3')
+    'ls'
+    >>> _get_constellation_code_for_product('usgs_ls9c_level1_2')
+    'ls'
+    >>> _get_constellation_code_for_product('ga_ls8c_ard_3')
+    'ls'
+    >>> _get_constellation_code_for_product('esa_s2bm_level1_0')
+    's2'
+    >>> _get_constellation_code_for_product('esa_s2cm_level1_0')
+    's2'
+    >>> _get_constellation_code_for_product('ga_s2cm_ard_3')
+    's2'
+    >>> # probably don't need to handle this...
+    >>> _get_constellation_code_for_product('ga_ls_landcover_class_cyear_3')
+    'ls'
+    """
+    # Let's be ultra safe by complaining loudly if something unusual pops up.
+    prefix = product_name.split("_")[1][:2]
+    if prefix not in ("ls", "s2"):
+        raise ValueError(
+            f"Unknown constellation {prefix} for {product_name=}! Something is wrong"
+        )
+    return prefix
+
+
 @define
 class ArdDataset(BaseDataset):
     maturity: str = field(eq=False, hash=False)
@@ -190,7 +226,7 @@ class ArdCollection:
     def __init__(
         self,
         dc: Datacube,
-        products: Iterable[ArdProduct],
+        ard_products: Iterable[ArdProduct],
         aoi_path: Path,
     ):
         """
@@ -207,14 +243,33 @@ class ArdCollection:
         self.dc = dc
         self.aoi: Aoi = Aoi(path=aoi_path)
 
-        self.products = list(products)
+        self.ard_products = list(ard_products)
+
+    @property
+    def constellation_code(self) -> str:
+        """
+        Is this an 'ls' or 's2' collection?
+        """
+        # Sanity check. Every collection will only have one constellation!
+        constellations = set(p.constellation_code for p in self.ard_products)
+        if len(constellations) != 1:
+            raise ValueError(
+                f"All products must be from the same constellation, got {constellations} for {self.ard_products}"
+            )
+
+        [constellation] = constellations
+        return constellation
+
+    def iter_level1_products(self) -> Generator[Level1Product, None, None]:
+        for ard_product in self.ard_products:
+            yield from ard_product.sources
 
     # def iterate_processable_levels1s(self): ...
     def iterate_indexed_ard_datasets(
         self,
         search_expressions: dict,
     ) -> Generator[Tuple[ArdProduct, ArdDataset], None, None]:
-        for product in self.products:
+        for product in self.ard_products:
             if (
                 "product" in search_expressions
                 and search_expressions["product"] != product.name

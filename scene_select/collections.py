@@ -28,6 +28,122 @@ AOI_PATH = PACKAGED_DATA / "Australian_AOI.json"
 # - unique fields?
 # - metadata
 
+AOI_FILE = "Australian_AOI.json"
+# AOI_FILE = "Australian_AOI_mainland.json"
+# AOI_FILE = "Australian_AOI_with_islands.json"
+
+
+def _make_patterns():
+    L9_C2_PATTERN = (
+        r"^(?P<sensor>LC)"
+        r"(?P<satellite>09)_"
+        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>02)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    # landsat 8 filename pattern is configured to match only
+    # processing level L1TP and L1GT for acquisition containing
+    # both the TIRS and OLI sensors with .tar extension.
+    L8_C1_PATTERN = (
+        r"^(?P<sensor>LC)"
+        r"(?P<satellite>08)_"
+        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>01)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    L8_C2_PATTERN = (
+        r"^(?P<sensor>LC)"
+        r"(?P<satellite>08)_"
+        r"(?P<processingCorrectionLevel>L1TP|L1GT)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>02)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+    # L1TP and L1GT are all ortho-rectified with DEM.
+    # The only difference is L1GT was processed without Ground Control Points
+    # - but because LS8 orbit is very accurate so LS8 L1GT products with orbital
+    # info is ~90% within one pixel.
+    # (From Lan-Wei)
+    # Therefore we use L1GT for ls8 but not ls7 or ls5.
+
+    # landsat 7 filename pattern is configured to match only
+    # processing level L1TP with .tar extension.
+    L7_C1_PATTERN = (
+        r"^(?P<sensor>LE)"
+        r"(?P<satellite>07)_"
+        r"(?P<processingCorrectionLevel>L1TP)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>01)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    L7_C2_PATTERN = (
+        r"^(?P<sensor>LE)"
+        r"(?P<satellite>07)_"
+        r"(?P<processingCorrectionLevel>L1TP)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>02)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    # landsat 5 filename is configured to match only
+    # processing level L1TP with .tar extension.
+    L5_PATTERN = (
+        r"^(?P<sensor>LT)"
+        r"(?P<satellite>05)_"
+        r"(?P<processingCorrectionLevel>L1TP)_"
+        r"(?P<wrsPath>[0-9]{3})"
+        r"(?P<wrsRow>[0-9]{3})_"
+        r"(?P<acquisitionDate>[0-9]{8})_"
+        r"(?P<processingDate>[0-9]{8})_"
+        r"(?P<collectionNumber>01)_"
+        r"(?P<collectionCategory>T1|T2)"
+        r"(?P<extension>)$"
+    )
+
+    S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-C])_"
+
+    return {
+        "ga_ls5t_level1_3": L5_PATTERN,
+        "ga_ls7e_level1_3": L7_C1_PATTERN,
+        "usgs_ls5t_level1_1": L5_PATTERN,
+        "usgs_ls7e_level1_1": L7_C1_PATTERN,
+        "usgs_ls7e_level1_2": L7_C2_PATTERN,
+        "usgs_ls8c_level1_1": L8_C1_PATTERN,
+        "usgs_ls8c_level1_2": L8_C2_PATTERN,
+        "usgs_ls9c_level1_2": L9_C2_PATTERN,
+        "esa_s2am_level1_0": S2_PATTERN,
+        "esa_s2bm_level1_0": S2_PATTERN,
+        "esa_s2cm_level1_0": S2_PATTERN,
+    }
+
+
+PROCESSING_PATTERN_MAPPING = _make_patterns()
+
 
 ANCILLARY_COLLECTION = AncillaryFiles(
     brdf_dir="/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061",
@@ -175,7 +291,7 @@ def get_collection(dc: Datacube, prefix: str = None) -> ArdCollection:
     if not products:
         raise ValueError(f"No products found for {prefix=}")
 
-    return ArdCollection(dc=dc, products=products, aoi_path=AOI_PATH)
+    return ArdCollection(dc=dc, ard_products=products, aoi_path=AOI_PATH)
 
 
 def index_level1_path(metadata_path: Path, d_log: WrappedLogger) -> bool:

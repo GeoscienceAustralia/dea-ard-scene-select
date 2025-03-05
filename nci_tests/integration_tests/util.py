@@ -24,7 +24,8 @@ def get_list_from_file(list_file: str) -> List:
     return file_list
 
 
-"""
+def get_expected_file_paths(DATASETS: List) -> List:
+    """
     Generate a list of expected file paths by replacing
     '.odc-metadata.yaml' with '.tar'
     for each file path in a given list.
@@ -36,10 +37,7 @@ def get_list_from_file(list_file: str) -> List:
     - List: A list of file paths with '.tar' extensions, corresponding
         to the input DATASETS.
 
-"""
-
-
-def get_expected_file_paths(DATASETS: List) -> List:
+    """
     return [file_path.replace(".odc-metadata.yaml", ".tar") for file_path in DATASETS]
 
 

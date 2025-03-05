@@ -508,7 +508,7 @@ def find_jobs_by_odc_ard_search(
     # The level1s to process, and the ids of datasets that will be replaced by them.
     level1s_to_process: List[Job] = []
 
-    log.info("chosen_products", products=[c.name for c in collection.products])
+    log.info("chosen_products", products=[c.name for c in collection.ard_products])
     # Filter to our set of ARD products.
     for ard_product, ard_dataset in collection.iterate_indexed_ard_datasets(
         expressions

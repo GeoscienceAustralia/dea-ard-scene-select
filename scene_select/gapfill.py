@@ -9,7 +9,6 @@ from pathlib import Path
 from subprocess import check_call
 from typing import Set, Tuple
 
-import psycopg2
 
 from scene_select.collections import index_level1_path
 from scene_select.utils import structlog_setup
@@ -46,6 +45,8 @@ def generate_indexed_paths(output_file: Path) -> Set[str]:
     """
     if not output_file.exists():
         _LOG.info("scanning_db", output=output_file)
+        import psycopg2
+
         conn = psycopg2.connect("")  # Use standard postgres environment variables
 
         with conn.cursor() as cur, output_file.open("w") as f:

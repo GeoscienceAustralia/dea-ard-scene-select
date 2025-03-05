@@ -1,0 +1,39 @@
+
+[project]
+name = "ard-scene-select"
+version = "0.3.0"
+description = "Select scenes to be processed by ARD."
+readme = "README.rst"
+requires-python = ">=3.11"
+license = { text = "Apache License 2.0" }
+keywords = ["ard-scene-select"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "click>=8.1.8",
+    "datacube>=1.9.2",
+    "eodatasets3>=1.9.1",
+    "pytest>=8.3.5",
+    "structlog>=25.1.0",
+]
+
+[project.urls]
+homepage = "https://github.com/GeoscienceAustralia/dea-ard-scene-select"
+repository = "https://github.com/GeoscienceAustralia/dea-ard-scene-select"
+
+[tool.setuptools]
+zip-safe = false
+packages = { find = { exclude = ["tests", "modules", "examples"] } }
+include-package-data = true
+
+[project.scripts]
+ard-scene-select = "scene_select.ard_scene_select:scene_select"
+ard-bulk-reprocess = "scene_select.bulk_process:cli"
+ard-bulk-merge = "scene_select.merge_bulk_runs:cli"
+generate-aoi = "scene_select.generate_aoi:generate_region"
+ard-reprocessed-l1s = "scene_select.ard_reprocessed_l1s:ard_reprocessed_l1s"
