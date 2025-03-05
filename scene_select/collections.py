@@ -4,7 +4,7 @@ What collections do we have, and where to we expect them?
 This is to make tools more foolproof — they should already know where we store our Level 1 data, for example.
 """
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pathlib import Path
 from typing import List
 
@@ -15,11 +15,27 @@ from datacube.model import Range, Dataset
 from eodatasets3.utils import default_utc
 from structlog.typing import WrappedLogger
 
+from scene_select.check_ancillary import AncillaryFiles
 from scene_select.library import ArdProduct, Level1Product, ArdCollection
 from scene_select.utils import chopped_scene_id
 
 PACKAGED_DATA = Path(__file__).parent / "data"
 AOI_PATH = PACKAGED_DATA / "Australian_AOI.json"
+
+
+# Constellation
+# - excluded days?
+# - unique fields?
+# - metadata
+
+
+ANCILLARY_COLLECTION = AncillaryFiles(
+    brdf_dir="/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061",
+    wv_dir="/g/data/v10/eoancillarydata-2/water_vapour",
+    viirs_i_path="/g/data/v10/eoancillarydata-2/BRDF/VNP43IA1.001",
+    viirs_m_path="/g/data/v10/eoancillarydata-2/BRDF/VNP43MA1.001",
+    use_viirs_after=datetime(2099, 9, 9),
+)
 
 ARD_PRODUCTS = {
     ArdProduct(
@@ -119,7 +135,7 @@ ARD_PRODUCTS = {
 }
 
 
-def get_product(product_name: str) -> ArdProduct:
+def get_ard_product(product_name: str) -> ArdProduct:
     products = {product for product in ARD_PRODUCTS if product.name == product_name}
     if not products:
         raise ValueError(f"No products found for {product_name=}")
@@ -131,7 +147,7 @@ def get_product(product_name: str) -> ArdProduct:
     return product
 
 
-def get_product_for_level1(level1_product_name: str):
+def get_ard_for_level1(level1_product_name: str) -> ArdProduct:
     def _source_names(product):
         return (p.name for p in product.sources)
 

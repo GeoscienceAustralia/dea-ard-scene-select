@@ -5,7 +5,6 @@ import json
 import os
 import re
 import uuid
-from logging.config import fileConfig
 from pathlib import Path
 from typing import List, Tuple, Dict, TypedDict
 
@@ -15,9 +14,9 @@ from datacube import Datacube
 from datacube.model import Dataset
 from eodatasets3.utils import default_utc
 
+from scene_select import utils, collections
 from scene_select.check_ancillary import AncillaryFiles
 from scene_select.do_ard import generate_ard_job, ODC_FILTERED_FILE
-from scene_select import utils, collections
 
 AOI_FILE = "Australian_AOI.json"
 # AOI_FILE = "Australian_AOI_mainland.json"
@@ -172,7 +171,7 @@ def does_have_a_mature_child(dc: Datacube, dataset: Dataset) -> bool:
     return False
 
 
-class ARDSceneInfo(TypedDict):
+class SceneInfo(TypedDict):
     dataset_maturity: str
     id: str
 
@@ -182,12 +181,12 @@ ChoppedSceneId = str
 
 def create_table_of_processed_ards(
     dc: Datacube, product_name: str, sat_key: str
-) -> Dict[ChoppedSceneId, ARDSceneInfo]:
+) -> Dict[ChoppedSceneId, SceneInfo]:
     """
     Return None or
     a dictionary with key chopped_scene_id and value id, maturity level.
     """
-    ard_product = collections.get_product_for_level1(product_name)
+    ard_product = collections.get_ard_for_level1(product_name)
     if not ard_product:
         raise ValueError(f"Product {product_name!r} is not a known ARD product")
 
@@ -208,15 +207,14 @@ def create_table_of_processed_ards(
             # The same chopped scene id has multiple scenes
             old_uuid = processed_ard_scene_ids[chopped_id]["id"]
             _LOG.warning(
-                "Multiple identical ARD scene ids",
+                "duplicate_ards",
                 landsat_scene_id=chopped_id,
                 old_uuid=old_uuid,
                 new_uuid=result.id,
             )
-        processed_ard_scene_ids[chopped_id] = {
-            "dataset_maturity": result.dataset_maturity,
-            "id": result.id,
-        }
+        processed_ard_scene_ids[chopped_id] = SceneInfo(
+            id=result.id, dataset_maturity=result.dataset_maturity
+        )
 
     return processed_ard_scene_ids
 
@@ -307,7 +305,7 @@ def should_we_filter_because_processed_already(
             temp_logger.debug("filtering", reason="Skipping dataset with children")
             return True
 
-    if choppedsceneid not in (processed_ard_scene_ids or {}):
+    if choppedsceneid not in processed_ard_scene_ids:
         return False
 
     kwargs = {}
@@ -324,18 +322,14 @@ def should_we_filter_because_processed_already(
         # an ard there.
 
     if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
-        # lets build a list of ARD uuid's to delete
         uuids2archive.append(str(produced_ard["id"]))
-
         temp_logger.debug(
             "scene added", reason="Interim scene is being processed to final"
         )
         return False
-    else:
-        temp_logger.debug("filtering", **kwargs)
-        # Continue for everything except interim
-        # so it doesn't get processed
-        return True
+
+    temp_logger.debug("filtering.already_in_list", **kwargs)
+    return True
 
 
 def find_to_process(
@@ -386,10 +380,9 @@ def find_to_process(
                 )
             elif sat_key == "s2":
                 product_id = l1_dataset.metadata.sentinel_tile_id
-                # S2 has no equivalent to a scene id
-                # I'm using sentinel_tile_id.  This will work for handling interim to final.
-                # it will not catch duplicates.
-                choppedsceneid = l1_dataset.metadata.sentinel_tile_id
+                choppedsceneid = utils.chopped_scene_id(
+                    l1_dataset.metadata.sentinel_tile_id
+                )
             else:
                 raise ValueError("Unknown satellite key")
 
@@ -406,7 +399,10 @@ def find_to_process(
             if l1_product_name in PROCESSING_PATTERN_MAPPING:
                 prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product_name]
                 if not re.match(prod_pattern, product_id):
-                    log.debug("filtering", reason="Processing level too low")
+                    log.debug(
+                        "filtering.low_processing_level",
+                        reason="Processing level too low",
+                    )
                     continue
 
             # Filter out if outside area of interest
@@ -415,7 +411,9 @@ def find_to_process(
                 and region_code not in region_codes_per_sat_key[sat_key]
             ):
                 log.debug(
-                    "filtering", reason="Region not in AOI", region_code=region_code
+                    "filtering.outside_aoi",
+                    reason="Region not in AOI",
+                    region_code=region_code,
                 )
                 continue
 
@@ -433,7 +431,7 @@ def find_to_process(
                 days_to_exclude, l1_dataset.time.end
             ):
                 log.info(
-                    "filtering",
+                    "filtering.excluded_day",
                     dataset_time_end=l1_dataset.time.end,
                     reason="This day is excluded.",
                 )
@@ -443,7 +441,7 @@ def find_to_process(
             if file_path in files2process:
                 duplicates += 1
                 log.debug(
-                    "filtering",
+                    "filtering.multi_file_path",
                     reason="Potential multi-granule duplicate file path removed.",
                     duplicate_count=duplicates,
                 )
@@ -468,7 +466,10 @@ def find_to_process(
             # LOGGER.debug("location:pre dataset_with_final_child")
             # If any child exists that isn't archived
             if does_have_a_mature_child(dc, l1_dataset):
-                log.debug("filtering", reason="Skipping dataset with children")
+                log.debug(
+                    "filtering.has_mature_children",
+                    reason="Skipping dataset with children",
+                )
                 continue
 
             files2process.add(file_path)
@@ -643,8 +644,6 @@ def scene_select(
     find_blocked: bool,
     **ard_click_params,
 ):
-    utils.structlog_setup()
-
     default_max_date = default_utc(datetime.datetime.now(datetime.UTC))
     default_min_date = default_max_date - datetime.timedelta(days=60)
 
@@ -660,11 +659,8 @@ def scene_select(
 
     if not stop_logging:
         gen_log_file = jobdir.joinpath("ard_scene_select.log").resolve()
-        fileConfig(
-            log_config,
-            disable_existing_loggers=False,
-            defaults={"genlogfilename": str(gen_log_file)},
-        )
+        utils.structlog_setup(gen_log_file.open("a"))
+
     _LOG.info("scene_select", **locals())
 
     # logdir is used both  by scene select and ard
@@ -687,7 +683,7 @@ def scene_select(
         duplicate_count = 0
         uuids2archive_combined = []
         paths_to_process = []
-        ancil_config = AncillaryFiles()
+        ancil_config = collections.ANCILLARY_COLLECTION
 
         scene_limit = min(scene_limit, HARD_SCENE_LIMIT)
         with Datacube(app="ard-scene-select", config=config) as dc:

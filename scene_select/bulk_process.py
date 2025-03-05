@@ -35,7 +35,7 @@ from packaging import version
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
 
-from scene_select.collections import get_collection, get_product, get_product_for_level1
+from scene_select.collections import get_collection, get_ard_product, get_ard_for_level1
 from scene_select.do_ard import calc_node_with_defaults
 from scene_select.library import Level1Dataset, ArdProduct, ArdCollection, ArdDataset
 from scene_select.scene_filters import parse_expressions, GreaterThan, LessThan
@@ -216,7 +216,7 @@ def cli_ard_ids(ctx, ids_file, ids: List[str]):
         for ard_id in all_ids:
             odc_ard = dc.index.datasets.get(ard_id, include_sources=False)
             ard_dataset = ArdDataset.from_odc(odc_ard)
-            ard_product = get_product(odc_ard.product.name)
+            ard_product = get_ard_product(odc_ard.product.name)
 
             this_platform = get_platform(odc_ard)
             if platform and (this_platform != platform):
@@ -311,14 +311,14 @@ def cli_level1_ids(ctx, ids_file, ids: List[str]):
 
                 # Record the expected product of our ards
                 if ard_product is None:
-                    ard_product = get_product(child_dataset.product.name)
+                    ard_product = get_ard_product(child_dataset.product.name)
 
                 derived_ard_uuids.append(str(child_dataset.id))
 
             # If we didn't find any ARD products, we need to determine which to use
             if ard_product is None:
                 log_ctx.info("no_existing_ard_datasets_found")
-                ard_product = get_product_for_level1(odc_level1.product.name)
+                ard_product = get_ard_for_level1(odc_level1.product.name)
                 if not ard_product:
                     raise ValueError(
                         f"No ARD product found for level1 {odc_level1.product.name}!"

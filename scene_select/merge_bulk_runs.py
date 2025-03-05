@@ -34,7 +34,7 @@ from eodatasets3.prepare.landsat_l1_prepare import normalise_nci_symlinks
 from eodatasets3.utils import default_utc
 from ruamel import yaml
 
-from scene_select.collections import get_product
+from scene_select.collections import get_ard_product
 from scene_select.library import ArdProduct
 from scene_select.utils import structlog_setup
 
@@ -148,7 +148,7 @@ def process_dataset(
         return False
 
     processing_base, metadata_offset = split_dataset_base_path(metadata_file)
-    collection_product = get_product(dataset.product.name)
+    collection_product = get_ard_product(dataset.product.name)
     dest_metadata_path = collection_product.base_package_directory / metadata_offset
 
     if not dataset_filter.should_process_dataset(dataset, collection_product, log):

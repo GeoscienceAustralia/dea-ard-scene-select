@@ -12,13 +12,8 @@ import structlog
 
 LOG = structlog.get_logger()
 
-MODIS_START_DATE = datetime.datetime(2002, 7, 1)
-DEFAULT_MODIS_DIR = "/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061"
-DEFAULT_VIIRS_I_PATH = "/g/data/v10/eoancillarydata-2/BRDF/VNP43IA1.001"  # viirs_i_path
-DEFAULT_VIIRS_M_PATH = "/g/data/v10/eoancillarydata-2/BRDF/VNP43MA1.001"  # viirs_m_path
-DEFAULT_USE_VIIRS_AFTER = datetime.datetime(2099, 9, 9)
-WV_DIR = "/g/data/v10/eoancillarydata-2/water_vapour"
 WV_FMT = "pr_wtr.eatm.{year}.h5"
+MODIS_START_DATE = datetime.datetime(2002, 7, 1)
 
 
 def read_h5_table(fid, dataset_name):
@@ -55,11 +50,11 @@ def read_h5_table(fid, dataset_name):
 class AncillaryFiles:
     def __init__(
         self,
-        brdf_dir=DEFAULT_MODIS_DIR,
-        wv_dir=WV_DIR,
-        viirs_i_path=DEFAULT_VIIRS_I_PATH,
-        viirs_m_path=DEFAULT_VIIRS_M_PATH,
-        use_viirs_after=DEFAULT_USE_VIIRS_AFTER,
+        brdf_dir,
+        wv_dir,
+        viirs_i_path,
+        viirs_m_path,
+        use_viirs_after,
         wv_days_tolerance=1,
     ):
         self.brdf_path = Path(brdf_dir)
@@ -67,7 +62,7 @@ class AncillaryFiles:
         self.viirs_i_path = Path(viirs_i_path)
         self.viirs_m_path = Path(viirs_m_path)
         self.use_viirs_after = use_viirs_after
-        self.max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
+        self.max_wv_tolerance = -datetime.timedelta(days=wv_days_tolerance)
 
     @lru_cache(maxsize=32)
     def wv_file_exists(self, a_year):
@@ -122,7 +117,7 @@ class AncillaryFiles:
         acquisition_datetime = acquisition_datetime.replace(tzinfo=None)
 
         delta = index.timestamp - acquisition_datetime
-        afilter = (delta < datetime.timedelta()) & (delta > self.max_tolerance)
+        afilter = (delta < datetime.timedelta()) & (delta > self.max_wv_tolerance)
         result = delta[afilter]
 
         if result.shape[0] == 0:
@@ -139,7 +134,3 @@ class AncillaryFiles:
             else:
                 # use viirs
                 return self.check_viirs(ymd)
-
-
-if __name__ == "__main__":
-    pass
