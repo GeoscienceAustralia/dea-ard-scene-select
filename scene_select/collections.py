@@ -20,18 +20,10 @@ from scene_select.library import ArdProduct, Level1Product, ArdCollection
 from scene_select.utils import chopped_scene_id
 
 PACKAGED_DATA = Path(__file__).parent / "data"
-AOI_PATH = PACKAGED_DATA / "Australian_AOI.json"
 
-
-# Constellation
-# - excluded days?
-# - unique fields?
-# - metadata
-
-AOI_FILE = "Australian_AOI.json"
 # AOI_FILE = "Australian_AOI_mainland.json"
 # AOI_FILE = "Australian_AOI_with_islands.json"
-
+AOI_PATH = PACKAGED_DATA / "Australian_AOI.json"
 
 ANCILLARY_COLLECTION = AncillaryFiles(
     brdf_dir="/g/data/v10/eoancillarydata-2/BRDF/MCD43A1.061",
@@ -157,7 +149,6 @@ PROCESSABLE_L1_FILENAME_PATTERN = {
     "esa_s2bm_level1_0": _PROCESSABLE_S2_L1_FILENAME_PATTERN,
     "esa_s2cm_level1_0": _PROCESSABLE_S2_L1_FILENAME_PATTERN,
 }
-
 
 ARD_PRODUCTS = {
     ArdProduct(

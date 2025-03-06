@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import datetime
-import json
 import os
 import re
 from pathlib import Path
@@ -19,27 +18,12 @@ from eodatasets3.utils import default_utc
 from scene_select import utils, collections
 from scene_select.check_ancillary import AncillaryFiles
 from scene_select.collections import PROCESSABLE_L1_FILENAME_PATTERN, get_collection
-from scene_select.do_ard import generate_ard_job, ODC_FILTERED_FILE, ArdParameters
+from scene_select.do_ard import generate_ard_job, ArdParameters
 from scene_select.library import ArdProduct
 
 HARD_SCENE_LIMIT = 10000
 
 _LOG = structlog.get_logger()
-
-
-def load_aoi(file_name: str) -> Dict[str, set[str]]:
-    """
-    load the expected set of region codes for each sat_key ("ls" and "s2")
-    """
-
-    with open(file_name, "r") as f:
-        data = json.load(f)
-
-    # json does not save sets
-    # So after loading the list is converted to a set
-    for key, value in data.items():
-        data[key] = set(value)
-    return data
 
 
 def does_have_a_mature_child(index: AbstractIndex, dataset: Dataset) -> bool:
@@ -208,7 +192,6 @@ def should_we_filter_because_processed_already(
 def find_to_process(
     collection: collections.ArdCollection,
     ancil_config: AncillaryFiles,
-    region_codes_per_sat_key: Dict[str, set[str]],
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
@@ -291,7 +274,7 @@ def find_to_process(
                     # Filter out if outside area of interest
                     if (
                         sat_key is not None
-                        and region_code not in region_codes_per_sat_key[sat_key]
+                        and region_code not in collection.aoi_region_codes
                     ):
                         log.debug(
                             "filtering.outside_aoi",
@@ -437,7 +420,6 @@ def _get_path_date(path: str) -> str:
 @ui.pass_index(app_name="scene-select")
 def scene_select(
     index: AbstractIndex,
-    allowed_codes: str,
     prefix: str,
     scene_limit: int,
     interim_days_wait: int,
@@ -450,15 +432,13 @@ def scene_select(
         collection = get_collection(dc, prefix)
 
     constellation_code = collection.constellation_code
+    base_job_dir = Path(f"/g/data/v10/work/{constellation_code}-submit-ard")
+    base_log_dir = Path(f"/g/data/v10/logs/{constellation_code}-submit-ard")
 
     run_date = datetime.datetime.now()
-    jobdir = Path(
-        f"/g/data/v10/work/{constellation_code}-submit-ard/{run_date:%Y-%m}/{run_date:%d-%H%M%S}"
-    )
-    scene_select_jobdir = jobdir / "scene-select"
-    logdir = Path(
-        f"/g/data/v10/logs/{constellation_code}-submit-ard/{run_date:%Y-%m}/{run_date:%d-%H%M%S}"
-    )
+
+    jobdir = base_job_dir / f"{run_date:%Y-%m}/{run_date:%d-%H%M%S}"
+    logdir = base_log_dir / "{run_date:%Y-%m}/{run_date:%d-%H%M%S}"
     jobdir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
 
@@ -498,7 +478,6 @@ def scene_select(
     files2process, uuids2archive, duplicates = find_to_process(
         collection=collection,
         ancil_config=ancil_config,
-        region_codes_per_sat_key=load_aoi(allowed_codes),
         interim_days_wait=interim_days_wait,
         days_to_exclude=days_to_exclude,
         find_blocked=find_blocked,
@@ -517,11 +496,6 @@ def scene_select(
     #       multiple times. But it also had a comment saying it wouldn't work well with multi-granule...
     l1_count = min(len(files2process), scene_limit)
 
-    level1_list_file = jobdir.joinpath(ODC_FILTERED_FILE)
-    with level1_list_file.open("w") as fid:
-        for path in files2process[:l1_count]:
-            fid.write(str(path) + "\n")
-
     # Check for separate yaml dirs in our products
     yaml_dirs = set(
         [
@@ -538,12 +512,12 @@ def scene_select(
         ard_params["yamls_dir"] = yaml_dirs.pop().as_posix()
 
     generate_ard_job(
-        ard_params,
-        l1_count,
-        level1_list_file,
-        uuids2archive,
-        jobdir,
-        run_ard,
+        ard_click_params=ard_params,
+        l1_count=l1_count,
+        l1_paths=files2process[:l1_count],
+        uuids2archive=uuids2archive,
+        jobdir=jobdir,
+        run_ard=run_ard,
     )
 
     _LOG.info("info", jobdir=str(jobdir))

@@ -30,9 +30,12 @@ class ArdParameters(TypedDict, total=False):
     jobfs: Optional[str]  # The jobfs memory in GB to request per node
     nodes: Optional[int]  # The number of nodes to request
 
+    archive_list: Optional[
+        str
+    ]  # The path containing a list of UUIDs to archive on success
 
-ODC_FILTERED_FILE = "level1_scenes_for_ard.txt"
-ARCHIVE_FILE = "uuid_to_archive.txt"
+
+ODC_FILTERED_FILE = "level1_paths_for_ard.txt"
 PBS_ARD_FILE = "run_ard_pbs.sh"
 PBS_JOB = """#!/bin/bash
 module purge
@@ -131,16 +134,16 @@ def make_ard_pbs(level1_list, **ard_click_params):
 def generate_ard_job(
     ard_click_params: ArdParameters,
     l1_count: int,
-    usgs_level1_files: Path,
     uuids2archive: list,
     jobdir: Path,
     run_ard: bool,
-    l1_zips=None,
+    l1_paths=None,
+    l1_paths_file: Path = None,
 ):
-    """Run ard.
-    This function assumes a l1 zip file has been written to the jobdir.
-    Though if you specify l1_zips in a list, and usgs_level1_files is None,
-      it will write the file."""
+    """Create a PBS job for an ARD job and optionally run it.
+
+    Either give a list of L1 paths, or a file path containing the list of L1 paths.
+    """
     _LOG.info("do_ard", **locals())
     try:
         calc_node_with_defaults(ard_click_params, l1_count)
@@ -148,24 +151,24 @@ def generate_ard_job(
         print(err.args)
         _LOG.warning("ValueError", message=err.args)
 
-    if l1_zips is not None:
-        assert usgs_level1_files is None
-        # ODC_FILTERED_FILE
-        usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
-        with open(usgs_level1_files, "w") as fid:
-            fid.write("\n".join(l1_zips))
+    if l1_paths:
+        if l1_paths_file:
+            raise ValueError("Specify either l1_paths or l1_paths_file, not both")
+        l1_paths_file = jobdir.joinpath(ODC_FILTERED_FILE)
+        with open(l1_paths_file, "w") as fid:
+            fid.write("\n".join(l1_paths))
+            fid.write("\n")
 
     if len(uuids2archive) > 0:
-        # ARCHIVE_FILE
-        path_scenes_to_archive = jobdir.joinpath(ARCHIVE_FILE)
+        path_scenes_to_archive = jobdir.joinpath("ard_uuids_to_archive.txt")
         with open(path_scenes_to_archive, "w") as fid:
             fid.write("\n".join(uuids2archive))
-        ard_click_params["archive-list"] = path_scenes_to_archive
+        ard_click_params["archive_list"] = path_scenes_to_archive.resolve().as_posix()
 
     # write pbs script
     script_path = jobdir.joinpath(PBS_ARD_FILE)
     with open(script_path, "w") as src:
-        src.write(make_ard_pbs(usgs_level1_files, **ard_click_params))
+        src.write(make_ard_pbs(l1_paths_file.resolve(), **ard_click_params))
 
     # Make the script executable
     os.chmod(script_path, os.stat(script_path).st_mode | stat.S_IEXEC)

@@ -1,8 +1,9 @@
 import calendar
 import datetime
+import json
 
 from pathlib import Path
-from typing import Optional, List, Generator, Tuple, Iterable
+from typing import Optional, List, Generator, Tuple, Iterable, Dict
 
 import structlog
 from attr import define, field
@@ -12,8 +13,22 @@ from datacube.utils import uri_to_local_path
 from eodatasets3.utils import default_utc
 from ruamel import yaml
 
-
 _LOG = structlog.get_logger()
+
+
+def load_aoi(file_name: Path) -> Dict[str, set[str]]:
+    """
+    load the expected set of region codes for each sat_key ("ls" and "s2")
+    """
+
+    with file_name.open("r") as f:
+        data = json.load(f)
+
+    # json does not save sets
+    # So after loading the list is converted to a set
+    for key, value in data.items():
+        data[key] = set(value)
+    return data
 
 
 @define
@@ -56,11 +71,6 @@ class ArdProduct(BaseProduct):
 
     # Example:
     # /g/data/xu18/ga/ga_ls8c_ard_3/089/074/2024/05/27/ga_ls8c_ard_3-2-1_089074_2024-05-27_final.odc-metadata.yaml
-
-
-@define
-class Aoi:
-    path: Path
 
 
 @define
@@ -241,9 +251,15 @@ class ArdCollection:
 
         """
         self.dc = dc
-        self.aoi: Aoi = Aoi(path=aoi_path)
 
         self.ard_products = list(ard_products)
+
+        aoi_region_codes = set(load_aoi(aoi_path).get(self.constellation_code))
+        if aoi_region_codes is None:
+            raise ValueError(
+                f"No region codes found for {self.constellation_code} in {aoi_path}. Unknown constellation?"
+            )
+        self.aoi_region_codes: set[str] = aoi_region_codes
 
     @property
     def constellation_code(self) -> str:
