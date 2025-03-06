@@ -18,7 +18,7 @@ from eodatasets3.utils import default_utc
 
 from scene_select import utils, collections
 from scene_select.check_ancillary import AncillaryFiles
-from scene_select.collections import PROCESSING_PATTERN_MAPPING, get_collection
+from scene_select.collections import PROCESSABLE_L1_FILENAME_PATTERN, get_collection
 from scene_select.do_ard import generate_ard_job, ODC_FILTERED_FILE, ArdParameters
 from scene_select.library import ArdProduct
 
@@ -235,7 +235,7 @@ def find_to_process(
             )
 
             # Don't crash on unknown l1 products
-            if l1_product_name not in PROCESSING_PATTERN_MAPPING:
+            if l1_product_name not in PROCESSABLE_L1_FILENAME_PATTERN:
                 msg = " not known to scene select processing filtering. Disabling processing filtering."
                 _LOG.warn(l1_product_name + msg)
 
@@ -279,8 +279,8 @@ def find_to_process(
                     )
 
                     # Filter out if the processing level is too low
-                    if l1_product_name in PROCESSING_PATTERN_MAPPING:
-                        prod_pattern = PROCESSING_PATTERN_MAPPING[l1_product_name]
+                    if l1_product_name in PROCESSABLE_L1_FILENAME_PATTERN:
+                        prod_pattern = PROCESSABLE_L1_FILENAME_PATTERN[l1_product_name]
                         if not re.match(prod_pattern, product_id):
                             log.debug(
                                 "filtering.low_processing_level",
@@ -434,7 +434,6 @@ def _get_path_date(path: str) -> str:
     is_flag=True,
     help="Find l1 scenes with no children that are not getting processed.",
 )
-@utils.LogAnyErrors(_LOG)
 @ui.pass_index(app_name="scene-select")
 def scene_select(
     index: AbstractIndex,
@@ -463,13 +462,19 @@ def scene_select(
     jobdir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
 
+    package_directories = set(a.base_package_directory for a in collection.ard_products)
+    if not len(package_directories) == 1:
+        raise ValueError(
+            f"All products must be in the same package directory: {package_directories}"
+        )
+
     # Create the ArdClickParameters instance with calculated paths
     ard_params = ArdParameters(
         walltime="10:00:00",
         project="v10",
         logdir=logdir.as_posix(),
         jobdir=jobdir.as_posix(),
-        pkgdir="/g/data/xu18/ga",
+        pkgdir=package_directories.pop().as_posix(),
         env=f"/g/data/v10/work/landsat_downloads/landsat-downloader/config/dass-prod-wagl-{constellation_code}.env",
         index_datacube_env="/g/data/v10/work/landsat_downloads/landsat-downloader/config/dass-index-datacube.env",
     )
