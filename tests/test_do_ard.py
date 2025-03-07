@@ -69,7 +69,6 @@ def test_do_ard(tmp_path):
         "workers": None,
         "yamls_dir": "",
     }
-    usgs_level1_files = None
     l1_zips = ["scene1.zip", "scene2.zip", "scene3.zip"]
     l1_count = len(l1_zips)
     uuids2archive = ["uuid1", "uuid2", "uuid3"]
@@ -77,13 +76,12 @@ def test_do_ard(tmp_path):
     jobdir.mkdir()
     run_ard = False
     generate_ard_job(
-        ard_click_params,
-        l1_count,
-        usgs_level1_files,
-        uuids2archive,
-        jobdir,
-        run_ard,
-        l1_zips,
+        ard_click_params=ard_click_params,
+        l1_count=l1_count,
+        uuids2archive=uuids2archive,
+        jobdir=jobdir,
+        run_ard=run_ard,
+        l1_paths=l1_zips,
     )
 
     # Not checking the values, just that the files exist

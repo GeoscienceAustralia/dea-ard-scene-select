@@ -352,7 +352,7 @@ def ard_reprocessed_l1s(
     scene_limit: int,
     run_ard: bool,
     dry_run: bool,
-    **ard_click_params: dict,
+    **ard_click_params,
 ):
     """
     The keys for ard_click_params;
@@ -406,13 +406,12 @@ def ard_reprocessed_l1s(
     l1_count = len(l1_zips)
     usgs_level1_files = None
     generate_ard_job(
-        ard_click_params,
-        l1_count,
-        usgs_level1_files,
-        uuids2archive,
-        jobdir,
-        run_ard,
-        l1_zips,
+        ard_click_params=ard_click_params,
+        l1_count=l1_count,
+        uuids2archive=uuids2archive,
+        jobdir=jobdir,
+        run_ard=run_ard,
+        l1_paths=l1_zips,
     )
 
     return jobdir

@@ -9,6 +9,7 @@ from typing import TypedDict, Optional
 
 import structlog
 
+
 _LOG = structlog.get_logger()
 
 
@@ -36,6 +37,7 @@ class ArdParameters(TypedDict, total=False):
 
 
 ODC_FILTERED_FILE = "level1_paths_for_ard.txt"
+ARCHIVE_FILE = "ard_uuids_to_archive.txt"
 PBS_ARD_FILE = "run_ard_pbs.sh"
 PBS_JOB = """#!/bin/bash
 module purge
@@ -160,7 +162,7 @@ def generate_ard_job(
             fid.write("\n")
 
     if len(uuids2archive) > 0:
-        path_scenes_to_archive = jobdir.joinpath("ard_uuids_to_archive.txt")
+        path_scenes_to_archive = jobdir.joinpath(ARCHIVE_FILE)
         with open(path_scenes_to_archive, "w") as fid:
             fid.write("\n".join(uuids2archive))
         ard_click_params["archive_list"] = path_scenes_to_archive.resolve().as_posix()

@@ -8,18 +8,19 @@ requires-python = ">=3.11"
 license = { text = "Apache License 2.0" }
 keywords = ["ard-scene-select"]
 classifiers = [
-    "Development Status :: 1 - Planning",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.11",
-    "Operating System :: OS Independent",
+  "Development Status :: 1 - Planning",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Operating System :: OS Independent",
 ]
 dependencies = [
-    "click>=8.1.8",
-    "datacube>=1.9.2",
-    "eodatasets3>=1.9.1",
-    "pytest>=8.3.5",
-    "structlog>=25.1.0",
+  "click>=8.1.8",
+  # Currently NCI still uses ODC 1.8
+  "datacube<1.9",
+  "eodatasets3",
+  "pytest>=8.3.5",
+  "structlog>=25.1.0",
 ]
 
 [project.urls]
