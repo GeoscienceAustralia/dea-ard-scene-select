@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import datetime
 import functools
 import logging
 import os
@@ -11,13 +12,20 @@ from typing import TextIO
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 from subprocess import Popen, PIPE
-import datetime
+
 from typing import Tuple, Iterator
 import calendar
 import click
 
-from datacube.model import Range, Dataset
+from typing import Dict
+from uuid import UUID
+
+import datacube.drivers.postgres._schema
 import structlog
+from datacube.index import Index
+from datacube.model import Range, Dataset
+from sqlalchemy import func, select
+from sqlalchemy.engine import Engine
 
 
 DATA_DIR = Path(__file__).parent.joinpath("data")
@@ -329,3 +337,61 @@ class LogAnyErrors:
             return result
 
         return decorated
+
+
+# The API `dc.index.datasets.get(ard_id, include_sources=True)` is extremely slow at NCI — we're manually
+# doing a non-recurvsive query here to avoid issues.
+
+
+def alchemy_engine(index: Index) -> Engine:
+    # There's no public api for sharing the existing engine (it's an implementation detail of the current index).
+    # We could create our own from config, but there's no api for getting the ODC config for the index either.
+    # pylint: disable=protected-access
+    return index.datasets._db._engine
+
+
+def get_dataset_sources(
+    index: Index, dataset_id: UUID, limit=None
+) -> Tuple[Dict[str, Dataset], int]:
+    """
+    Get the direct source datasets of a dataset, but without loading the whole upper provenance tree.
+
+    This is a lighter alternative to doing `index.datasets.get(include_source=True)`
+
+    A limit can also be specified.
+
+    Returns a source dict and how many more sources exist beyond the limit.
+    """
+    dataset_source = datacube.drivers.postgres._schema.DATASET_SOURCE
+    query = select(
+        [dataset_source.c.source_dataset_ref, dataset_source.c.classifier]
+    ).where(dataset_source.c.dataset_ref == dataset_id)
+    if limit:
+        # We add one to detect if there are more records after out limit.
+        query = query.limit(limit + 1)
+
+    engine = alchemy_engine(index)
+    dataset_classifier = engine.execute(query).fetchall()
+
+    if not dataset_classifier:
+        return {}, 0
+
+    remaining_records = 0
+    if limit and len(dataset_classifier) > limit:
+        dataset_classifier = dataset_classifier[:limit]
+        remaining_records = (
+            engine.execute(
+                select(func.count())
+                .select_from(dataset_source)
+                .where(dataset_source.c.dataset_ref == dataset_id)
+            ).scalar()
+            - limit
+        )
+
+    classifier = dict(dataset_classifier)
+    return {
+        classifier[d.id]: d
+        for d in (
+            index.datasets.bulk_get(dataset_id for dataset_id, _ in dataset_classifier)
+        )
+    }, remaining_records

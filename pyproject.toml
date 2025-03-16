@@ -23,6 +23,8 @@ dependencies = [
   "structlog>=25.1.0",
 ]
 
+tool.uv.package = true
+
 [project.urls]
 homepage = "https://github.com/GeoscienceAustralia/dea-ard-scene-select"
 repository = "https://github.com/GeoscienceAustralia/dea-ard-scene-select"
