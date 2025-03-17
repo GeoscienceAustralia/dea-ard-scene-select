@@ -362,6 +362,150 @@ def cli_level1_ids(ctx, ids_file, ids: List[str]):
     )
 
 
+@cli.command(
+    "level1-paths",
+    help="Specify a list of Level 1 paths to process (will check for ARDs to replace)",
+)
+@click.option(
+    "-f",
+    "--paths-file",
+    type=click.File("r"),
+    help="File containing Level 1 paths to process",
+)
+@click.argument("paths", nargs=-1)
+@click.pass_context
+def cli_level1_paths(ctx, paths_file, paths: List[str]):
+    structlog_setup()
+
+    all_paths = list(paths)
+    if paths_file:
+        for path_line in paths_file.readlines():
+            all_paths.append(path_line.strip())
+
+    log = structlog.get_logger()
+
+    index = ctx.obj["index"]
+    max_count = ctx.obj["max_count"]
+    work_dir = ctx.obj["work_dir"]
+    workers_per_node = ctx.obj["workers_per_node"]
+    pkg_dir = ctx.obj["pkg_dir"]
+    platform = None
+    project = ctx.obj["project"]
+
+    with Datacube(index=index) as dc:
+        jobs = []
+        for level1_path in all_paths:
+            log_ctx = log.bind(level1_path=level1_path)
+
+            matching_datasets = dc.index.datasets.get_datasets_for_location(
+                uri=_level1_path_to_uri(level1_path), mode="prefix"
+            )
+            if not matching_datasets:
+                log_ctx.warning("level1_dataset_not_found")
+                continue
+
+            # If more than one dataset is found, it might be an indexing issue to address later, but wont
+            # harm our run.
+            if len(matching_datasets) > 1:
+                log_ctx.warning("multiple_datasets_found", count=len(matching_datasets))
+
+            odc_level1 = matching_datasets[0]
+
+            # Determine platform
+            this_platform = get_platform(odc_level1)
+            if platform and (this_platform != platform):
+                raise ValueError(
+                    f"All paths should be of the same platform: {platform} != {this_platform}"
+                )
+            platform = this_platform
+
+            # Find all derived ARD datasets
+            derived_ard_uuids = []
+            ard_product = None
+
+            for child_dataset in dc.index.datasets.get_derived(odc_level1.id):
+                # Only check for ARD products
+                if "_ard_" not in child_dataset.product.name:
+                    continue
+
+                # Record the expected product of our ards
+                if ard_product is None:
+                    ard_product = get_ard_product(child_dataset.product.name)
+
+                derived_ard_uuids.append(str(child_dataset.id))
+
+            # If we didn't find any ARD products, we need to determine which to use
+            if ard_product is None:
+                log_ctx.info("no_existing_ard_datasets_found")
+                ard_product = get_ard_for_level1(odc_level1.product.name)
+                if not ard_product:
+                    raise ValueError(
+                        f"No ARD product found for level1 {odc_level1.product.name}!"
+                    )
+            else:
+                log_ctx.info("found_ard_datasets", count=len(derived_ard_uuids))
+
+            # Get the appropriate level1 product definition
+            level1_product = [
+                s for s in ard_product.sources if s.name == odc_level1.product.name
+            ]
+            if not level1_product:
+                log_ctx.error(
+                    "level1_product_not_in_ard_sources",
+                    level1=odc_level1.product.name,
+                    ard=ard_product.name,
+                )
+                continue
+            level1_product = level1_product[0]
+            level1_dataset = Level1Dataset.from_odc(odc_level1, level1_product)
+
+            jobs.append(
+                Job(
+                    level1=level1_dataset,
+                    replacement_uuids=derived_ard_uuids,
+                    target_ard_product=ard_product,
+                )
+            )
+
+            if len(jobs) >= max_count:
+                log.info("reached_max_count", max_count=max_count)
+                break
+
+    if not jobs:
+        log.info("no_datasets_to_process")
+        return
+
+    create_pbs_jobs(
+        jobs=jobs,
+        platform=platform,
+        work_dir=work_dir,
+        workers_per_node=workers_per_node,
+        pkg_dir=pkg_dir,
+        project=project,
+        log=log,
+    )
+
+
+def _level1_path_to_uri(level1_path: Path) -> str:
+    """
+    Convert level1 data path to the expected indexed URI
+
+    >>> # This is not a real NCI path-- trimmed down to fit line width.
+    >>> p = Path('/g/data/fj7/Copernicus/S2C_MSIL1C_20250124T010751_N0511_R045_T53KNV_20250124T024236.zip')
+    >>> _level1_path_to_uri(p)
+    'zip:/g/data/fj7/Copernicus/S2C_MSIL1C_20250124T010751_N0511_R045_T53KNV_20250124T024236.zip!/'
+    """
+    full_path = level1_path.absolute().as_posix()
+
+    # S2 are indexed as zip URIs.
+    if "S2" not in full_path:
+        raise ValueError(
+            f"TODO: Only Sentinel-2 Level 1 paths are supported for now: {full_path}"
+        )
+
+    return f"zip:{full_path}!/"
+
+
 def get_platform(odc_ard):
     if odc_ard.metadata.platform.startswith("s"):
         ourplatform = "s2"
