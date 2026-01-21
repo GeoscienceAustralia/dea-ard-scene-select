@@ -90,7 +90,6 @@ class AncillaryFiles:
         wv_pathname = self.wv_path.joinpath(
             WV_FMT.format(year=a_year)
         )
-        print("WE ARE LOOKING AT ", wv_pathname)
         return self._file_exists(wv_pathname)
 
     @lru_cache(maxsize=32)
@@ -98,7 +97,6 @@ class AncillaryFiles:
         wv_pathname = self.wv_path.joinpath(
             WV_FMT.format(year=a_year)
         )
-        print("WE READING THE INDEX AT ", wv_pathname)
         self._download_file(wv_pathname)
         with h5py.File(str(wv_pathname), "r") as fid:
             index = read_h5_table(fid, "INDEX")
@@ -107,7 +105,7 @@ class AncillaryFiles:
     @lru_cache(maxsize=20000)
     def brdf_day_exists(self, ymd, base_path):
         brdf_day_of_interest = base_path.joinpath(ymd)
-        print("WE ARE LOOKING FOR FOLDER ", brdf_day_of_interest)
+        LOG.debug("Searching for folder ", brdf_day_of_interest)
         return self._dir_exists(brdf_day_of_interest)
 
     def check_modis(self, ymd):
@@ -165,11 +163,9 @@ class AncillaryFiles:
         """List children of the given path, either locally or in S3, depending on configuration."""
         if S3_CLIENT:
             s3_path = self._to_s3_key(path)
-            print(f"LISTING S3 PATH AT {s3_path}")
+            LOG.debug(f"Listing S3 path at {s3_path}")
             response = S3_CLIENT.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_path)
-            ans= response.get("KeyCount", 0) > 0
-            print("RETURNING", ans)
-            return ans
+            return response.get("KeyCount", 0) > 0
         else:
             return path.is_dir()
 
@@ -177,7 +173,7 @@ class AncillaryFiles:
     def _download_file(self, path: Path) -> bool:
         path.parent.mkdir(parents=True, exist_ok=True)
         s3_key = self._to_s3_key(path)
-        print("DOWNLOADING", s3_key, "to", path)
+        LOG.debug(f"Downloading {s3_key} to {path}")
         S3_CLIENT.download_file(S3_BUCKET, s3_key, path)
 
 
@@ -188,7 +184,7 @@ class AncillaryFiles:
         if S3_CLIENT:
             try:
                 s3_key = self._to_s3_key(path)
-                print("LOOKING FOR KEY", s3_key)
+                LOG.debug(f"Looking for key {s3_key}")
                 S3_CLIENT.head_object(Bucket=S3_BUCKET, Key=s3_key)
                 return True
             except ClientError as e:
