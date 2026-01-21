@@ -24,7 +24,7 @@ WV_DIR = "/g/data/v10/eoancillarydata-2/water_vapour"
 WV_FMT = "pr_wtr.eatm.{year}.h5"
 
 
-S3_BUCKET = os.environ.get("S3_BUCKET") # TODO default to none
+S3_BUCKET = os.environ.get("S3_BUCKET")
 
 S3_CLIENT = None
 if S3_BUCKET:
@@ -105,7 +105,7 @@ class AncillaryFiles:
     @lru_cache(maxsize=20000)
     def brdf_day_exists(self, ymd, base_path):
         brdf_day_of_interest = base_path.joinpath(ymd)
-        LOG.debug("Searching for folder ", brdf_day_of_interest)
+        LOG.debug(f"Searching for folder  {brdf_day_of_interest}")
         return self._dir_exists(brdf_day_of_interest)
 
     def check_modis(self, ymd):
