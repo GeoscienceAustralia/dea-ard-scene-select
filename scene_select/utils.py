@@ -52,9 +52,9 @@ def calc_file_path(l1_dataset: Dataset, product_id: str) -> str:
 def calc_local_path(l1_dataset: Dataset) -> str:
     assert len(l1_dataset.uris) == 1, str(l1_dataset.uris)
     components = urlparse(l1_dataset.uris[0])
-    if not (components.scheme == "file" or components.scheme == "zip"):
+    if not (components.scheme == "file" or components.scheme == "zip" or components.scheme == "s3"):
         raise ValueError(
-            "Only file/Zip URIs currently supported. Tried %r." % components.scheme
+            "Only file/Zip/S3 URIs currently supported. Tried %r." % components.scheme
         )
     path = url2pathname(components.path)
     if path[-2:] == "!/":
