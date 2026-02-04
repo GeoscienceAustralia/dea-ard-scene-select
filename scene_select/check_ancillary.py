@@ -171,7 +171,6 @@ class AncillaryFiles:
 
 
     def _download_file(self, path: Path) -> bool:
-        path.parent.mkdir(parents=True, exist_ok=True)
         s3_key = self._to_s3_key(path)
         LOG.debug(f"Downloading {s3_key} to {path}")
         S3_CLIENT.download_file(S3_BUCKET, s3_key, path)
