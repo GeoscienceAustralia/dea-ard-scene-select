@@ -97,8 +97,21 @@ class AncillaryFiles:
         wv_pathname = self.wv_path.joinpath(
             WV_FMT.format(year=a_year)
         )
-        self._download_file(wv_pathname)
-        with h5py.File(str(wv_pathname), "r") as fid:
+        args = {}
+        if S3_CLIENT:
+            wv_pathname = f"s3://{S3_BUCKET}{wv_pathname}"
+            import boto3
+            session = session = boto3.Session()
+            creds = session.get_credentials().get_frozen_credentials()
+            args.update({
+              "driver": "ros3",
+              "aws_region": b"ap-southeast-2",
+              "secret_id": creds.access_key.encode(),
+              "secret_key": creds.secret_key.encode(),
+              "session_token": creds.token.encode()
+            })
+
+        with h5py.File(wv_pathname, "r", **args) as fid:
             index = read_h5_table(fid, "INDEX")
         return index
 
@@ -153,7 +166,6 @@ class AncillaryFiles:
             else:
                 # use viirs
                 return self.check_viirs(ymd)
-
         
     def _to_s3_key(self, path: Path) -> str:
         # Remove the leading slash if present.
@@ -168,13 +180,6 @@ class AncillaryFiles:
             return response.get("KeyCount", 0) > 0
         else:
             return path.is_dir()
-
-
-    def _download_file(self, path: Path) -> bool:
-        s3_key = self._to_s3_key(path)
-        LOG.debug(f"Downloading {s3_key} to {path}")
-        S3_CLIENT.download_file(S3_BUCKET, s3_key, path)
-
 
     def _file_exists(self, path: Path) -> bool:
         """Check if the file exists either locally or in S3, depending on configuration."""
