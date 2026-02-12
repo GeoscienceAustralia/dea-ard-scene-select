@@ -19,18 +19,14 @@ def load_file(file_name):
     return lines
 
 
-landsat = "Australian_wrs_list_extended.txt"
+landsat = "Australian_wrs_list_reconciled.txt"
 with open(landsat) as fid:
     path_row_list = [line.rstrip() for line in fid.readlines()]
-path_row_list = [
-    "{:03}{:03}".format(int(item.split("_")[0]), int(item.split("_")[1]))
-    for item in path_row_list
-]
 
-s2 = "Australian_tile_list_optimised.txt"
+s2 = "Australian_tile_list_reconciled.txt"
 tiles = load_file(s2)
 region_dic = {"ls": path_row_list, "s2": tiles}
-output_file = "Australian_AOI_ls_extended.json"
+output_file = "Australian_AOI.json"
 
 with open(output_file, "w") as f:
     json.dump(region_dic, f, ensure_ascii=False, indent=4)
