@@ -9,12 +9,13 @@ import subprocess
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Iterator
 import calendar
 import click
 import json
 
 from datacube.model import Range
+from eodatasets3.utils import default_utc
 
 try:
     import datacube
@@ -34,6 +35,9 @@ from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
 from scene_select import utils
 
 AOI_FILE = "Australian_AOI.json"
+# AOI_FILE = "Australian_AOI_non_mainland.json"
+# AOI_FILE = "Australian_AOI_mainland.json"
+# AOI_FILE = "Australian_AOI_with_islands.json"
 
 PRODUCTS = '["usgs_ls8c_level1_2", "usgs_ls9c_level1_2"]'
 FMT2 = "filter-jobid-{jobid}"
@@ -66,6 +70,7 @@ ARD_PARENT_PRODUCT_MAPPING = {
     "usgs_ls9c_level1_2": "ga_ls9c_ard_3",
     "esa_s2am_level1_0": "ga_s2am_ard_3",
     "esa_s2bm_level1_0": "ga_s2bm_ard_3",
+    "esa_s2cm_level1_0": "ga_s2cm_ard_3",
 }
 
 L9_C2_PATTERN = (
@@ -160,7 +165,7 @@ L5_PATTERN = (
     r"(?P<extension>)$"
 )
 
-S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-B])_"
+S2_PATTERN = r"^(?P<satellite>S2)" + r"(?P<satelliteid>[A-C])_"
 
 PROCESSING_PATTERN_MAPPING = {
     "ga_ls5t_level1_3": L5_PATTERN,
@@ -173,6 +178,7 @@ PROCESSING_PATTERN_MAPPING = {
     "usgs_ls9c_level1_2": L9_C2_PATTERN,
     "esa_s2am_level1_0": S2_PATTERN,
     "esa_s2bm_level1_0": S2_PATTERN,
+    "esa_s2cm_level1_0": S2_PATTERN,
 }
 
 
@@ -199,8 +205,8 @@ def dataset_with_final_child(dc, dataset):
     ds_w_child = []
     for child_dataset in dc.index.datasets.get_derived(dataset.id):
         if (
-            not child_dataset.is_archived
-            and child_dataset.metadata.dataset_maturity == "final"
+           not child_dataset.is_archived
+           and child_dataset.metadata.dataset_maturity == "final"
         ):
             ds_w_child.append(child_dataset)
     return any(ds_w_child)
@@ -361,6 +367,7 @@ def filter_reprocessed_scenes(
                 temp_logger.debug(
                     SCENEADDED, **{REASON: "Interim scene is being processed to final"}
                 )
+                # filter_out = True
             else:
                 temp_logger.debug(SCENEREMOVED, **kwargs)
                 # Contine for everything except interim
@@ -383,7 +390,33 @@ def month_as_range(year: int, month: int) -> Range:
     )
 
 
+def _month_iterator(start_time: datetime.date, end_time: datetime.date) -> Iterator[Tuple[int, int]]:
+    """
+    Yield every month between the two times as a pair of (year, month) tuples
 
+    Both sides are inclusive.
+    """
+    start_year, start_month = start_time.year, start_time.month
+    end_year, end_month = end_time.year, end_time.month
+
+    current_year, current_month = start_year, start_month
+
+    while (current_year, current_month) <= (end_year, end_month):
+        yield current_year, current_month
+
+        current_month += 1
+        if current_month > 12:
+            current_month = 1
+            current_year += 1
+
+
+
+## MAX_DATE = default_utc(datetime.datetime.utcnow()) - datetime.timedelta(days=(365*3)-2)
+## MIN_DATE = MAX_DATE - datetime.timedelta(days=365)
+MAX_DATE = default_utc(datetime.datetime.utcnow())
+MIN_DATE = MAX_DATE - datetime.timedelta(days=385)
+# MAX_DATE = default_utc(datetime.datetime(2025, 1, 1))
+# MIN_DATE = default_utc(datetime.datetime(2024, 1, 1))
 
 def l1_filter(
     dc,
@@ -397,6 +430,8 @@ def l1_filter(
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
+    min_date: datetime.datetime = MIN_DATE,
+    max_date: datetime.datetime = MAX_DATE,
 ):
 
     """return
@@ -434,13 +469,21 @@ def l1_filter(
     files2process = set({})
     duplicates = 0
     uuids2archive = []
-    product_start_time, product_end_time = dc.index.datasets.get_product_time_bounds(product=l1_product)
+    product_start_time, product_end_time = dc.index.datasets.get_product_time_bounds(
+        product=l1_product
+    )
+
+    if min_date:
+        product_start_time = max(product_start_time, min_date)
+    if max_date:
+        product_end_time = min(product_end_time, max_date)
 
     # Query month-by-month to make DB queries smaller.
     # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
-    for year in range(product_start_time.year, product_end_time.year + 1):
-        for month in range(1, 13):
-            for l1_dataset in dc.index.datasets.search(product=l1_product, time=month_as_range(year, month)):
+    for year, month in _month_iterator(product_start_time, product_end_time):
+            for l1_dataset in dc.index.datasets.search(
+                product=l1_product, time=month_as_range(year, month)
+            ):
                 if sat_key == "ls":
                     product_id = l1_dataset.metadata.landsat_product_id
                     choppedsceneid = utils.chopped_scene_id(
@@ -530,15 +573,15 @@ def l1_filter(
 
                 files2process.add(file_path)
 
-    # Sort files so most recent are processed first.
-    # This is to avoid a backlog holding up recent acquisitions
-    return sorted(files2process, key=_get_path_date, reverse=True), uuids2archive, duplicates
+    return list(files2process), uuids2archive, duplicates
 
 
 def _get_path_date(path: str) -> str:
     """
     >>> _get_path_date('/g/data/da82/AODH/USGS/L1/Landsat/C2/135_097/LC81350972022337/LC08_L1GT_135097_20221203_20221212_02_T2.tar')
     '20221203'
+    >>> _get_path_date('/g/data/da82/AODH/USGS/L1/Landsat/C2/135_097/LC91350972023268/LC09_L1GT_135097_20230925_20230925_02_T2.tar')
+    '20230925'
     >>> _get_path_date('/g/data/fj7/Copernicus/Sentinel-2/MSI/L1C/2022/2022-07/05S140E-10S145E/S2A_MSIL1C_20220706T005721_N0400_R002_T54LWQ_20220706T022422.zip')
     '20220706T005721'
     """
@@ -575,10 +618,12 @@ def l1_scenes_to_process(
     # R0913: Too many arguments
     # pylint: disable=R0914
     # R0914: Too many local variables
-    dc = datacube.Datacube(app="gen-list", config=config)
-    l1_count = 0
-    with open(outfile, "w") as fid:
-        uuids2archive_combined = []
+    duplicate_count = 0
+    uuids2archive_combined = []
+    paths_to_process = []
+
+    scene_limit = min(scene_limit, 10000)
+    with datacube.Datacube(app="ard-scene-select", config=config) as dc:
         for product in products:
             files2process, uuids2archive, duplicates = l1_filter(
                 dc,
@@ -594,16 +639,22 @@ def l1_scenes_to_process(
                 find_blocked=find_blocked,
             )
             uuids2archive_combined += uuids2archive
-            for fp in files2process:
-                fid.write(str(fp) + "\n")
-                l1_count += 1
-                if l1_count >= scene_limit:
-                    break
-            # Note this means a scene limit will not work
-            # for multi-granule scenes
-            l1_count += duplicates
-            if l1_count >= scene_limit:
-                break
+            paths_to_process.extend(files2process)
+            duplicate_count += duplicates
+
+    # If we stopped above as soon as we reached the limit we could end up in a situation where
+    # only the first product is ever processed.
+
+    # Sort files so most recent acquisitions are processed first.
+    # This is to avoid a backlog holding up recent acquisitions
+    paths_to_process.sort(key=_get_path_date, reverse=True)
+
+    # TODO: the old code reduced written records by the duplicate count, seemingly for multi-granule to be counted
+    #       multiple times. But it also had a comment saying it wouldn't work well with multi-granule...
+    l1_count = min(len(paths_to_process), scene_limit)
+    with open(outfile, "w") as fid:
+        for path in paths_to_process[:l1_count]:
+            fid.write(str(path) + "\n")
     return l1_count, uuids2archive_combined
 
 
@@ -682,7 +733,7 @@ Does not work for multigranule zip files.",
 )
 @click.option(
     "--interim-days-wait",
-    default=18,
+    default=60,
     type=int,
     help="Maxi days to wait for ancillary data before processing ARD to "
     "an interim maturity level.",
@@ -808,6 +859,9 @@ def scene_select(
     # pylint: disable=R0913, R0914
     # R0913: Too many arguments
     # R0914: Too many local variables
+    interim_days_wait = max(60, interim_days_wait)
+    # scene_limit = 480
+    # ard_click_params['workers'] = 48
 
     logdir = Path(logdir).resolve()
     # If we write a file we write it in the job dir

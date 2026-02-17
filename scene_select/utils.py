@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-
+import logging
 import os
-from pathlib import Path
+import re
+import sys
+from pathlib import Path, PurePath
+from typing import TextIO
 
 from urllib.parse import urlparse
 from urllib.request import url2pathname
-from subprocess import STDOUT, check_output, Popen, PIPE
+from subprocess import Popen, PIPE
 
-import yaml
 import click
+import structlog
 
-from datacube import Datacube
 from datacube.model import Dataset
 
 DATA_DIR = Path(__file__).parent.joinpath("data")
@@ -18,6 +20,8 @@ DATA_DIR = Path(__file__).parent.joinpath("data")
 # Logging
 LOG_CONFIG_FILE = "log_config.ini"
 LOG_CONFIG = DATA_DIR.joinpath(LOG_CONFIG_FILE)
+
+EXPECTED_CHOPPED_S2_PATTERN = re.compile(r"S2[A-C]_L1C_[A-Z0-9]{6}_[0-9]{8}T[0-9]{6}")
 
 INSIGNIFICANT_DIGITS_FIX = [
     "--allow-any",
@@ -60,9 +64,27 @@ def calc_local_path(l1_dataset: Dataset) -> str:
 
 def chopped_scene_id(scene_id: str) -> str:
     """
-    Remove the groundstation/version information from a scene id.
-
+    Create a string to uniquely identify an acquisition within the collection.
     >>> chopped_scene_id('LE71800682013283ASA00')
+    'LE71800682013283'
+    >>> chopped_scene_id('S2A_OPER_MSI_L1C_TL_2APS_20240129T005713_A044929_T56JLN_N05.10')
+    'S2A_L1C_T56JLN_20240129T005713'
+    """
+    if scene_id.startswith("S"):
+        return chop_s2_tile_id(scene_id)
+    elif scene_id.startswith("L"):
+        return chopped_ls_scene_id(scene_id)
+    else:
+        raise NotImplementedError(f"Unsupported scene_id format: {scene_id!r}")
+
+
+def chopped_ls_scene_id(scene_id: str) -> str:
+    """
+    Create a string to uniquely identify an LS acquisition within the collection.
+
+    ie. chop off their processing version number.
+
+    >>> chopped_ls_scene_id('LE71800682013283ASA00')
     'LE71800682013283'
     """
     if len(scene_id) != 21:
@@ -71,21 +93,70 @@ def chopped_scene_id(scene_id: str) -> str:
     return capture_id
 
 
+def chop_s2_tile_id(sentinel_tile_id: str) -> str:
+    """
+    Create a string to uniquely identify an S2 acquisition within the collection.
+
+    (for instance, we remove processing time, because a reprocessed acquisition will be a duplicate.)
+
+    The chosen fields are based on GA's naming conventions:
+
+        /ga_s2am_ard_3/56/JLN/2024/01/29/20240129T005713/ga_s2am_ard_3-2-1_56JLN_2024-01-29_final.odc-metadata.yaml
+
+    (if it was acquired from the same groundstation, or had the same processing time, it would clash in name, because
+    they are not included.)
+
+    >>> chop_s2_tile_id('S2A_OPER_MSI_L1C_TL_2APS_20240129T005713_A044929_T56JLN_N05.10')
+    'S2A_L1C_T56JLN_20240129T005713'
+    """
+    split_tile_id = sentinel_tile_id.strip().split("_")
+    if len(split_tile_id) != 10:
+        raise NotImplementedError(
+            f"Unexpected sentinel_tile_id format: {sentinel_tile_id!r}"
+        )
+
+    # This all feels dangerous, which is why we check the result with a regexp below.
+    sensor = split_tile_id[0]
+    level = split_tile_id[3]
+    datatake_date = split_tile_id[-4]
+    region_code = split_tile_id[-2]
+
+    code = f"{sensor}_{level}_{region_code}_{datatake_date}"
+
+    # Let's be safe -- loud error if some have a different tile format.
+    if not EXPECTED_CHOPPED_S2_PATTERN.match(code):
+        raise NotImplementedError(f"Unexpected chopped S2 code: {code!r}")
+
+    return code
+
+
 class PythonLiteralOption(click.Option):
-    """Load click value representing a Python list."""
+    """
+    Load click value representing a Python list.
+
+    This previously required the entire python list syntax, but this is considered legacy. It's an
+    escaping nightmare.
+
+    Instead, separate values by comma.
+    """
 
     def type_cast_value(self, ctx, value):
-        try:
-            value = str(value)
-            assert value.count("[") == 1
-            assert value.count("]") == 1
-            list_str = value.replace('"', "'").split("[")[1].split("]")[0]
-            l_items = [item.strip().strip("'") for item in list_str.split(",")]
-            if l_items == [""]:
-                l_items = []
-            return l_items
-        except Exception:
-            raise click.BadParameter(value)
+        value = str(value)
+        if '[' not in value:
+            # Assume simple comma-separated items.
+            return [item.strip() for item in value.split(",")]
+        else:
+            # This is considered legacy, but included for now for backwards compatibility.
+            try:
+                assert value.count("[") == 1
+                assert value.count("]") == 1
+                list_str = value.replace('"', "'").split("[")[1].split("]")[0]
+                l_items = [item.strip().strip("'") for item in list_str.split(",")]
+                if l_items == [""]:
+                    l_items = []
+                return l_items
+            except Exception:
+                raise click.BadParameter(value)
 
 
 def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
@@ -102,7 +173,6 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
             errs  : str output from the database update call
     """
     worked = True
-    cmd_results = {}
 
     dst = new_base_path / current_path.relative_to(current_base_path)
     os.makedirs(dst.parent, exist_ok=True)
@@ -139,3 +209,56 @@ def scene_move(current_path: Path, current_base_path: str, new_base_path: str):
         "errs": str(errs),
     }
     return worked, update_results
+
+
+def structlog_setup(output: TextIO | None = sys.stderr, verbose=False):
+    """
+    Sensible structlog defaults.
+
+    It will pretty-print if going to an interactive terminal, and otherwise output json.
+
+    You can manually give a file to output to.
+
+    :param output: file to print to. (default: `sys.stderr`)
+    """
+    shared_processors = [
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.add_log_level,
+        structlog.processors.StackInfoRenderer(),
+        structlog.dev.set_exc_info,
+        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S", utc=False),
+    ]
+
+    if output.isatty():
+        # Pretty printing when run in a terminal session.
+        # Automatically prints pretty tracebacks when "rich" is installed
+        processors = shared_processors + [
+            structlog.dev.ConsoleRenderer(sort_keys=False),
+        ]
+    else:
+        # Log JSON when run otherwise
+        processors = shared_processors + [
+            structlog.processors.dict_tracebacks,
+            structlog.processors.JSONRenderer(default=_lenient_json_default),
+        ]
+    structlog.configure(
+        processors=processors,
+        wrapper_class=structlog.make_filtering_bound_logger(
+            logging.NOTSET if verbose else logging.INFO
+        ),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(file=output),
+        cache_logger_on_first_use=False,
+    )
+
+
+def _lenient_json_default(o):
+    """
+    A json-dump `default` function that will show
+    pathlib Paths as normal strings
+    """
+
+    if isinstance(o, PurePath):
+        return o.as_posix()
+
+    return repr(o)
