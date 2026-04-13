@@ -859,7 +859,7 @@ def scene_select(
     # pylint: disable=R0913, R0914
     # R0913: Too many arguments
     # R0914: Too many local variables
-    interim_days_wait = max(60, interim_days_wait)
+
     # scene_limit = 480
     # ard_click_params['workers'] = 48
 
