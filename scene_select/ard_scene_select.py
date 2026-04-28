@@ -488,8 +488,7 @@ def l1_filter(
                 # it will not catch duplicates.
                 choppedsceneid = l1_dataset.metadata.sentinel_tile_id
             region_code = l1_dataset.metadata.region_code
-
-            file_path = l1_dataset.uris[0].removesuffix("!/")
+            file_path = utils.calc_file_path(l1_dataset)
 
             # Set up the logging
             temp_logger = LOGGER.bind(

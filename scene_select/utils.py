@@ -35,34 +35,24 @@ INSIGNIFICANT_DIGITS_FIX = [
 ]
 
 
-def calc_file_path(l1_dataset: Dataset, product_id: str) -> str:
-    if l1_dataset.local_path is None:
-        # The s2 way
-        file_path = calc_local_path(l1_dataset)
-    else:
-        # The ls way
-        local_path = l1_dataset.local_path
+def calc_file_path(l1_dataset: Dataset) -> str:
+    """Get the input file path for processing.
 
-        # Metadata assumptions
-        a_path = local_path.parent.joinpath(product_id)
-        file_path = a_path.with_suffix(".tar").as_posix()
-    return file_path
+    - Sentinel-2: zip archive stored as '.zip!/'
+    - Landsat: tar archive from .odc-metadata.yaml
+    """
+    assert len(l1_dataset.uris) == 1
+    uri = l1_dataset.uris[0]
 
+    # Sentinel-2: remove trailing !/ from zip URIs
+    if uri.endswith("!/"):
+        return uri[:-2]  # or: uri.removesuffix("!/")
 
-def calc_local_path(l1_dataset: Dataset) -> str:
-    assert len(l1_dataset.uris) == 1, str(l1_dataset.uris)
-    components = urlparse(l1_dataset.uris[0])
-    if components.scheme == "s3":
-        # return full path if S3 url
-        return l1_dataset.uris[0]
-    if not (components.scheme == "file" or components.scheme == "zip"):
-        raise ValueError(
-            "Only file/Zip URIs currently supported. Tried %r." % components.scheme
-        )
-    path = url2pathname(components.path)
-    if path[-2:] == "!/":
-        path = path[:-2]
-    return path
+    # Landsat: odc-metadata.yaml URI -> point to tar instead
+    if uri.endswith(".odc-metadata.yaml"):
+        return uri.replace(".odc-metadata.yaml", ".tar")
+
+    return uri
 
 
 def chopped_scene_id(scene_id: str) -> str:
