@@ -13,6 +13,8 @@ import h5py
 import numpy
 import pandas
 import structlog
+import re
+
 
 LOG = structlog.get_logger()
 MODIS_START_DATE = datetime.datetime(2002, 7, 1)
@@ -21,20 +23,21 @@ DEFAULT_VIIRS_I_PATH = "/g/data/v10/eoancillarydata-2/BRDF/VNP43IA1.001"  # viir
 DEFAULT_VIIRS_M_PATH = "/g/data/v10/eoancillarydata-2/BRDF/VNP43MA1.001"  # viirs_m_path
 DEFAULT_USE_VIIRS_AFTER = datetime.datetime(2099, 9, 9)
 WV_DIR = "/g/data/v10/eoancillarydata-2/water_vapour"
-WV_FMT = "pr_wtr.eatm.{year}.h5"
-
-
+WV_FMT = "pr_wtr.eatm.{year}.*.h5"
+WV_PATTERN = r"pr_wtr\.eatm\.\d{4}\.(\d{4}-\d{2}-\d{2}-\d{2})\.h5"
 S3_BUCKET = os.environ.get("S3_BUCKET")
 
 S3_CLIENT = None
 if S3_BUCKET:
     import boto3
+    import s3fs
     import logging
     for package in ["botocore", "s3transfer", "urllib3"]:
         logging.getLogger(package).setLevel(logging.WARNING)
         logging.getLogger(package).propagate = True
         
     S3_CLIENT = boto3.client("s3")
+    _S3FS = s3fs.S3FileSystem()
     LOG.info(f"Using S3 for ancillary data, reading from bucket {S3_BUCKET}")
 
 def read_h5_table(fid, dataset_name):
@@ -85,24 +88,6 @@ class AncillaryFiles:
         self.use_viirs_after = use_viirs_after
         self.max_tolerance = -datetime.timedelta(days=wv_days_tolerance)
 
-    @lru_cache(maxsize=32)
-    def wv_file_exists(self, a_year):
-        wv_pathname = self.wv_path.joinpath(
-            WV_FMT.format(year=a_year)
-        )
-        return self._file_exists(wv_pathname)
-
-    @lru_cache(maxsize=32)
-    def get_wv_index(self, a_year):
-        wv_pathname = self.wv_path.joinpath(
-            WV_FMT.format(year=a_year)
-        )
-
-        self._download_file(wv_pathname)
-        with h5py.File(wv_pathname, "r") as fid:
-            index = read_h5_table(fid, "INDEX")
-        return index
-
     @lru_cache(maxsize=20000)
     def brdf_day_exists(self, ymd, base_path):
         brdf_day_of_interest = base_path.joinpath(ymd)
@@ -124,14 +109,31 @@ class AncillaryFiles:
             return False, f"VIIRS BRDF data for {ymd} does not exist."
 
     def ancillary_files(self, acquisition_datetime):
-        if not self.wv_file_exists(acquisition_datetime.year):
+        a_year = acquisition_datetime.year
+        s = str(self.wv_path).lstrip("/")
+        files = _S3FS.glob(
+            f"s3://{S3_BUCKET}/{s}/{WV_FMT.format(year=a_year)}"
+        )
+        if not files:
             return (
                 False,
-                "No water vapour data for year {}.".format(acquisition_datetime.year),
+                "No water vapour data for year {}.".format(a_year),
             )
 
-        # get year of acquisition to confirm definitive data
-        index = self.get_wv_index(acquisition_datetime.year)
+        pattern = re.compile(WV_PATTERN)
+        latest_wv_file = max(
+            files,
+            key=lambda file: datetime.datetime.strptime(
+                pattern.search(file).group(1),
+                "%Y-%m-%d-%H",
+            ),
+        )
+
+        if not Path(latest_wv_file).exists():
+            _S3FS.get(latest_wv_file, latest_wv_file)
+
+        with h5py.File(latest_wv_file, "r") as fid:
+            index = read_h5_table(fid, "INDEX")
 
         # Removing timezone info since different UTC formats were clashing.
         acquisition_datetime = acquisition_datetime.replace(tzinfo=None)
@@ -159,11 +161,6 @@ class AncillaryFiles:
         # Remove the leading slash if present.
         return str(path).lstrip("/")
 
-    def _download_file(self, path: Path) -> bool:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        s3_key = self._to_s3_key(path)
-        LOG.debug(f"Downloading {s3_key} to {path}")
-        S3_CLIENT.download_file(S3_BUCKET, s3_key, path)
 
     def _dir_exists(self, path: Path) -> bool:
         """List children of the given path, either locally or in S3, depending on configuration."""
@@ -174,26 +171,6 @@ class AncillaryFiles:
             return response.get("KeyCount", 0) > 0
         else:
             return path.is_dir()
-
-    def _file_exists(self, path: Path) -> bool:
-        """Check if the file exists either locally or in S3, depending on configuration."""
-        from botocore.exceptions import ClientError
-
-        if S3_CLIENT:
-            try:
-                s3_key = self._to_s3_key(path)
-                LOG.debug(f"Looking for key {s3_key}")
-                S3_CLIENT.head_object(Bucket=S3_BUCKET, Key=s3_key)
-                return True
-            except ClientError as e:
-                # Object does not exist.
-                if e.response["Error"]["Code"] == "404":
-                    return False
-                # For any other error (e.g., 403 Forbidden, 500 Server Error), re-raise the exception
-                else:
-                    return path.exists()
-        else:
-            return False
 
 if __name__ == "__main__":
     pass
