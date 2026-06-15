@@ -12,6 +12,7 @@ import json
 import click
 
 from datacube.model import Range
+from eodatasets3.utils import default_utc
 
 try:
     import datacube
@@ -869,6 +870,10 @@ def scene_select(
     # pylint: disable=R0913, R0914
     # R0913: Too many arguments
     # R0914: Too many local variables
+
+    # All times default to UTC
+    start_date = default_utc(start_date)
+    end_date = default_utc(end_date)
 
     logdir = Path(logdir).resolve()
     # If we write a file we write it in the job dir
