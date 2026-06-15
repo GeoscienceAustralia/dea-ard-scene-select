@@ -8,11 +8,10 @@ from logging.config import fileConfig
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Iterator
 import calendar
-import click
 import json
+import click
 
 from datacube.model import Range
-from eodatasets3.utils import default_utc
 
 try:
     import datacube
@@ -30,6 +29,7 @@ from scene_select.check_ancillary import (
 from scene_select.dass_logs import LOGGER, LogMainFunction
 from scene_select.do_ard import do_ard, ODC_FILTERED_FILE
 from scene_select import utils
+
 
 AOI_FILE = "Australian_AOI.json"
 # AOI_FILE = "Australian_AOI_mainland.json"
@@ -407,10 +407,6 @@ def _month_iterator(
             current_year += 1
 
 
-MAX_DATE = default_utc(datetime.datetime.utcnow())
-MIN_DATE = MAX_DATE - datetime.timedelta(days=60)
-
-
 def l1_filter(
     dc,
     l1_product,
@@ -423,8 +419,8 @@ def l1_filter(
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
-    min_date: datetime.datetime = MIN_DATE,
-    max_date: datetime.datetime = MAX_DATE,
+    min_date: datetime.datetime,
+    max_date: datetime.datetime,
 ):
     """return
     @param dc:
@@ -606,6 +602,8 @@ def l1_scenes_to_process(
     interim_days_wait: int,
     days_to_exclude: List,
     find_blocked: bool,
+    min_date: datetime.datetime,
+    max_date: datetime.datetime,
     config: Optional[Path] = None,
 ) -> Tuple[int, List[str]]:
     """Writes all the files returned from datacube for level1 to a file."""
@@ -631,6 +629,8 @@ def l1_scenes_to_process(
                 region_codes=region_codes,
                 interim_days_wait=interim_days_wait,
                 days_to_exclude=days_to_exclude,
+                min_date=min_date,
+                max_date=max_date,
                 find_blocked=find_blocked,
             )
             uuids2archive_combined += uuids2archive
@@ -813,6 +813,19 @@ Does not work for multigranule zip files.",
     is_flag=True,
     help="Find l1 scenes with no children that are not getting processed.",
 )
+@click.option(
+    "--start-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=lambda: datetime.datetime.utcnow() - datetime.timedelta(days=60),
+    help="Start date to select (YYYY-MM-DD).",
+)
+@click.option(
+    "--end-date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    # Default to outside the 48 hour NRT window.
+    default=lambda: datetime.datetime.utcnow() - datetime.timedelta(hours=49),
+    help="End date to select (YYYY-MM-DD)",
+)
 @LogMainFunction()
 def scene_select(
     usgs_level1_files: str,
@@ -833,6 +846,8 @@ def scene_select(
     days_to_exclude: list,
     run_ard: bool,
     find_blocked: bool,
+    start_date: datetime.datetime,
+    end_date: datetime.datetime,
     **ard_click_params: dict,
 ):
     """
@@ -891,6 +906,8 @@ def scene_select(
             region_codes=load_aoi(allowed_codes),
             config=config,
             scene_limit=scene_limit,
+            min_date=start_date,
+            max_date=end_date,
             interim_days_wait=interim_days_wait,
             days_to_exclude=days_to_exclude,
             find_blocked=find_blocked,
