@@ -6,8 +6,6 @@ import sys
 from pathlib import Path, PurePath
 from typing import TextIO
 
-from urllib.parse import urlparse
-from urllib.request import url2pathname
 from subprocess import Popen, PIPE
 
 import click
@@ -38,17 +36,25 @@ INSIGNIFICANT_DIGITS_FIX = [
 def calc_file_path(l1_dataset: Dataset) -> str:
     """Get the input file path for processing.
 
-    - Sentinel-2: zip archive stored as '.zip!/'
-    - Landsat: tar archive from .odc-metadata.yaml
+    Dataset locations are the prefix URI to reading data.
+
+    - Sentinel-2: zip archive stored as zip+s3 uri prefix: 'zip:s3://file.zip!/'
+    - Landsat: s3 location of the metadata yaml: convert it to sibling tar file.
     """
+    # In AWS we don't use multiple URIs
     assert len(l1_dataset.uris) == 1
+
     uri = l1_dataset.uris[0]
 
-    # Sentinel-2: remove trailing !/ from zip URIs
+    # Sentinel-2: convert zip+s3 uri to just an s3 link to the zip.
+    if uri.startswith("zip:s3"):
+        uri = uri.replace("zip:s3", "s3")
+    # Remove zip/tar inner-file suffix to get the outer file.
     if uri.endswith("!/"):
-        return uri[:-2]  # or: uri.removesuffix("!/")
+        uri = uri[:-2]
 
-    # Landsat: odc-metadata.yaml URI -> point to tar instead
+    # If a metadata file is indexed, we expect the data as a sibling file.
+    # Landsat is indexed this way for its tar files.
     if uri.endswith(".odc-metadata.yaml"):
         return uri.replace(".odc-metadata.yaml", ".tar")
 

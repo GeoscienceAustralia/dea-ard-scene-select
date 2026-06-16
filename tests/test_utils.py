@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 
-import os
-from pathlib import Path
 from unittest.mock import Mock
 from scene_select.utils import calc_file_path
 
 
 def test_local_path():
-    # s2
-    # uris = ["zip:/yada/yada/yada20124T021536.zip!/"]
-
-    # ls
-    # "local_path": "PosixPath('/g/data/u46/yada_01_T2.odc-metadata.yaml')
+    # Sentinel 2 should return the inner zip's s3 location without a zip:// uri
     s2_l1_dataset = Mock()
     s2_l1_dataset.local_path = None
-    path = "/g/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.zip"
-    s2_l1_dataset.uris = ["zip:" + path + "!/"]
-    product_id = "S2A_OPER_MSI_L1C_TL_VGS2_20220124T021536_A034419_T54LYH_N03.01"
-    result = calc_file_path(s2_l1_dataset, product_id)
-    assert result == path
+    s2_l1_dataset.uris = [
+        "zip:s3://ourdata/g/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.zip!/"
+    ]
+    result = calc_file_path(s2_l1_dataset)
+    assert (
+        result
+        == "s3://ourdata/g/S2A_MSIL1C_20220124T004711_N0301_R102_T54LYH_20220124T021536.zip"
+    )
 
+    # Landsat should find a sibling tar file in s3.
     ls_l1_dataset = Mock()
-    the_path = "/this/path/"
-    ls_l1_dataset.local_path = Path(os.path.join(the_path, "LC08_T2.odc-metadata.yaml"))
-    product_id = "LC08_T2"
-    actual = os.path.join(the_path, product_id + ".tar")
-    result = calc_file_path(ls_l1_dataset, product_id)
-    assert result == actual
+    ls_l1_dataset.local_path = None
+    ls_l1_dataset.uris = [
+        "s3://our-data/LC80990702026160/LC08_L1TP_099070_20260609_20260613_02_T1.odc-metadata.yaml"
+    ]
+    result = calc_file_path(ls_l1_dataset)
+    assert (
+        result
+        == "s3://our-data/LC80990702026160/LC08_L1TP_099070_20260609_20260613_02_T1.tar"
+    )
