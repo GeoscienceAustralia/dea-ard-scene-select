@@ -221,6 +221,9 @@ def calc_processed_ard_scene_ids(dc, product, sat_key):
             scene_id = "landsat_scene_id"
         elif sat_key == "s2":
             scene_id = "sentinel_tile_id"
+        else:
+            raise ValueError(f"Unknown satellite key: {sat_key}")
+
         for result in dc.index.datasets.search_returning(
             (scene_id, "dataset_maturity", "id"),
             product=ARD_PARENT_PRODUCT_MAPPING[product],
@@ -357,18 +360,22 @@ def filter_reprocessed_scenes(
                 # filtered out we don't know why there is
                 # an ard there.
 
-            if produced_ard["dataset_maturity"] == "interim" and ancill_there is True:
-                # lets build a list of ARD uuid's to delete
+            maturity_ = produced_ard["dataset_maturity"]
+            if maturity_ in ("interim", "nrt") and ancill_there is True:
+                temp_logger.debug(
+                    SCENEADDED,
+                    **{REASON: f"{maturity_} scene is being processed to final"},
+                )
+                # Process it!
+
+                # ... and archive the existing interim/nrt scene
                 uuids2archive.append(str(produced_ard["id"]))
 
-                temp_logger.debug(
-                    SCENEADDED, **{REASON: "Interim scene is being processed to final"}
-                )
             else:
+                # Otherwise don't process it.
                 temp_logger.debug(SCENEREMOVED, **kwargs)
-                # Continue for everything except interim
-                # so it doesn't get processed
                 filter_out = True
+
     return filter_out
 
 
@@ -480,10 +487,13 @@ def l1_filter(
                 )
             elif sat_key == "s2":
                 product_id = l1_dataset.metadata.sentinel_tile_id
-                # S2 has no eqivalent to a scene id
+                # S2 has no equivalent to a scene id
                 # I'm using sentinel_tile_id.  This will work for handling interim to final.
                 # it will not catch duplicates.
                 choppedsceneid = l1_dataset.metadata.sentinel_tile_id
+            else:
+                raise ValueError(f"Unknown satellite key: {sat_key}")
+
             region_code = l1_dataset.metadata.region_code
             file_path = utils.calc_file_path(l1_dataset)
 
