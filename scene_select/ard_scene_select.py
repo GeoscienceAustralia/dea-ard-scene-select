@@ -415,6 +415,25 @@ def _month_iterator(
             current_year += 1
 
 
+def iter_month_ranges(
+    start_time: datetime.datetime,
+    end_time: datetime.datetime,
+) -> Iterator[Range]:
+    """
+    Yield maximum-month-sized ranges clipped to a start and end time.
+    """
+    if start_time > end_time:
+        return
+
+    for year, month in _month_iterator(start_time, end_time):
+        full_month = month_as_range(year, month)
+
+        yield Range(
+            begin=max(full_month.begin, start_time),
+            end=min(full_month.end, end_time),
+        )
+
+
 def l1_filter(
     dc,
     l1_product,
@@ -476,9 +495,10 @@ def l1_filter(
 
     # Query month-by-month to make DB queries smaller.
     # Note that we may receive the same dataset multiple times due to boundaries (hence: results as a set)
-    for year, month in _month_iterator(product_start_time, product_end_time):
+    for query_range in iter_month_ranges(product_start_time, product_end_time):
         for l1_dataset in dc.index.datasets.search(
-            product=l1_product, time=month_as_range(year, month)
+            product=l1_product,
+            time=query_range,
         ):
             if sat_key == "ls":
                 product_id = l1_dataset.metadata.landsat_product_id
