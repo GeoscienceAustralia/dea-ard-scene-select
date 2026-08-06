@@ -382,14 +382,14 @@ def filter_reprocessed_scenes(
 def month_as_range(year: int, month: int) -> Range:
     """
     >>> month_as_range(2024, 2)
-    Range(begin=datetime.datetime(2024, 2, 1, 0, 0), end=datetime.datetime(2024, 2, 29, 23, 59, 59, 999999))
+    Range(begin=datetime.datetime(2024, 2, 1, 0, 0, tzinfo=datetime.timezone.utc), end=datetime.datetime(2024, 2, 29, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc))
     >>> month_as_range(2023, 12)
-    Range(begin=datetime.datetime(2023, 12, 1, 0, 0), end=datetime.datetime(2023, 12, 31, 23, 59, 59, 999999))
+    Range(begin=datetime.datetime(2023, 12, 1, 0, 0, tzinfo=datetime.timezone.utc), end=datetime.datetime(2023, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc))
     """
     week_day, number_of_days = calendar.monthrange(year, month)
     return Range(
-        datetime.datetime(year, month, 1),
-        datetime.datetime(year, month, number_of_days, 23, 59, 59, 999999),
+        default_utc(datetime.datetime(year, month, 1)),
+        default_utc(datetime.datetime(year, month, number_of_days, 23, 59, 59, 999999)),
     )
 
 
