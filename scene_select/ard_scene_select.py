@@ -6,7 +6,7 @@ import re
 import uuid
 from logging.config import fileConfig
 from pathlib import Path
-from typing import List, Optional, Tuple, Dict, Iterator
+from typing import List, Optional, Set, Tuple, Dict, Iterator
 import calendar
 import json
 import click
@@ -448,6 +448,7 @@ def l1_filter(
     find_blocked: bool,
     min_date: datetime.datetime,
     max_date: datetime.datetime,
+    skip_ids: Set[str],
 ):
     """return
     @param dc:
@@ -458,6 +459,7 @@ def l1_filter(
     @param interim_days_wait:
     @param days_to_exclude:
     @param find_blocked:
+    @param skip_ids: level-1 ids to never process
     @return: a list of file paths to ARD process
     """
     # pylint: disable=R0913, R0914
@@ -483,6 +485,7 @@ def l1_filter(
     )
     files2process = set({})
     duplicates = 0
+    skipped = 0
     uuids2archive = []
     product_start_time, product_end_time = dc.index.datasets.get_product_time_bounds(
         product=l1_product
@@ -523,6 +526,13 @@ def l1_filter(
                 dataset_id=str(l1_dataset.id),
                 dataset_path=file_path,
             )
+
+            # Filter out the scenes an operator has told us to never process.
+            # (this is first: it's the cheapest filter, and the most definitive)
+            if product_id in skip_ids:
+                skipped += 1
+                temp_logger.debug(SCENEREMOVED, **{REASON: "In the skip list"})
+                continue
 
             # Filter out if the processing level is too low
             if l1_product in PROCESSING_PATTERN_MAPPING:
@@ -595,6 +605,9 @@ def l1_filter(
 
             files2process.add(file_path)
 
+    if skipped:
+        LOGGER.info("skip_list_applied", product=l1_product, scenes_skipped=skipped)
+
     return list(files2process), uuids2archive, duplicates
 
 
@@ -635,6 +648,7 @@ def l1_scenes_to_process(
     find_blocked: bool,
     min_date: datetime.datetime,
     max_date: datetime.datetime,
+    skip_ids: Set[str],
     config: Optional[Path] = None,
 ) -> Tuple[int, List[str]]:
     """Writes all the files returned from datacube for level1 to a file."""
@@ -663,6 +677,7 @@ def l1_scenes_to_process(
                 min_date=min_date,
                 max_date=max_date,
                 find_blocked=find_blocked,
+                skip_ids=skip_ids,
             )
             uuids2archive_combined += uuids2archive
             paths_to_process.extend(files2process)
@@ -774,6 +789,16 @@ Does not work for multigranule zip files.",
     default=[],
 )
 @click.option(
+    "--skip-list",
+    type=click.Path(dir_okay=False, file_okay=True, exists=True),
+    default=None,
+    help="A CSV of level-1 ids to never process, such as scenes that are known "
+    "to fail in the processor. The first column is a landsat_product_id or "
+    "sentinel_tile_id; any further columns are ignored, so a reason can be "
+    "recorded alongside each id. Skipped scenes don't count towards the "
+    "--scene-limit.",
+)
+@click.option(
     "--run-ard",
     default=False,
     is_flag=True,
@@ -875,6 +900,7 @@ def scene_select(
     scene_limit: int,
     interim_days_wait: int,
     days_to_exclude: list,
+    skip_list: str,
     run_ard: bool,
     find_blocked: bool,
     start_date: datetime.datetime,
@@ -928,6 +954,11 @@ def scene_select(
     # So put it in the ard parameter dictionary
     ard_click_params["logdir"] = logdir
 
+    # Load after the log call above, so we don't dump the whole list into the log.
+    skip_ids = utils.load_skip_list(Path(skip_list)) if skip_list else set()
+    if skip_list:
+        LOGGER.info("skip_list_loaded", path=str(skip_list), scene_count=len(skip_ids))
+
     if not usgs_level1_files:
         usgs_level1_files = jobdir.joinpath(ODC_FILTERED_FILE)
         l1_count, uuids2archive = l1_scenes_to_process(
@@ -946,6 +977,7 @@ def scene_select(
             interim_days_wait=interim_days_wait,
             days_to_exclude=days_to_exclude,
             find_blocked=find_blocked,
+            skip_ids=skip_ids,
         )
     else:
         uuids2archive = []

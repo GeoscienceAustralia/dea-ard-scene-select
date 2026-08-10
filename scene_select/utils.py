@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+import csv
 import logging
 import os
 import re
 import sys
 from pathlib import Path, PurePath
-from typing import TextIO
+from typing import Set, TextIO
 
 from subprocess import Popen, PIPE
 
@@ -20,6 +21,20 @@ LOG_CONFIG_FILE = "log_config.ini"
 LOG_CONFIG = DATA_DIR.joinpath(LOG_CONFIG_FILE)
 
 EXPECTED_CHOPPED_S2_PATTERN = re.compile(r"S2[A-C]_L1C_[A-Z0-9]{6}_[0-9]{8}T[0-9]{6}")
+
+# First-column names we'll treat as a header row in a skip list, rather than as an id.
+SKIP_LIST_HEADER_NAMES = frozenset(
+    {
+        "id",
+        "landsat_product_id",
+        "landsat_scene_id",
+        "level1_id",
+        "product_id",
+        "scene_id",
+        "sentinel_tile_id",
+        "tile_id",
+    }
+)
 
 INSIGNIFICANT_DIGITS_FIX = [
     "--allow-any",
@@ -59,6 +74,51 @@ def calc_file_path(l1_dataset: Dataset) -> str:
         return uri.replace(".odc-metadata.yaml", ".tar")
 
     return uri
+
+
+def load_skip_list(file_path: Path) -> Set[str]:
+    """
+    Load a set of level-1 ids that should never be processed.
+
+    Datasets fail in the processor for reasons we can't fix (bad source data, no
+    elevation coverage, ...), and would otherwise be retried on every single run.
+    An operator lists them here to take them out of scene select permanently.
+
+    The file is a CSV whose first column is a level-1 id: either a
+    `landsat_product_id` or a `sentinel_tile_id`, as reported in our logs. Any
+    remaining columns are ignored, so operators can record why each scene was
+    skipped, and whether it's expected to be temporary.
+
+    An optional header row is allowed, as are blank lines and `#` comments::
+
+        landsat_product_id,reason
+        LC08_L1GT_135097_20221203_20221212_02_T2,No DSM coverage (SR-2231)
+        # Awaiting a USGS fix, remove after their next release:
+        LE07_L1TP_091081_20200101_20200823_02_T1,Corrupt band 3
+
+    The whole file is held in memory as a set of strings: a 200,000 scene list
+    is a few tens of MB, and lookups stay O(1).
+    """
+    skip_ids = set()
+    seen_a_row = False
+
+    with open(file_path, "r", newline="") as f:
+        for row in csv.reader(f):
+            # csv gives [] for a blank line.
+            if not row:
+                continue
+            identifier = row[0].strip()
+            if not identifier or identifier.startswith("#"):
+                continue
+
+            if not seen_a_row:
+                seen_a_row = True
+                if identifier.lower() in SKIP_LIST_HEADER_NAMES:
+                    continue
+
+            skip_ids.add(identifier)
+
+    return skip_ids
 
 
 def chopped_scene_id(scene_id: str) -> str:
